@@ -816,17 +816,23 @@ async function loadTeamDashboard() {
   ]);
   const wk=Date.now()-7*86400000, myUid=cUser.uid;
 
-  // All downline — include ONLY users who have myUid in their uplinePath
-  // AND whose uplineUid chain goes DOWN from myUid (not upline of myUid)
-  // Extra check: myUid must NOT be in the current user's ancestors above them
-  const myOwnUplinePath = cData?.uplinePath || [];
-  const myUplineIds = new Set(myOwnUplinePath); // people ABOVE me
+  // Build full ancestor set by walking uplineUid chain upward from current user
+  // This is reliable even for users registered before the uplinePath system
+  const myUplineIds = new Set();
+  let cursor = us.find(u=>u.id===myUid);
+  let safety = 0;
+  while(cursor && cursor.uplineUid && safety < 20) {
+    myUplineIds.add(cursor.uplineUid);
+    cursor = us.find(u=>u.id===cursor.uplineUid);
+    safety++;
+  }
+  // Also add anyone in cData.uplinePath as extra safety
+  (cData?.uplinePath||[]).forEach(uid=>myUplineIds.add(uid));
 
+  // Downline = users who have myUid in their uplinePath AND are not my ancestors
   const allDownline = us.filter(u=>{
     if(u.id===myUid) return false;
-    // Must not be one of my uplines
     if(myUplineIds.has(u.id)) return false;
-    // Must have myUid somewhere in their uplinePath
     return (u.uplinePath||[]).includes(myUid);
   });
   const show = allDownline.length>0 ? allDownline : [];
