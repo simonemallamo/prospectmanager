@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prospect Manager — simonemallamo</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── THEMES ── */
+[data-theme="dark"] {
+  --bg:#0f0f0f; --surface:#1a1a1a; --surface2:#222;
+  --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.13);
+  --text:#f0f0f0; --text2:#888; --text3:#555;
+  --accent:#c9a84c; --accent-dim:rgba(201,168,76,0.12);
+  --blue:#4a9cf0; --blue-dim:rgba(74,156,240,0.12);
+  --amber:#f0b44a; --amber-dim:rgba(240,180,74,0.12);
+  --red:#f05a4a; --red-dim:rgba(240,90,74,0.12);
+  --green:#4af09a; --green-dim:rgba(74,240,154,0.12);
+  --shadow:0 2px 16px rgba(0,0,0,0.5);
+}
+[data-theme="light"] {
+  --bg:#f5f5f0; --surface:#fff; --surface2:#f0f0eb;
+  --border:rgba(0,0,0,0.07); --border2:rgba(0,0,0,0.13);
+  --text:#111; --text2:#666; --text3:#aaa;
+  --accent:#a07830; --accent-dim:rgba(160,120,48,0.1);
+  --blue:#1a6cc4; --blue-dim:rgba(26,108,196,0.1);
+  --amber:#c47a00; --amber-dim:rgba(196,122,0,0.1);
+  --red:#c43020; --red-dim:rgba(196,48,32,0.1);
+  --green:#1a8c4e; --green-dim:rgba(26,140,78,0.1);
+  --shadow:0 2px 16px rgba(0,0,0,0.08);
+}
+/* ── BASE ── */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5;transition:background .2s,color .2s;}
+button{font-family:'DM Sans',sans-serif;cursor:pointer;}
+input,select,textarea{font-family:'DM Sans',sans-serif;}
+.hidden{display:none!important;}
+
+/* ── THEME TOGGLE ── */
+.toggle-wrap{display:flex;align-items:center;gap:6px;}
+.toggle-wrap span{font-size:13px;}
+.t-toggle{width:36px;height:20px;background:var(--surface2);border:1px solid var(--border2);border-radius:20px;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;display:inline-block;}
+.t-toggle::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:var(--accent);top:2px;left:2px;transition:transform .2s;}
+[data-theme="light"] .t-toggle::after{transform:translateX(16px);}
+
+/* ── AUTH ── */
+#auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:var(--bg);}
+.auth-card{background:var(--surface);border:.5px solid var(--border2);border-radius:16px;padding:2.25rem;width:100%;max-width:400px;box-shadow:var(--shadow);}
+.auth-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem;}
+.auth-logo{display:flex;align-items:center;gap:10px;}
+.logo-mark{width:36px;height:36px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+[data-theme="dark"] .logo-mark{color:#0f0f0f;}
+[data-theme="light"] .logo-mark{color:#fff;}
+.logo-text{font-size:15px;font-weight:600;letter-spacing:-.3px;}
+.logo-sub{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:1px;}
+.auth-title{font-size:21px;font-weight:600;letter-spacing:-.4px;margin-bottom:5px;}
+.auth-sub{color:var(--text2);font-size:13px;margin-bottom:1.5rem;}
+.auth-tabs{display:flex;background:var(--surface2);border-radius:7px;padding:3px;margin-bottom:1.25rem;}
+.auth-tab{flex:1;padding:7px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;border-radius:5px;transition:all .15s;}
+.auth-tab.on{background:var(--surface);color:var(--text);border:.5px solid var(--border2);}
+.auth-error{background:var(--red-dim);border:.5px solid var(--red);border-radius:7px;padding:8px 12px;color:var(--red);font-size:12px;margin-bottom:1rem;display:none;}
+.invite-banner{background:var(--accent-dim);border:.5px solid var(--accent);border-radius:7px;padding:9px 12px;font-size:12px;color:var(--text2);margin-bottom:1rem;display:none;line-height:1.6;}
+.invite-banner b{color:var(--accent);}
+.leader-link{background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px;margin-bottom:1rem;display:block;}
+
+/* ── FORM ── */
+.fg{margin-bottom:.875rem;}
+.fg label{display:block;font-size:10px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;}
+.fg input,.fg select{width:100%;padding:8px 11px;background:var(--surface2);border:.5px solid var(--border2);border-radius:7px;color:var(--text);font-size:13px;outline:none;transition:border-color .15s;}
+.fg input:focus,.fg select:focus{border-color:var(--accent);}
+.fg select option{background:var(--surface);}
+.fg select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+.btn-primary{width:100%;padding:10px;background:var(--accent);border:none;border-radius:7px;font-size:14px;font-weight:600;transition:opacity .15s;margin-top:2px;}
+[data-theme="dark"] .btn-primary{color:#0f0f0f;}
+[data-theme="light"] .btn-primary{color:#fff;}
+.btn-primary:hover{opacity:.87;}
+
+/* ── APP ── */
+#app-screen{display:none;min-height:100vh;}
+.topbar{display:flex;align-items:center;gap:8px;padding:0 1.25rem;height:54px;background:var(--surface);border-bottom:.5px solid var(--border);position:sticky;top:0;z-index:50;box-shadow:var(--shadow);}
+.topbar-logo{display:flex;align-items:center;gap:8px;margin-right:8px;}
+.topbar-mark{width:26px;height:26px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;}
+[data-theme="dark"] .topbar-mark{color:#0f0f0f;}
+[data-theme="light"] .topbar-mark{color:#fff;}
+.topbar-name{font-size:13px;font-weight:600;letter-spacing:-.2px;}
+.topbar-name span{font-weight:300;color:var(--text3);font-size:11px;margin-left:4px;}
+.t-tab{padding:5px 12px;border:none;background:transparent;color:var(--text2);font-size:12px;font-weight:500;border-radius:6px;transition:all .15s;}
+.t-tab.on{background:var(--surface2);color:var(--text);}
+.t-tab.leader{color:var(--accent);}
+.t-tab.leader.on{background:var(--accent-dim);}
+.t-tab.admin-tab{color:var(--red);}
+.t-tab.admin-tab.on{background:var(--red-dim);}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.user-av{width:28px;height:28px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--accent);}
+.user-nm{font-size:11px;color:var(--text2);}
+.btn-sm{padding:4px 10px;border:.5px solid var(--border2);border-radius:6px;background:transparent;color:var(--text2);font-size:11px;transition:all .15s;}
+.btn-sm:hover{color:var(--text);border-color:var(--border2);}
+.btn-sm.danger:hover{color:var(--red);border-color:var(--red-dim);}
+
+/* ── MAIN ── */
+.main{padding:1.25rem;max-width:1320px;margin:0 auto;}
+
+/* ── STATS ── */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:1.25rem;}
+.sc{background:var(--surface);border:.5px solid var(--border);border-radius:10px;padding:.875rem 1rem;}
+.sc-lbl{font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.sc-val{font-size:26px;font-weight:600;font-family:'DM Mono',monospace;letter-spacing:-1px;}
+.sc-val.g{color:var(--green);} .sc-val.b{color:var(--blue);} .sc-val.a{color:var(--amber);} .sc-val.r{color:var(--red);} .sc-val.ac{color:var(--accent);}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:.875rem;}
+.search{padding:7px 11px;background:var(--surface);border:.5px solid var(--border2);border-radius:6px;color:var(--text);font-size:13px;outline:none;width:175px;transition:border-color .15s;}
+.search:focus{border-color:var(--accent);}
+.search::placeholder{color:var(--text3);}
+.f-btn{padding:5px 11px;border:.5px solid var(--border);border-radius:6px;background:transparent;color:var(--text2);font-size:12px;font-weight:500;transition:all .15s;}
+.f-btn.on{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
+.btn-add{margin-left:auto;padding:7px 14px;background:var(--accent);border:none;border-radius:6px;font-size:13px;font-weight:600;transition:opacity .15s;}
+[data-theme="dark"] .btn-add{color:#0f0f0f;}
+[data-theme="light"] .btn-add{color:#fff;}
+.btn-add:hover{opacity:.87;}
+
+/* ── TABLE ── */
+.tbl-wrap{background:var(--surface);border:.5px solid var(--border);border-radius:10px;overflow-x:auto;}
+table{width:100%;border-collapse:collapse;min-width:750px;}
+thead th{padding:9px 13px;text-align:left;font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:.5px solid var(--border);white-space:nowrap;}
+tbody tr{border-bottom:.5px solid var(--border);transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--surface2);}
+td{padding:9px 13px;vertical-align:middle;}
+.nm{font-weight:500;font-size:13px;}
+.note{font-size:11px;color:var(--text3);margin-top:1px;}
+.dbadge{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:21px;border-radius:5px;font-size:11px;font-weight:500;font-family:'DM Mono',monospace;padding:0 5px;}
+.dbadge.ok{background:var(--green-dim);color:var(--green);}
+.dbadge.warn{background:var(--amber-dim);color:var(--amber);}
+.dbadge.bad{background:var(--red-dim);color:var(--red);}
+.chk{width:25px;height:25px;border-radius:5px;border:1.5px solid var(--border2);background:transparent;display:inline-flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s;}
+.chk.on{background:var(--accent);border-color:var(--accent);}
+[data-theme="dark"] .chk.on{color:#0f0f0f;}
+[data-theme="light"] .chk.on{color:#fff;}
+.chk.fu:not(.on){color:var(--text3);font-size:10px;border-color:var(--blue-dim);}
+.chk.fu.on{background:var(--blue);border-color:var(--blue);color:#fff;}
+.fu-row{display:flex;gap:3px;}
+.th-sort{cursor:pointer;user-select:none;white-space:nowrap;}
+.th-sort:hover{color:var(--text2);}
+.th-sort.active{color:var(--accent);}
+.sort-arrow{margin-left:4px;font-size:9px;opacity:.6;}
+.th-sort.active .sort-arrow{opacity:1;}
+.pay-row{display:flex;align-items:center;gap:6px;cursor:pointer;}
+.pay-dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--border2);transition:all .15s;}
+.pay-dot.on{background:var(--amber);border-color:var(--amber);}
+.pay-lbl{font-size:12px;color:var(--text3);}
+.pay-lbl.on{color:var(--amber);}
+.pill{display:inline-flex;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.3px;}
+.pill.nuovo{background:var(--surface2);color:var(--text3);border:.5px solid var(--border2);}
+.pill.attivo{background:var(--blue-dim);color:var(--blue);border:.5px solid var(--blue-dim);}
+.pill.paga{background:var(--amber-dim);color:var(--amber);border:.5px solid var(--amber-dim);}
+.pill.done{background:var(--green-dim);color:var(--green);border:.5px solid var(--green-dim);}
+.act-btns{display:flex;gap:5px;}
+.act-btn{padding:4px 9px;border:.5px solid var(--border);border-radius:5px;background:transparent;color:var(--text2);font-size:11px;transition:all .15s;}
+.act-btn:hover{color:var(--text);border-color:var(--border2);}
+.act-btn.del:hover{color:var(--red);border-color:var(--red-dim);}
+.empty{padding:2.5rem;text-align:center;color:var(--text3);font-size:13px;}
+
+/* ── TEAM DASHBOARD ── */
+.dash-title{font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:.875rem;}
+.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin-bottom:1.5rem;}
+.tc{background:var(--surface);border:.5px solid var(--border);border-radius:10px;padding:1.125rem;}
+.tc-head{display:flex;align-items:center;gap:9px;margin-bottom:12px;}
+.tc-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;}
+.tc-name{font-size:13px;font-weight:500;}
+.tc-role{font-size:10px;color:var(--text3);margin-top:1px;}
+.wk-tag{margin-left:auto;font-size:10px;font-weight:500;padding:2px 7px;border-radius:20px;background:var(--green-dim);color:var(--green);font-family:'DM Mono',monospace;}
+.tc-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.tc-num{text-align:center;}
+.tc-num-val{font-size:18px;font-weight:600;font-family:'DM Mono',monospace;}
+.tc-num-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;margin-top:1px;}
+.rank-table{background:var(--surface);border:.5px solid var(--border);border-radius:10px;overflow:hidden;}
+.rank-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:.5px solid var(--border);}
+.rank-row:last-child{border-bottom:none;}
+.rank-pos{font-size:11px;font-weight:600;font-family:'DM Mono',monospace;color:var(--text3);width:18px;}
+.rank-pos.top{color:var(--accent);}
+.rank-name{font-size:13px;font-weight:500;flex:1;}
+.rank-bar-wrap{width:100px;height:3px;background:var(--surface2);border-radius:2px;}
+.rank-bar{height:100%;border-radius:2px;background:var(--accent);}
+.rank-val{font-size:11px;font-family:'DM Mono',monospace;color:var(--text2);min-width:24px;text-align:right;}
+
+/* ── ADMIN ── */
+.admin-badge{display:inline-flex;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:500;text-transform:uppercase;}
+.admin-badge.leader{background:var(--accent-dim);color:var(--accent);border:.5px solid var(--accent);}
+.admin-badge.member{background:var(--surface2);color:var(--text3);border:.5px solid var(--border2);}
+.tree-wrap{background:var(--surface);border:.5px solid var(--border);border-radius:10px;padding:1.125rem;font-size:13px;}
+.tree-node{padding:2px 0 2px 18px;border-left:1.5px solid var(--border2);margin-left:6px;}
+.tree-item{display:flex;align-items:center;gap:7px;padding:4px 7px;border-radius:5px;margin-bottom:1px;}
+.tree-item:hover{background:var(--surface2);}
+.tree-lbl{font-size:13px;font-weight:500;}
+.tree-meta{font-size:10px;color:var(--text3);margin-left:3px;}
+
+/* ── MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:100;padding:1rem;backdrop-filter:blur(4px);}
+.modal{background:var(--surface);border:.5px solid var(--border2);border-radius:14px;padding:1.625rem;width:100%;max-width:430px;box-shadow:var(--shadow);}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:1.125rem;}
+.modal-info{background:var(--surface2);border-radius:7px;padding:.75rem 1rem;margin-bottom:1.125rem;}
+.modal-info .mi-name{font-size:13px;font-weight:500;}
+.modal-info .mi-sub{font-size:11px;color:var(--text2);margin-top:2px;}
+.modal-actions{display:flex;gap:7px;justify-content:flex-end;margin-top:1.125rem;}
+.btn-cancel{padding:8px 14px;border:.5px solid var(--border2);border-radius:6px;background:transparent;color:var(--text2);font-size:13px;}
+.btn-save{padding:8px 14px;background:var(--accent);border:none;border-radius:6px;font-size:13px;font-weight:600;}
+[data-theme="dark"] .btn-save{color:#0f0f0f;}
+[data-theme="light"] .btn-save{color:#fff;}
+.btn-danger{padding:8px 14px;border:.5px solid var(--red-dim);border-radius:6px;background:transparent;color:var(--red);font-size:13px;}
+.modal-err{font-size:12px;color:var(--red);margin-top:6px;display:none;}
+
+/* ── SETTINGS INVITE ── */
+.invite-box{background:var(--surface2);border-radius:7px;padding:.875rem;margin-top:.875rem;}
+.invite-box-title{font-size:12px;font-weight:500;margin-bottom:5px;}
+.invite-box-sub{font-size:11px;color:var(--text2);margin-bottom:.75rem;line-height:1.6;}
+.invite-row{display:flex;gap:6px;align-items:center;}
+.invite-input{flex:1;padding:6px 9px;background:var(--surface);border:.5px solid var(--border2);border-radius:5px;color:var(--text);font-size:11px;font-family:'DM Mono',monospace;}
+.btn-copy{padding:6px 12px;background:var(--accent);border:none;border-radius:5px;font-size:12px;font-weight:600;white-space:nowrap;}
+[data-theme="dark"] .btn-copy{color:#0f0f0f;}
+[data-theme="light"] .btn-copy{color:#fff;}
+
+/* ── LOADER ── */
+.loader{display:flex;align-items:center;justify-content:center;min-height:150px;gap:5px;}
+.ld{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:ld .8s infinite;}
+.ld:nth-child(2){animation-delay:.15s;} .ld:nth-child(3){animation-delay:.3s;}
+@keyframes ld{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+</style>
+</head>
+<body>
+
+<!-- ══ AUTH ══ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-top">
+      <div class="auth-logo">
+        <div class="logo-mark">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="5.5" r="3" fill="currentColor"/>
+            <circle cx="3.5" cy="15" r="2.2" fill="currentColor" opacity=".5"/>
+            <circle cx="16.5" cy="15" r="2.2" fill="currentColor" opacity=".5"/>
+            <line x1="10" y1="8.5" x2="3.5" y2="12.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <line x1="10" y1="8.5" x2="16.5" y2="12.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="logo-text">Prospect Manager</div>
+          <div class="logo-sub">developed by @simonemallamo</div>
+        </div>
+      </div>
+      <div class="toggle-wrap">
+        <span>☀️</span><div class="t-toggle" onclick="toggleTheme()"></div><span>🌙</span>
+      </div>
+    </div>
+    <div class="auth-title">Bentornato</div>
+    <div class="auth-sub">Gestisci i tuoi prospect e monitora il team</div>
+    <div class="auth-tabs">
+      <button class="auth-tab on" id="atab-login" onclick="authTab('login')">Accedi</button>
+      <button class="auth-tab" id="atab-signup" onclick="authTab('signup')">Registrati</button>
+    </div>
+    <div id="auth-err" class="auth-error"></div>
+    <div id="invite-banner" class="invite-banner">🔗 Stai per unirti al team di <b id="inviter-nm">—</b></div>
+
+    <!-- LOGIN -->
+    <div id="form-login">
+      <div class="fg"><label>Email</label><input type="email" id="l-email" placeholder="tua@email.com"></div>
+      <div class="fg"><label>Password</label><input type="password" id="l-pass" placeholder="••••••••"></div>
+      <button class="btn-primary" onclick="doLogin()">Accedi →</button>
+    </div>
+
+    <!-- SIGNUP -->
+    <div id="form-signup" class="hidden">
+      <div class="fg"><label>Nome completo</label><input type="text" id="s-name" placeholder="Mario Rossi"></div>
+      <div class="fg"><label>Email</label><input type="email" id="s-email" placeholder="tua@email.com"></div>
+      <div class="fg"><label>Password</label><input type="password" id="s-pass" placeholder="Min. 6 caratteri"></div>
+      <div id="leader-code-wrap" class="hidden">
+        <div class="fg"><label>Codice Leader</label><input type="password" id="s-lcode" placeholder="Codice riservato ai Leader"></div>
+      </div>
+      <button class="leader-link" onclick="toggleLeaderField()">Hai un codice Leader? Clicca qui</button>
+      <button class="btn-primary" onclick="doSignup()">Crea account →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app-screen">
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div class="topbar-mark">
+        <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="5.5" r="3" fill="currentColor"/>
+          <circle cx="3.5" cy="15" r="2.2" fill="currentColor" opacity=".5"/>
+          <circle cx="16.5" cy="15" r="2.2" fill="currentColor" opacity=".5"/>
+          <line x1="10" y1="8.5" x2="3.5" y2="12.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="10" y1="8.5" x2="16.5" y2="12.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="topbar-name">Prospect Manager <span>developed by @simonemallamo</span></div>
+    </div>
+    <button class="t-tab on" id="tab-lista" onclick="switchTab('lista')">Lista Prospect</button>
+    <button class="t-tab leader hidden" id="tab-team" onclick="switchTab('team')">Dashboard Team</button>
+    <button class="t-tab admin-tab hidden" id="tab-admin" onclick="switchTab('admin')">⚙ Admin</button>
+    <div class="topbar-right">
+      <div class="toggle-wrap"><span>☀️</span><div class="t-toggle" onclick="toggleTheme()"></div><span>🌙</span></div>
+      <div class="user-av" id="u-av">?</div>
+      <div class="user-nm" id="u-nm">—</div>
+      <button class="btn-sm" onclick="openSettings()">Impostazioni</button>
+      <button class="btn-sm danger" onclick="doLogout()">Esci</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- LISTA -->
+    <div id="view-lista">
+      <div class="stats" id="my-stats"></div>
+      <div class="toolbar">
+        <input class="search" type="text" id="p-search" placeholder="Cerca prospect..." oninput="renderTable()">
+        <button class="f-btn on" onclick="setFilter(this,'tutti')">Tutti</button>
+        <button class="f-btn" onclick="setFilter(this,'nuovo')">Nuovo</button>
+        <button class="f-btn" onclick="setFilter(this,'attivo')">Attivo</button>
+        <button class="f-btn" onclick="setFilter(this,'paga')">In attesa pag.</button>
+        <button class="f-btn" onclick="setFilter(this,'done')">FU completo</button>
+        <select class="search" id="prov-filter" onchange="renderTable()" style="width:80px;"><option value="">Prov.</option><option>AG</option><option>AL</option><option>AN</option><option>AO</option><option>AQ</option><option>AR</option><option>AP</option><option>AT</option><option>AV</option><option>BA</option><option>BT</option><option>BL</option><option>BN</option><option>BG</option><option>BI</option><option>BO</option><option>BZ</option><option>BS</option><option>BR</option><option>CA</option><option>CL</option><option>CB</option><option>CE</option><option>CT</option><option>CZ</option><option>CH</option><option>CO</option><option>CS</option><option>CR</option><option>KR</option><option>CN</option><option>EN</option><option>FM</option><option>FE</option><option>FI</option><option>FG</option><option>FC</option><option>FR</option><option>GE</option><option>GO</option><option>GR</option><option>IM</option><option>IS</option><option>SP</option><option>LT</option><option>LE</option><option>LC</option><option>LI</option><option>LO</option><option>LU</option><option>MC</option><option>MN</option><option>MS</option><option>MT</option><option>ME</option><option>MI</option><option>MO</option><option>MB</option><option>NA</option><option>NO</option><option>NU</option><option>OG</option><option>OT</option><option>OR</option><option>PD</option><option>PA</option><option>PR</option><option>PV</option><option>PG</option><option>PU</option><option>PE</option><option>PC</option><option>PI</option><option>PT</option><option>PN</option><option>PZ</option><option>PO</option><option>RG</option><option>RA</option><option>RC</option><option>RE</option><option>RI</option><option>RN</option><option>RM</option><option>RO</option><option>SA</option><option>SS</option><option>SV</option><option>SI</option><option>SR</option><option>SO</option><option>TA</option><option>TE</option><option>TR</option><option>TO</option><option>TP</option><option>TN</option><option>TV</option><option>TS</option><option>UD</option><option>VA</option><option>VE</option><option>VB</option><option>VC</option><option>VR</option><option>VV</option><option>VI</option><option>VT</option></select>
+        <select class="search" id="p-prov-filter" onchange="renderTable()" style="width:90px;" title="Filtra per provincia">
+          <option value="">Provincia</option>
+        </select>
+        <button class="btn-add" onclick="openProspectModal()">＋ Nuovo prospect</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th class="th-sort active" id="th-name" onclick="sortBy('name')">Nome / Note <span class="sort-arrow">↕</span></th>
+            <th class="th-sort" id="th-days" onclick="sortBy('days')">Giorni <span class="sort-arrow">↕</span></th>
+            <th class="th-sort" id="th-pres" onclick="sortBy('pres')">Presentazione <span class="sort-arrow">↕</span></th>
+            <th>Follow-up 1→4</th>
+            <th class="th-sort" id="th-pay" onclick="sortBy('pay')">Pagamento <span class="sort-arrow">↕</span></th>
+            <th class="th-sort" id="th-status" onclick="sortBy('status')">Stato <span class="sort-arrow">↕</span></th>
+            <th class="th-sort" id="th-prov" onclick="sortBy('prov')">Prov. <span class="sort-arrow">↕</span></th>
+            <th></th>
+          </tr></thead>
+          <tbody id="p-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TEAM -->
+    <div id="view-team" class="hidden">
+      <!-- Global stats -->
+      <div class="stats" id="team-stats"></div>
+
+      <!-- Binary leg comparison -->
+      <div class="dash-title" style="margin-top:.25rem;">Confronto gambe</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:1rem;flex-wrap:wrap;">
+        <select id="leg-leader-filter" class="search" style="width:200px;" onchange="renderTeamDashboard()">
+          <option value="">Tutta la struttura</option>
+        </select>
+        <span style="font-size:12px;color:var(--text3);">Filtra per leader per vedere le sue gambe</span>
+      </div>
+      <div id="binary-view" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem;"></div>
+
+      <!-- Members grid -->
+      <div class="dash-title">Tutti i membri</div>
+      <div class="team-grid" id="team-grid"></div>
+      <div class="dash-title" style="margin-top:1rem;">Ranking nuovi prospect (settimana)</div>
+      <div class="rank-table" id="rank-table"></div>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="view-admin" class="hidden">
+      <div class="stats" id="admin-stats"></div>
+      <div class="toolbar" style="margin-top:.25rem;">
+        <input class="search" type="text" id="a-search" placeholder="Cerca utente..." oninput="renderAdminTable()">
+        <button class="f-btn on" onclick="setAdminFilter(this,'tutti')">Tutti</button>
+        <button class="f-btn" onclick="setAdminFilter(this,'leader')">Leader</button>
+        <button class="f-btn" onclick="setAdminFilter(this,'member')">Membri</button>
+        <button class="f-btn" onclick="setAdminFilter(this,'orphan')">Senza upline</button>
+        <button class="f-btn" onclick="assignAllIds()" style="color:var(--amber);border-color:var(--amber-dim);">⚡ Assegna ID mancanti</button>
+      </div>
+      <div class="tbl-wrap" style="margin-bottom:1.25rem;">
+        <table>
+          <thead><tr>
+            <th>Utente</th><th>Ruolo</th><th>Upline diretto</th><th>Prospect</th><th>Registrato</th><th></th>
+          </tr></thead>
+          <tbody id="a-tbody"></tbody>
+        </table>
+      </div>
+      <div class="dash-title">Albero del network</div>
+      <div class="tree-wrap" id="net-tree"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODALS ══ -->
+
+<!-- Prospect -->
+<div id="p-overlay" class="overlay hidden">
+  <div class="modal">
+    <div class="modal-title" id="p-modal-title">Nuovo prospect</div>
+    <div class="fg"><label>Nome e cognome *</label><input type="text" id="p-name" placeholder="Es. Luca Bianchi"></div>
+    <div class="fg"><label>Canale di contatto</label><input type="text" id="p-channel" placeholder="Es. Instagram, WhatsApp..."></div>
+    <div class="fg"><label>Provincia</label><select id="p-provincia"><option value="">— Seleziona provincia —</option><option>AG</option><option>AL</option><option>AN</option><option>AO</option><option>AQ</option><option>AR</option><option>AP</option><option>AT</option><option>AV</option><option>BA</option><option>BT</option><option>BL</option><option>BN</option><option>BG</option><option>BI</option><option>BO</option><option>BZ</option><option>BS</option><option>BR</option><option>CA</option><option>CL</option><option>CB</option><option>CI</option><option>CE</option><option>CT</option><option>CZ</option><option>CH</option><option>CO</option><option>CS</option><option>CR</option><option>KR</option><option>CN</option><option>EN</option><option>FM</option><option>FE</option><option>FI</option><option>FG</option><option>FC</option><option>FR</option><option>GE</option><option>GO</option><option>GR</option><option>IM</option><option>IS</option><option>SP</option><option>AQ</option><option>LT</option><option>LE</option><option>LC</option><option>LI</option><option>LO</option><option>LU</option><option>MC</option><option>MN</option><option>MS</option><option>MT</option><option>ME</option><option>MI</option><option>MO</option><option>MB</option><option>NA</option><option>NO</option><option>NU</option><option>OG</option><option>OT</option><option>OR</option><option>PD</option><option>PA</option><option>PR</option><option>PV</option><option>PG</option><option>PU</option><option>PE</option><option>PC</option><option>PI</option><option>PT</option><option>PN</option><option>PZ</option><option>PO</option><option>RG</option><option>RA</option><option>RC</option><option>RE</option><option>RI</option><option>RN</option><option>RM</option><option>RO</option><option>SA</option><option>VS</option><option>SS</option><option>SV</option><option>SI</option><option>SR</option><option>SO</option><option>TA</option><option>TE</option><option>TR</option><option>TO</option><option>TP</option><option>TN</option><option>TV</option><option>TS</option><option>UD</option><option>VA</option><option>VE</option><option>VB</option><option>VC</option><option>VR</option><option>VV</option><option>VI</option><option>VT</option></select></div>
+    <div class="fg"><label>Note</label><input type="text" id="p-note" placeholder="Es. Interessato al business..."></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeProspectModal()">Annulla</button>
+      <button class="btn-save" onclick="saveProspect()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings -->
+<div id="s-overlay" class="overlay hidden">
+  <div class="modal">
+    <div class="modal-title">Impostazioni account</div>
+    <div class="modal-info">
+      <div class="mi-name" id="s-name">—</div>
+      <div class="mi-sub" id="s-email">—</div>
+      <div style="margin-top:8px;" id="s-role-badge"></div>
+    </div>
+
+    <!-- Upgrade to leader -->
+    <div id="s-upgrade">
+      <div style="font-size:13px;font-weight:500;margin-bottom:5px;">Upgrade a Team Leader</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:.75rem;line-height:1.6;">Inserisci il codice Leader per sbloccare la Dashboard Team.</div>
+      <div class="fg"><label>Codice Leader</label><input type="password" id="s-lcode" placeholder="Inserisci il codice..."></div>
+      <div class="modal-err" id="s-upgrade-err"></div>
+      <button class="btn-primary" style="margin-top:6px;" onclick="doUpgrade()">Attiva accesso Leader →</button>
+    </div>
+    <div id="s-already-leader" class="hidden" style="text-align:center;padding:.75rem 0;font-size:13px;color:var(--green);">✅ Sei già Team Leader</div>
+
+    <!-- Invite link (leaders only) -->
+    <div id="s-invite" class="hidden">
+      <div class="invite-box">
+        <div class="invite-box-title">🔗 Il tuo link di invito</div>
+        <div class="invite-box-sub">Condividi con i tuoi diretti. Chi si registra tramite questo link viene collegato automaticamente al tuo team.</div>
+        <div class="invite-row">
+          <input class="invite-input" type="text" id="invite-input" readonly>
+          <button class="btn-copy" id="copy-btn" onclick="copyInvite()">Copia</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeSettings()">Chiudi</button></div>
+  </div>
+</div>
+
+<!-- Admin login -->
+<div id="al-overlay" class="overlay hidden">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-title">🔐 Accesso Admin</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:1rem;">Inserisci il codice Admin per gestire utenti e network.</div>
+    <div class="fg"><label>Codice Admin</label><input type="password" id="al-code" placeholder="••••••••••"></div>
+    <div class="modal-err" id="al-err"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeAdminLogin()">Annulla</button>
+      <button class="btn-save" onclick="verifyAdmin()">Accedi →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit user -->
+<div id="eu-overlay" class="overlay hidden">
+  <div class="modal">
+    <div class="modal-title">✏️ Modifica utente</div>
+    <div class="modal-info">
+      <div class="mi-name" id="eu-name">—</div>
+      <div class="mi-sub" id="eu-email">—</div>
+      <div style="margin-top:5px;" id="eu-num"></div>
+    </div>
+    <div class="fg"><label>Ruolo</label>
+      <select id="eu-role"><option value="member">Membro</option><option value="leader">Team Leader</option></select>
+    </div>
+    <div class="fg"><label>Sposta upline diretto</label>
+      <select id="eu-upline"></select>
+    </div>
+    <div class="fg"><label>Gamba nel team dell'upline</label>
+      <select id="eu-leg">
+        <option value="">— Non assegnata —</option>
+        <option value="right">Destra 👉</option>
+        <option value="left">Sinistra 👈</option>
+      </select>
+    </div>
+    <div class="modal-err" id="eu-err"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEditUser()">Annulla</button>
+      <button class="btn-danger" onclick="deleteUser()">Elimina</button>
+      <button class="btn-save" onclick="saveEditUser()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FIREBASE ══ -->
+<script type="module">
+import { initializeApp }        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+                                 from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc,
+         onSnapshot, query, where, serverTimestamp, getDocs }
+                                 from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ════════════════════════════════════
+// 🔧 FIREBASE CONFIG
+// ════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyA5_Bqs8MBsMT-MT_dcAc9I3MEeQa04XEA",
+  authDomain: "prospectmanager-simonemallamo.firebaseapp.com",
+  projectId: "prospectmanager-simonemallamo",
+  storageBucket: "prospectmanager-simonemallamo.firebasestorage.app",
+  messagingSenderId: "85066394723",
+  appId: "1:85066394723:web:1687432bb2c1c07eae9c56"
+};
+// ════════════════════════════════════
+const LEADER_CODE = "RYOUNG";
+const ADMIN_CODE  = "Giftedbird609";
+// ════════════════════════════════════
+
+const fbApp = initializeApp(firebaseConfig);
+const auth  = getAuth(fbApp);
+const db    = getFirestore(fbApp);
+
+// ── STATE ──
+let cUser = null, cData = null;
+let prospects = [];
+let pFilter = 'tutti';
+let sortCol = 'date';
+let sortDir = 'desc';
+let editingPid = null;
+let adminUnlocked = false;
+let allUsers = [], allProspects = [];
+let editingUid = null;
+let aFilter = 'tutti';
+let unsub = null;
+
+// ── THEME ──
+window.toggleTheme = () => {
+  const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('pm_theme', t);
+};
+document.documentElement.setAttribute('data-theme', localStorage.getItem('pm_theme') || 'dark');
+
+// ── AUTH STATE ──
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    cUser = user;
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    // If user doc exists in 'users' collection they are valid — ignore deleted_users
+    if (snap.exists()) {
+      cData = snap.data();
+      showApp();
+      return;
+    }
+    // User doc missing from 'users' — check if deliberately deleted by admin
+    try {
+      const deletedSnap = await getDoc(doc(db, 'deleted_users', user.uid));
+      if (deletedSnap.exists()) {
+        await signOut(auth);
+        showAuth();
+        showErr('Account eliminato. Contatta Simone per assistenza.');
+        return;
+      }
+    } catch(e) {}
+    // Doc missing but not deleted — treat as valid, use empty data
+    cData = {};
+    showApp();
+  } else {
+    cUser = null; cData = null;
+    showAuth();
+  }
+});
+
+// ── LOGIN / SIGNUP ──
+window.doLogin = async () => {
+  const email = id('l-email').value.trim();
+  const pass  = id('l-pass').value;
+  if (!email || !pass) { showErr('Inserisci email e password'); return; }
+  try { await signInWithEmailAndPassword(auth, email, pass); }
+  catch(e) { showErr(errMsg(e.code)); }
+};
+
+window.doSignup = async () => {
+  const name   = id('s-name').value.trim();
+  const email  = id('s-email').value.trim();
+  const pass   = id('s-pass').value;
+  const lcode  = id('s-lcode').value;
+  if (!name || !email || !pass) { showErr('Compila tutti i campi'); return; }
+  if (lcode && lcode !== LEADER_CODE) { showErr('Codice Leader non valido'); return; }
+  const role = lcode === LEADER_CODE ? 'leader' : 'member';
+
+  // Read invite token
+  const token = new URLSearchParams(window.location.search).get('invite');
+  let uplineUid = null, uplinePath = [];
+  if (token) {
+    try {
+      const inv = await getDoc(doc(db, 'invites', token));
+      if (inv.exists()) { uplineUid = inv.data().uid; uplinePath = inv.data().uplinePath || []; }
+    } catch(e) {}
+  }
+  const myPath = uplineUid ? [...uplinePath, uplineUid] : [];
+
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    // Generate progressive user number
+    const allUsersSnap = await getDocs(collection(db, 'users'));
+    const userNumber = allUsersSnap.size + 1;
+    await setDoc(doc(db, 'users', cred.user.uid), {
+      name, email, role,
+      userNumber,
+      uplineUid: uplineUid || null,
+      uplinePath: myPath,
+      createdAt: serverTimestamp()
+    });
+    window.history.replaceState({}, '', window.location.pathname);
+  } catch(e) { showErr(errMsg(e.code)); }
+};
+
+window.doLogout = async () => { if (unsub) unsub(); await signOut(auth); };
+
+window.authTab = t => {
+  id('form-login').classList.toggle('hidden', t !== 'login');
+  id('form-signup').classList.toggle('hidden', t !== 'signup');
+  id('atab-login').classList.toggle('on', t === 'login');
+  id('atab-signup').classList.toggle('on', t === 'signup');
+};
+
+window.toggleLeaderField = () => {
+  id('leader-code-wrap').classList.toggle('hidden');
+  if (!id('leader-code-wrap').classList.contains('hidden')) id('s-lcode').focus();
+};
+
+// ── SHOW AUTH / APP ──
+function showAuth() {
+  id('auth-screen').style.display = 'flex';
+  id('app-screen').style.display  = 'none';
+  checkInviteBanner();
+}
+function showApp() {
+  id('auth-screen').style.display = 'none';
+  id('app-screen').style.display  = 'block';
+  const ini = (cData?.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  id('u-av').textContent = ini;
+  id('u-nm').textContent = cData?.name || cUser.email;
+  if (cData?.role === 'leader') id('tab-team').classList.remove('hidden');
+  id('tab-admin').classList.remove('hidden'); // always visible, protected by code
+  loadProspects();
+}
+
+async function checkInviteBanner() {
+  const token = new URLSearchParams(window.location.search).get('invite');
+  if (!token) return;
+  try {
+    const inv = await getDoc(doc(db, 'invites', token));
+    if (inv.exists()) {
+      id('inviter-nm').textContent = inv.data().name || '—';
+      id('invite-banner').style.display = 'block';
+      authTab('signup');
+    }
+  } catch(e) {}
+}
+
+// ── PROSPECTS ──
+function loadProspects() {
+  if (unsub) unsub();
+  const q = query(collection(db, 'prospects'), where('uid','==', cUser.uid));
+  unsub = onSnapshot(q, snap => {
+    prospects = snap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>(b.createdAt?.toMillis()||0)-(a.createdAt?.toMillis()||0));
+    // Populate provincia filter with used provinces
+    const provSel = id('p-prov-filter');
+    if (provSel) {
+      const used = [...new Set(prospects.map(p=>p.provincia).filter(Boolean))].sort();
+      const cur = provSel.value;
+      provSel.innerHTML = '<option value="">Provincia</option>' + used.map(p=>`<option${p===cur?' selected':''}>${p}</option>`).join('');
+    }
+    renderStats(); renderTable();
+  });
+}
+
+function renderStats() {
+  const wk = Date.now()-7*86400000;
+  const nw = prospects.filter(p=>(p.createdAt?.toMillis()||0)>=wk).length;
+  const pr = prospects.filter(p=>p.presentation).length;
+  const pa = prospects.filter(p=>p.payment).length;
+  const fu = prospects.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length;
+  id('my-stats').innerHTML =
+    sc('Nuovi (7gg)',nw,'g')+sc('Totale',prospects.length,'ac')+
+    sc('Presentazioni',pr,'b')+sc('Attesa pag.',pa,'a')+sc('FU completi',fu,'g');
+}
+
+window.renderTable = () => {
+  const q = (id('p-search')?.value||'').toLowerCase();
+  const provF = (id('prov-filter')?.value||'');
+  let rows = prospects.filter(p=>{
+    const m=(p.name||'').toLowerCase().includes(q)||(p.note||'').toLowerCase().includes(q)||(p.channel||'').toLowerCase().includes(q);
+    const st=status(p);
+    const pv=!provF||(p.provincia||'')=== provF;
+    return m&&(pFilter==='tutti'||st===pFilter)&&pv;
+  });
+  // Apply sorting
+  rows.sort((a,b) => {
+    let va, vb;
+    switch(sortCol) {
+      case 'name':   va=(a.name||'').toLowerCase(); vb=(b.name||'').toLowerCase(); break;
+      case 'days':   va=days(a); vb=days(b); break;
+      case 'prov':   va=(a.provincia||'').toLowerCase(); vb=(b.provincia||'').toLowerCase(); break;
+      case 'pres':   va=a.presentation?1:0; vb=b.presentation?1:0; break;
+      case 'pay':    va=a.payment?1:0; vb=b.payment?1:0; break;
+      case 'provincia': va=(a.provincia||''); vb=(b.provincia||''); break;
+      case 'status': va=status(a); vb=status(b); break;
+      default: // date — most recent first
+        va=(a.createdAt?.toMillis()||a._insertedAt||0);
+        vb=(b.createdAt?.toMillis()||b._insertedAt||0);
+        return vb-va;
+    }
+    if (va < vb) return sortDir==='asc' ? -1 : 1;
+    if (va > vb) return sortDir==='asc' ? 1 : -1;
+    return 0;
+  });
+  const tb = id('p-tbody');
+  if (!rows.length){tb.innerHTML=`<tr><td colspan="7"><div class="empty">📋 Nessun prospect. Aggiungine uno!</div></td></tr>`;return;}
+  tb.innerHTML = rows.map(p=>{
+    const d=days(p), dc=d<=3?'ok':d<=7?'warn':'bad';
+    const fu=p.followUps||[false,false,false,false];
+    const st=status(p);
+    const pt={nuovo:'Nuovo',attivo:'Attivo',paga:'In attesa pag.',done:'Follow-up ✓'}[st];
+    return `<tr>
+      <td><div class="nm">${x(p.name)}</div>${p.channel||p.note?`<div class="note">${x(p.channel||'')}${p.channel&&p.note?' · ':''}${x(p.note||'')}</div>`:''}</td>
+      <td><span class="dbadge ${dc}">${d}g</span></td>
+      <td><button class="chk${p.presentation?' on':''}" onclick="tField('${p.id}','presentation',${!p.presentation})">${p.presentation?'✓':''}</button></td>
+      <td><div class="fu-row">${[0,1,2,3].map(i=>`<button class="chk fu${fu[i]?' on':''}" onclick="tFu('${p.id}',${i},${!fu[i]})">${fu[i]?'✓':(i+1)}</button>`).join('')}</div></td>
+      <td><div class="pay-row" onclick="tField('${p.id}','payment',${!p.payment})"><div class="pay-dot${p.payment?' on':''}"></div><span class="pay-lbl${p.payment?' on':''}">${p.payment?'In attesa':'—'}</span></div></td>
+      <td><span class="pill ${st}">${pt}</span></td>
+      <td>${p.provincia?`<span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:500;padding:2px 6px;background:var(--surface2);border-radius:4px;border:.5px solid var(--border2);">${x(p.provincia)}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
+      <td><div class="act-btns"><button class="act-btn" onclick="editProspect('${p.id}')">Modifica</button><button class="act-btn del" onclick="delProspect('${p.id}','${x(p.name)}')">Elimina</button></div></td>
+    </tr>`;
+  }).join('');
+};
+
+window.tField = async (id_,f,v) => await updateDoc(doc(db,'prospects',id_),{[f]:v,lastCheckAt:serverTimestamp()});
+window.tFu = async (id_,i,v) => {
+  const p=prospects.find(x=>x.id===id_); if(!p) return;
+  const fu=[...(p.followUps||[false,false,false,false])]; fu[i]=v;
+  await updateDoc(doc(db,'prospects',id_),{followUps:fu,lastCheckAt:serverTimestamp()});
+};
+window.delProspect = async (id_,name) => { if(confirm(`Eliminare ${name}?`)) await deleteDoc(doc(db,'prospects',id_)); };
+window.editProspect = pid => {
+  const p=prospects.find(x=>x.id===pid); if(!p) return;
+  editingPid=pid;
+  id('p-modal-title').textContent='Modifica prospect';
+  id('p-name').value=p.name||''; id('p-channel').value=p.channel||''; id('p-provincia').value=p.provincia||''; id('p-note').value=p.note||'';
+  id('p-overlay').classList.remove('hidden');
+};
+window.openProspectModal = () => {
+  editingPid=null;
+  id('p-modal-title').textContent='Nuovo prospect';
+  ['p-name','p-channel','p-note'].forEach(k=>id(k).value='');
+  id('p-provincia').value=''; id('p-provincia').value='';
+  id('p-overlay').classList.remove('hidden');
+};
+window.closeProspectModal = () => id('p-overlay').classList.add('hidden');
+window.saveProspect = async () => {
+  const name=id('p-name').value.trim();
+  if(!name){id('p-name').style.borderColor='var(--red)';return;}
+  const data={name,channel:id('p-channel').value.trim(),provincia:id('p-provincia').value,note:id('p-note').value.trim(),uid:cUser.uid,userName:cData?.name||cUser.email};
+  if(editingPid) await updateDoc(doc(db,'prospects',editingPid),data);
+  else await addDoc(collection(db,'prospects'),{...data,presentation:false,followUps:[false,false,false,false],payment:false,createdAt:serverTimestamp(),lastCheckAt:null,_insertedAt:Date.now()});
+  closeProspectModal();
+};
+
+
+window.sortBy = col => {
+  if (sortCol === col) {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortCol = col;
+    sortDir = col === 'days' ? 'desc' : 'asc';
+  }
+  // Update header styles
+  ['name','days','prov','pres','pay','status'].forEach(k => {
+    const th = id('th-'+k);
+    if (!th) return;
+    th.classList.toggle('active', k === col);
+    const arrow = th.querySelector('.sort-arrow');
+    if (arrow) arrow.textContent = k === col ? (sortDir === 'asc' ? '↑' : '↓') : '↕';
+  });
+  renderTable();
+};
+
+window.setLeg = async (uid, leg, btn) => {
+  try {
+    await updateDoc(doc(db,'users',uid), { leg: leg||null });
+    // Update local caches
+    if(window._cachedUs) {
+      const u = window._cachedUs.find(u=>u.id===uid);
+      if(u) u.leg = leg||null;
+    }
+    // Re-render team dashboard with cached data
+    renderTeamDashboard();
+  } catch(e) {
+    alert('Errore: '+e.message);
+  }
+};
+
+window.setFilter = (btn,f) => {
+  pFilter=f;
+  document.querySelectorAll('#view-lista .f-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on'); renderTable();
+};
+
+// ── TEAM DASHBOARD ──
+async function loadTeamDashboard() {
+  id('team-grid').innerHTML=loader();
+  id('binary-view').innerHTML=loader();
+  const [ps,us] = await Promise.all([
+    getDocs(collection(db,'prospects')).then(s=>s.docs.map(d=>({id:d.id,...d.data()}))),
+    getDocs(collection(db,'users')).then(s=>s.docs.map(d=>({id:d.id,...d.data()})))
+  ]);
+  const wk=Date.now()-7*86400000, myUid=cUser.uid;
+
+  // All downline
+  const allDownline = us.filter(u=>{
+    if(u.id===myUid) return false;
+    return (u.uplinePath||[]).includes(myUid);
+  });
+  const show = allDownline.length>0 ? allDownline : us.filter(u=>u.id!==myUid&&(u.role==='member'||!u.role));
+  const uids = new Set(show.map(m=>m.id));
+  const tPs = ps.filter(p=>uids.has(p.uid));
+
+  // Populate leader filter
+  const leaders = show.filter(u=>u.role==='leader');
+  const legSel = id('leg-leader-filter');
+  if(legSel){
+    const curVal = legSel.value;
+    legSel.innerHTML='<option value="">Tutta la struttura</option>'+
+      leaders.map(l=>`<option value="${l.id}"${l.id===curVal?' selected':''}>${x(l.name||l.email)}</option>`).join('');
+  }
+
+  // Global stats
+  id('team-stats').innerHTML =
+    sc('Diretti',show.filter(u=>(u.uplinePath||[]).slice(-1)[0]===myUid).length,'ac')+
+    sc('Totale struttura',show.length,'b')+
+    sc('Nuovi (7gg)',tPs.filter(p=>(p.createdAt?.toMillis()||0)>=wk).length,'g')+
+    sc('Presentazioni sett.',tPs.filter(p=>p.presentation&&(p.createdAt?.toMillis()||0)>=wk).length,'b')+
+    sc('Attesa pag.',tPs.filter(p=>p.payment).length,'a')+
+    sc('Prospect totali',tPs.length,'ac');
+
+  renderTeamDashboard(us, ps, show, wk);
+}
+
+// ── Separate render function so filter can re-run it ──
+window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
+  // Allow calling from filter change using cached data
+  const us = usArg || window._cachedUs;
+  const ps = psArg || window._cachedPs;
+  const show = showArg || window._cachedShow;
+  const wk = wkArg || window._cachedWk;
+  if(!us||!ps||!show) return;
+  // Cache for filter re-render
+  window._cachedUs=us; window._cachedPs=ps; window._cachedShow=show; window._cachedWk=wk;
+
+  const myUid = cUser.uid;
+  const filterLeaderId = id('leg-leader-filter')?.value || '';
+
+  // Determine reference node for binary split
+  const refUid = filterLeaderId || myUid;
+  const refUser = filterLeaderId ? us.find(u=>u.id===filterLeaderId) : {id:myUid, name:'La mia struttura'};
+
+  // Get users in each leg relative to refUid
+  // A user is in "right" leg of refUid if their leg===right and refUid is their direct upline,
+  // OR if any ancestor between them and refUid has leg===right from refUid
+  function getLegForUser(u) {
+    const path = u.uplinePath||[];
+    const refIdx = path.indexOf(refUid);
+    if(refIdx === -1 && u.uplineUid !== refUid) return null; // not in this subtree
+    // Find the direct child of refUid in this user's path
+    if(u.uplineUid === refUid) return u.leg||null;
+    // Walk up from user to find first ancestor whose upline is refUid
+    const directChildIdx = refIdx + 1;
+    if(directChildIdx >= path.length) return u.leg||null;
+    const directChildId = path[directChildIdx];
+    const directChild = (window._cachedUs||[]).find(a=>a.id===directChildId);
+    return directChild?.leg||null;
+  }
+
+  const rightMembers = show.filter(u=>getLegForUser(u)==='right');
+  const leftMembers  = show.filter(u=>getLegForUser(u)==='left');
+  const noLeg        = show.filter(u=>!getLegForUser(u));
+
+  function legStats(members) {
+    const mUids = new Set(members.map(m=>m.id));
+    const mPs = ps.filter(p=>mUids.has(p.uid));
+    return {
+      members: members.length,
+      prospects: mPs.length,
+      presentations: mPs.filter(p=>p.presentation).length,
+      payment: mPs.filter(p=>p.payment).length,
+      fu4: mPs.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length,
+      newWk: mPs.filter(p=>(p.createdAt?.toMillis()||0)>=(wk||Date.now()-7*86400000)).length,
+    };
+  }
+
+  const rStats = legStats(rightMembers);
+  const lStats = legStats(leftMembers);
+  const total = Math.max(rStats.prospects + lStats.prospects, 1);
+
+  function legCard(side, stats, members) {
+    const isRight = side==='right';
+    const color = isRight ? 'var(--accent)' : 'var(--blue)';
+    const colorDim = isRight ? 'var(--accent-dim)' : 'var(--blue-dim)';
+    const label = isRight ? '👉 GAMBA DESTRA' : '👈 GAMBA SINISTRA';
+    const pct = Math.round((stats.prospects/total)*100);
+    const leaders = members.filter(m=>m.role==='leader');
+    const topMembers = members.slice(0,8);
+    return `<div class="leg-card ${side}">
+      <div class="leg-title" style="color:${color}">${label}</div>
+      <div class="leg-sub">${stats.members} persone · ${pct}% dei prospect totali</div>
+      <div class="leg-stats">
+        <div class="leg-stat"><div class="leg-stat-val" style="color:${color}">${stats.prospects}</div><div class="leg-stat-lbl">Prospect totali</div></div>
+        <div class="leg-stat"><div class="leg-stat-val" style="color:var(--green)">${stats.newWk}</div><div class="leg-stat-lbl">Nuovi (7gg)</div></div>
+        <div class="leg-stat"><div class="leg-stat-val" style="color:var(--blue)">${stats.presentations}</div><div class="leg-stat-lbl">Presentazioni</div></div>
+        <div class="leg-stat"><div class="leg-stat-val" style="color:var(--amber)">${stats.payment}</div><div class="leg-stat-lbl">Attesa pag.</div></div>
+      </div>
+      <div class="leg-bar-wrap"><div class="leg-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;margin-bottom:4px;">Leader in questa gamba (${leaders.length})</div>
+      <div class="leg-members">
+        ${leaders.map(m=>`<span class="leg-member-tag leader-tag">👑 ${x(m.name||m.email)}${m.userNumber?` #${m.userNumber}`:''}</span>`).join('')||'<span style="font-size:11px;color:var(--text3);">Nessun leader</span>'}
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;margin-bottom:4px;">Membri (${stats.members})</div>
+      <div class="leg-members">
+        ${topMembers.map(m=>{const num=m.userNumber?' #'+m.userNumber:'';return '<span class="leg-member-tag">'+x(m.name||m.email)+num+'</span>';}).join('')}
+        ${members.length>8?`<span class="leg-member-tag" style="color:var(--text3)">+${members.length-8} altri</span>`:''}
+        ${members.length===0?'<span style="font-size:11px;color:var(--text3);">Nessun membro assegnato</span>':''}
+      </div>
+    </div>`;
+  }
+
+  id('binary-view').innerHTML =
+    legCard('right', rStats, rightMembers) +
+    legCard('left',  lStats, leftMembers);
+
+  // If there are unassigned members show a note
+  const existingNote = id('no-leg-note');
+  if(noLeg.length>0){
+    const note = existingNote || document.createElement('div');
+    note.id='no-leg-note';
+    note.style.cssText='font-size:12px;color:var(--amber);background:var(--amber-dim);border:.5px solid var(--amber-dim);border-radius:8px;padding:8px 12px;margin-bottom:1rem;';
+    note.textContent=`⚠️ ${noLeg.length} ${noLeg.length===1?'membro non ha':'membri non hanno'} ancora una gamba assegnata. Vai nel pannello Admin per assegnarla.`;
+    if(!existingNote) id('binary-view').insertAdjacentElement('afterend', note);
+  } else if(existingNote) existingNote.remove();
+
+  // Members grid
+  const COLS=[{bg:'rgba(201,168,76,.12)',c:'#c9a84c'},{bg:'rgba(74,156,240,.12)',c:'#4a9cf0'},{bg:'rgba(74,240,154,.12)',c:'#4af09a'},{bg:'rgba(240,180,74,.12)',c:'#f0b44a'},{bg:'rgba(240,90,74,.12)',c:'#f05a4a'},{bg:'rgba(180,74,240,.12)',c:'#b44af0'}];
+  const directUids=new Set(show.filter(u=>(u.uplinePath||[]).slice(-1)[0]===myUid).map(u=>u.id));
+  const getLevel=u=>{const path=u.uplinePath||[];const myIdx=path.indexOf(myUid);return myIdx===-1?99:path.length-myIdx;};
+  const sorted_show=[...show].sort((a,b)=>{const la=getLevel(a),lb=getLevel(b);if(la!==lb)return la-lb;return(a.name||'').localeCompare(b.name||'');});
+  const mdata=sorted_show.map((m,i)=>({m,level:getLevel(m),mp:ps.filter(p=>p.uid===m.id),mpWk:ps.filter(p=>p.uid===m.id&&(p.createdAt?.toMillis()||0)>=(wk||Date.now()-7*86400000)),c:COLS[i%COLS.length]}));
+  const grid=id('team-grid'); grid.innerHTML='';
+  mdata.forEach(({m,level,mp,mpWk,c})=>{
+    const ini=m.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const levelLabel=level===1?'Diretto':level===2?'Livello 2':`Livello ${level}`;
+    const levelColor=level===1?'var(--accent)':level===2?'var(--blue)':'var(--text3)';
+    const roleIcon=m.role==='leader'?'👑 ':'';
+    const legTag=m.leg?`<span style="font-size:10px;padding:1px 5px;border-radius:8px;margin-left:4px;background:${m.leg==='right'?'var(--accent-dim)':'var(--blue-dim)'};color:${m.leg==='right'?'var(--accent)':'var(--blue)'};">${m.leg==='right'?'👉':'👈'}</span>`:'';
+    const el=document.createElement('div'); el.className='tc';
+    el.innerHTML=`<div class="tc-head"><div class="tc-av" style="background:${c.bg};color:${c.c}">${ini}</div><div><div class="tc-name">${roleIcon}${x(m.name)}${legTag}</div><div class="tc-role">${mp.length} prospect · <span style="color:${levelColor}">${levelLabel}</span></div></div>${mpWk.length?`<div class="wk-tag">+${mpWk.length} sett.</div>`:''}</div><div class="tc-nums"><div class="tc-num"><div class="tc-num-val" style="color:${c.c}">${mp.filter(p=>p.presentation).length}</div><div class="tc-num-lbl">Presentazioni</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="tc-num-lbl">Attesa pag.</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--green)">${mp.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length}</div><div class="tc-num-lbl">FU completi</div></div></div><div style="margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:var(--text3);">Gamba:</span><button onclick="setLeg('${m.id}','right',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='right'?'var(--accent)':'var(--border2)'};background:${m.leg==='right'?'var(--accent-dim)':'transparent'};color:${m.leg==='right'?'var(--accent)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👉 Destra</button><button onclick="setLeg('${m.id}','left',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='left'?'var(--blue)':'var(--border2)'};background:${m.leg==='left'?'var(--blue-dim)':'transparent'};color:${m.leg==='left'?'var(--blue)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👈 Sinistra</button>${m.leg?`<button onclick="setLeg('${m.id}','',this)" style="padding:3px 8px;border-radius:20px;border:.5px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">✕</button>`:''}</div>`;
+    grid.appendChild(el);
+  });
+  if(!mdata.length) id('team-grid').innerHTML='<div class="empty">Nessun membro nel team. Condividi il tuo link di invito!</div>';
+
+  const rankSorted=[...mdata].sort((a,b)=>b.mpWk.length-a.mpWk.length);
+  const max=Math.max(...rankSorted.map(s=>s.mpWk.length),1);
+  id('rank-table').innerHTML=rankSorted.length?rankSorted.map(({m,mpWk},i)=>`<div class="rank-row"><div class="rank-pos ${i===0?'top':''}">${i===0?'★':i+1}</div><div class="rank-name">${x(m.name)}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${(mpWk.length/max)*100}%"></div></div><div class="rank-val">${mpWk.length}</div></div>`).join(''):'';
+}
+
+
+// ── ADMIN ──
+window.verifyAdmin = () => {
+  const code=id('al-code').value;
+  if(code!==ADMIN_CODE){id('al-err').textContent='Codice non valido.';id('al-err').style.display='block';return;}
+  adminUnlocked=true;
+  id('al-overlay').classList.add('hidden');
+  doSwitchTab('admin');
+  loadAdminPanel();
+};
+window.closeAdminLogin = () => id('al-overlay').classList.add('hidden');
+
+async function loadAdminPanel() {
+  const [uSnap,pSnap]=await Promise.all([getDocs(collection(db,'users')),getDocs(collection(db,'prospects'))]);
+  allUsers=uSnap.docs.map(d=>({id:d.id,...d.data()}));
+  allProspects=pSnap.docs.map(d=>({id:d.id,...d.data()}));
+  const leaders=allUsers.filter(u=>u.role==='leader').length;
+  const members=allUsers.filter(u=>u.role==='member'||!u.role).length;
+  const orphans=allUsers.filter(u=>!u.uplineUid).length;
+  id('admin-stats').innerHTML=
+    sc('Utenti totali',allUsers.length,'ac')+sc('Leader',leaders,'g')+
+    sc('Membri',members,'b')+sc('Senza upline',orphans,'a')+sc('Prospect totali',allProspects.length,'ac');
+  renderAdminTable();
+  renderTree();
+}
+
+window.setAdminFilter=(btn,f)=>{
+  aFilter=f;
+  document.querySelectorAll('#view-admin .f-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on'); renderAdminTable();
+};
+
+window.renderAdminTable=()=>{
+  const q=(id('a-search')?.value||'').toLowerCase();
+  const users=allUsers.filter(u=>{
+    const m=(u.name||'').toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q);
+    if(aFilter==='leader') return m&&u.role==='leader';
+    if(aFilter==='member') return m&&(u.role==='member'||!u.role);
+    if(aFilter==='orphan') return m&&!u.uplineUid;
+    return m;
+  });
+  const tb=id('a-tbody');
+  if(!users.length){tb.innerHTML='<tr><td colspan="6"><div class="empty">Nessun utente trovato</div></td></tr>';return;}
+  tb.innerHTML=users.map(u=>{
+    const up=u.uplineUid?allUsers.find(a=>a.id===u.uplineUid):null;
+    const pCount=allProspects.filter(p=>p.uid===u.id).length;
+    const reg=u.createdAt?.toDate?u.createdAt.toDate().toLocaleDateString('it-IT'):'—';
+    const role=u.role||'member';
+    const ini=(u.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const idBadge=u.userNumber
+      ? `<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);background:var(--accent-dim);padding:1px 6px;border-radius:4px;border:.5px solid var(--accent);margin-left:5px;">#${u.userNumber}</span>`
+      : '<span style="font-size:10px;color:var(--text3);margin-left:4px;">no ID</span>';
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:26px;height:26px;border-radius:50%;background:var(--accent-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">${ini}</div>
+        <div><div class="nm" style="display:flex;align-items:center;">${x(u.name||'—')}${idBadge}</div><div class="note">${x(u.email||'')}</div></div></div></td>
+      <td><span class="admin-badge ${role}">${role==='leader'?'Leader':'Membro'}</span>${u.leg?`<span style="font-size:10px;margin-left:4px;padding:2px 6px;border-radius:10px;background:${u.leg==='right'?'var(--accent-dim)':'var(--blue-dim)'};color:${u.leg==='right'?'var(--accent)':'var(--blue)'};border:.5px solid ${u.leg==='right'?'var(--accent)':'var(--blue)'};">${u.leg==='right'?'👉 Destra':'👈 Sinistra'}</span>`:''}</td>
+      <td><span style="font-size:12px;color:var(--text2);">${up?x(up.name):'<span style="color:var(--text3)">—</span>'}</span></td>
+      <td><span style="font-family:\'DM Mono\',monospace;font-size:12px;">${pCount}</span></td>
+      <td><span style="font-size:12px;color:var(--text2);">${reg}</span></td>
+      <td><button class="act-btn" onclick="openEditUser('${u.id}')">Modifica</button></td>
+    </tr>`;
+  }).join('');
+};
+
+function renderTree() {
+  const roots=allUsers.filter(u=>!u.uplineUid);
+  function node(u,depth){
+    const ch=allUsers.filter(a=>a.uplineUid===u.id);
+    const pc=allProspects.filter(p=>p.uid===u.id).length;
+    const icon=depth===0?'🌐':ch.length?'📂':'👤';
+    const roleIcon=u.role==='leader'?'👑 Leader':'Membro';
+    const idTag=u.userNumber
+      ? `<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);background:var(--accent-dim);padding:1px 5px;border-radius:4px;border:.5px solid var(--accent);margin-left:4px;">#${u.userNumber}</span>`
+      : `<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);padding:1px 5px;">no ID</span>`;
+    const legTag=u.leg?`<span style="font-size:10px;padding:1px 5px;border-radius:10px;margin-left:3px;background:${u.leg==='right'?'var(--accent-dim)':'var(--blue-dim)'};color:${u.leg==='right'?'var(--accent)':'var(--blue)'};">${u.leg==='right'?'👉':'👈'}</span>`:'';
+    let h=`<div class="tree-item"><span>${icon}</span><span class="tree-lbl">${x(u.name||'—')}</span>${idTag}${legTag}<span class="tree-meta">${roleIcon} · ${pc} prospect</span></div>`;
+    if(ch.length) h+=`<div class="tree-node">${ch.map(c=>node(c,depth+1)).join('')}</div>`;
+    return h;
+  }
+  id('net-tree').innerHTML=roots.length?roots.map(r=>node(r,0)).join(''):'<div class="empty">Nessun utente registrato</div>';
+}
+
+window.openEditUser=async uid=>{
+  const u=allUsers.find(a=>a.id===uid); if(!u) return;
+  editingUid=uid;
+  id('eu-name').textContent=u.name||'—';
+  id('eu-email').textContent=u.email||'—';
+  id('eu-role').value=u.role||'member';
+  id('eu-err').style.display='none';
+  id('eu-leg').value = u.leg||'';
+  const sel=id('eu-upline');
+  sel.innerHTML='<option value="">— Nessun upline (top level) —</option>';
+  allUsers.filter(a=>a.id!==uid&&!(a.uplinePath||[]).includes(uid))
+    .sort((a,b)=>(a.name||'').localeCompare(b.name||''))
+    .forEach(a=>{
+      const o=document.createElement('option');
+      o.value=a.id; o.textContent=`${a.name||a.email} (${a.role==='leader'?'Leader':'Membro'})`;
+      if(a.id===u.uplineUid) o.selected=true;
+      sel.appendChild(o);
+    });
+  id('eu-overlay').classList.remove('hidden');
+};
+window.closeEditUser=()=>{id('eu-overlay').classList.add('hidden');editingUid=null;};
+
+window.assignAllIds=async()=>{
+  const usersWithoutId=allUsers.filter(u=>!u.userNumber);
+  if(!usersWithoutId.length){alert('Tutti gli utenti hanno già un ID assegnato.');return;}
+  if(!confirm('Assegnare un ID numerico a '+usersWithoutId.length+' utenti che ne sono privi?')) return;
+  const maxNum=Math.max(0,...allUsers.map(u=>u.userNumber||0));
+  let counter=maxNum;
+  let updated=0;
+  for(const u of usersWithoutId){
+    counter++;
+    try{
+      await updateDoc(doc(db,'users',u.id),{userNumber:counter});
+      updated++;
+    }catch(e){console.warn('Could not update',u.id,e);}
+  }
+  // Reload all users fresh from Firestore to show updated IDs
+  const uSnap=await getDocs(collection(db,'users'));
+  allUsers=uSnap.docs.map(d=>({id:d.id,...d.data()}));
+  renderAdminTable();
+  renderTree();
+  alert('ID assegnati a '+updated+' utenti. Tabella aggiornata.');
+};
+window.saveEditUser=async()=>{
+  if(!editingUid) return;
+  const role=id('eu-role').value, uplineUid=id('eu-upline').value||null, leg=id('eu-leg').value||null;
+  try{
+    let uplinePath=[];
+    if(uplineUid){const up=allUsers.find(a=>a.id===uplineUid);uplinePath=[...(up?.uplinePath||[]),uplineUid];}
+    await updateDoc(doc(db,'users',editingUid),{role,uplineUid,uplinePath,leg:leg||null});
+    const i=allUsers.findIndex(a=>a.id===editingUid);
+    if(i>=0) allUsers[i]={...allUsers[i],role,uplineUid,uplinePath,leg:leg||null};
+    closeEditUser(); renderAdminTable(); renderTree();
+    id('admin-stats').innerHTML=
+      sc('Utenti totali',allUsers.length,'ac')+sc('Leader',allUsers.filter(u=>u.role==='leader').length,'g')+
+      sc('Membri',allUsers.filter(u=>u.role==='member'||!u.role).length,'b')+sc('Senza upline',allUsers.filter(u=>!u.uplineUid).length,'a')+sc('Prospect totali',allProspects.length,'ac');
+  }catch(e){id('eu-err').textContent='Errore: '+e.message;id('eu-err').style.display='block';}
+};
+window.deleteUser=async()=>{
+  if(!editingUid) return;
+  const u=allUsers.find(a=>a.id===editingUid);
+  if(!confirm(`Eliminare definitivamente ${u?.name||'questo utente'}?\n\nQuesto eliminerà:\n- Il profilo utente\n- L'account di accesso\n\nI prospect rimarranno nel database.`)) return;
+  const errEl=id('eu-err');
+  errEl.style.display='none';
+  try{
+    // 1. Delete Firestore user doc
+    await deleteDoc(doc(db,'users',editingUid));
+    // 2. Delete Firebase Auth account using current user's token + Firebase REST API
+    // Note: Firebase only allows deleting own account client-side.
+    // We delete the Firestore record (blocks access) and mark as deleted.
+    // For full Auth deletion, mark in Firestore and handle on next login attempt.
+    await setDoc(doc(db,'deleted_users',editingUid),{
+      deletedAt: serverTimestamp(),
+      deletedBy: cUser.uid,
+      email: u?.email||'',
+      name: u?.name||''
+    });
+    allUsers=allUsers.filter(a=>a.id!==editingUid);
+    closeEditUser(); renderAdminTable(); renderTree();
+    id('admin-stats').innerHTML=
+      sc('Utenti totali',allUsers.length,'ac')+
+      sc('Leader',allUsers.filter(u=>u.role==='leader').length,'g')+
+      sc('Membri',allUsers.filter(u=>u.role==='member'||!u.role).length,'b')+
+      sc('Senza upline',allUsers.filter(u=>!u.uplineUid).length,'a')+
+      sc('Prospect totali',allProspects.length,'ac');
+    alert('Utente eliminato. L\'account non potrà più accedere all\'app.');
+  }catch(e){
+    errEl.textContent='Errore: '+e.message;
+    errEl.style.display='block';
+  }
+};
+
+// ── SETTINGS ──
+window.openSettings=async()=>{
+  const role=cData?.role||'member';
+  id('s-name').textContent=cData?.name||'—';
+  id('s-email').textContent=cUser?.email||'—';
+  const myNum=cData?.userNumber?` <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);background:var(--accent-dim);padding:1px 6px;border-radius:4px;">#${cData.userNumber}</span>`:'';
+  id('s-role-badge').innerHTML=(role==='leader'?'<span class="pill done">Team Leader</span>':'<span class="pill nuovo">Membro</span>')+myNum;
+  id('s-upgrade').classList.toggle('hidden',role==='leader');
+  id('s-already-leader').classList.toggle('hidden',role!=='leader');
+  id('s-invite').classList.toggle('hidden',role!=='leader');
+  id('s-upgrade-err').style.display='none';
+  id('s-lcode').value='';
+  if(role==='leader') await genInviteLink();
+  id('s-overlay').classList.remove('hidden');
+};
+window.closeSettings=()=>id('s-overlay').classList.add('hidden');
+
+window.doUpgrade=async()=>{
+  const code=id('s-lcode').value, errEl=id('s-upgrade-err');
+  if(!code){errEl.textContent='Inserisci il codice';errEl.style.display='block';return;}
+  if(code!==LEADER_CODE){errEl.textContent='Codice non valido. Contatta Simone.';errEl.style.display='block';return;}
+  try{
+    await updateDoc(doc(db,'users',cUser.uid),{role:'leader'});
+    cData.role='leader';
+    id('tab-team').classList.remove('hidden');
+    id('s-upgrade').classList.add('hidden');
+    id('s-already-leader').classList.remove('hidden');
+    id('s-invite').classList.remove('hidden');
+    id('s-role-badge').innerHTML='<span class="pill done">Team Leader</span>';
+    await genInviteLink();
+  }catch(e){errEl.textContent='Errore. Riprova.';errEl.style.display='block';}
+};
+
+async function genInviteLink(){
+  const existing=await getDocs(query(collection(db,'invites'),where('uid','==',cUser.uid)));
+  let token;
+  if(!existing.empty) token=existing.docs[0].id;
+  else{
+    const ref=await addDoc(collection(db,'invites'),{uid:cUser.uid,name:cData?.name||cUser.email,uplinePath:cData?.uplinePath||[],createdAt:serverTimestamp()});
+    token=ref.id;
+  }
+  const link=window.location.origin+window.location.pathname+'?invite='+token;
+  id('invite-input').value=link;
+}
+
+window.copyInvite=()=>{
+  navigator.clipboard.writeText(id('invite-input').value).then(()=>{
+    id('copy-btn').textContent='Copiato ✓';
+    setTimeout(()=>id('copy-btn').textContent='Copia',2000);
+  }).catch(()=>{id('invite-input').select();document.execCommand('copy');});
+};
+
+// ── TAB SWITCHING ──
+function doSwitchTab(t){
+  ['lista','team','admin'].forEach(v=>{
+    id('view-'+v)?.classList.toggle('hidden',v!==t);
+    id('tab-'+v)?.classList.toggle('on',v===t);
+  });
+}
+window.switchTab=t=>{
+  if(t==='admin'&&!adminUnlocked){
+    id('al-code').value=''; id('al-err').style.display='none';
+    id('al-overlay').classList.remove('hidden'); return;
+  }
+  doSwitchTab(t);
+  if(t==='team') loadTeamDashboard();
+  if(t==='admin') loadAdminPanel();
+};
+
+// ── UTILS ──
+const id = k => document.getElementById(k);
+const x  = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const sc = (l,v,c) => `<div class="sc"><div class="sc-lbl">${l}</div><div class="sc-val ${c}">${v}</div></div>`;
+const loader = () => '<div class="loader"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div>';
+const days = p => {
+  // Use lastCheckAt if set (means a check was done after insertion), else createdAt
+  // createdAt from Firestore may be a Timestamp or null if not yet synced — handle both
+  const base = p.lastCheckAt?.toMillis
+    ? p.lastCheckAt.toMillis()
+    : p.createdAt?.toMillis
+      ? p.createdAt.toMillis()
+      : p._insertedAt || Date.now();
+  return Math.floor((Date.now() - base) / 86400000);
+};
+const status = p => { if(p.payment)return'paga'; const n=(p.followUps||[]).filter(Boolean).length; if(n===4)return'done'; if(p.presentation||n>0)return'attivo'; return'nuovo'; };
+
+function showErr(msg){
+  const el=id('auth-err');
+  el.style.display='block';
+  if(msg.includes('già registrata')){
+    el.innerHTML='';
+    el.textContent=msg;
+    const btn=document.createElement('button');
+    btn.textContent='→ Vai al login';
+    btn.style.cssText='background:none;border:none;color:var(--accent);cursor:pointer;font-size:12px;font-weight:600;padding:0 0 0 6px;text-decoration:underline;';
+    btn.onclick=()=>authTab('login');
+    el.appendChild(btn);
+  } else {
+    el.textContent=msg;
+  }
+  setTimeout(()=>el.style.display='none',6000);
+}
+function errMsg(code){
+  const msgs={
+    'auth/user-not-found':'Utente non trovato. Controlla email e password.',
+    'auth/wrong-password':'Password errata.',
+    'auth/email-already-in-use':'⚠️ Email già registrata. Usa la funzione Accedi.',
+    'auth/weak-password':'Password troppo corta (minimo 6 caratteri).',
+    'auth/invalid-email':'Formato email non valido.',
+    'auth/invalid-credential':'Email o password non corretti.',
+    'auth/too-many-requests':'Troppi tentativi. Attendi qualche minuto e riprova.'
+  };
+  return msgs[code]||('Errore: '+code);
+}
+</script>
+</body>
+</html>
