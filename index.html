@@ -816,26 +816,29 @@ async function loadTeamDashboard() {
   ]);
   const wk=Date.now()-7*86400000, myUid=cUser.uid;
 
-  // Build full ancestor set by walking uplineUid chain upward from current user
-  // This is reliable even for users registered before the uplinePath system
-  const myUplineIds = new Set();
-  let cursor = us.find(u=>u.id===myUid);
-  let safety = 0;
-  while(cursor && cursor.uplineUid && safety < 20) {
-    myUplineIds.add(cursor.uplineUid);
-    cursor = us.find(u=>u.id===cursor.uplineUid);
-    safety++;
+  // Build downline by walking DOWN the tree using uplineUid links only
+  // This is the only reliable method — does NOT depend on uplinePath
+  function buildDownlineSet(rootUid, allUsers) {
+    const result = new Set();
+    const queue = [rootUid];
+    let safety = 0;
+    while(queue.length > 0 && safety < 500) {
+      const current = queue.shift();
+      const children = allUsers.filter(u => u.uplineUid === current);
+      children.forEach(child => {
+        if(!result.has(child.id)) {
+          result.add(child.id);
+          queue.push(child.id);
+        }
+      });
+      safety++;
+    }
+    return result;
   }
-  // Also add anyone in cData.uplinePath as extra safety
-  (cData?.uplinePath||[]).forEach(uid=>myUplineIds.add(uid));
 
-  // Downline = users who have myUid in their uplinePath AND are not my ancestors
-  const allDownline = us.filter(u=>{
-    if(u.id===myUid) return false;
-    if(myUplineIds.has(u.id)) return false;
-    return (u.uplinePath||[]).includes(myUid);
-  });
-  const show = allDownline.length>0 ? allDownline : [];
+  const downlineIds = buildDownlineSet(myUid, us);
+  const allDownline = us.filter(u => downlineIds.has(u.id));
+  const show = allDownline;
   const uids = new Set(show.map(m=>m.id));
   const tPs = ps.filter(p=>uids.has(p.uid));
 
@@ -947,9 +950,10 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
     </div>`;
   }
 
+  // Render left leg first (left column), right leg second (right column)
   id('binary-view').innerHTML =
-    legCard('right', rStats, rightMembers) +
-    legCard('left',  lStats, leftMembers);
+    legCard('left',  lStats, leftMembers) +
+    legCard('right', rStats, rightMembers);
 
   // If there are unassigned members show a note
   const existingNote = id('no-leg-note');
