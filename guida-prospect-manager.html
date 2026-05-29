@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guida Prospect Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #C9A84C;
+  --gold-dim: rgba(201,168,76,0.12);
+  --gold-bright: #e0be70;
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --surface2: #1c1c1c;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #f0f0f0;
+  --text2: #888;
+  --text3: #444;
+  --blue: #4a9cf0;
+  --green: #4af09a;
+  --amber: #f0b44a;
+  --red: #f05a4a;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;}
+
+/* NAV */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,10,0.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 2rem;height:56px;display:flex;align-items:center;gap:24px;}
+.nav-logo{display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;letter-spacing:-.3px;}
+.nav-mark{width:26px;height:26px;background:var(--gold);border-radius:6px;display:flex;align-items:center;justify-content:center;}
+.nav-mark svg{display:block;}
+.nav-links{display:flex;gap:4px;margin-left:auto;}
+.nav-link{padding:5px 12px;border-radius:6px;font-size:13px;color:var(--text2);text-decoration:none;transition:all .15s;cursor:pointer;}
+.nav-link:hover,.nav-link.active{background:var(--surface2);color:var(--text);}
+.nav-link.gold{color:var(--gold);}
+
+/* HERO */
+.hero{padding:120px 2rem 80px;text-align:center;max-width:800px;margin:0 auto;position:relative;}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;background:var(--gold-dim);border:.5px solid var(--gold);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:500;color:var(--gold);font-family:'DM Mono',monospace;margin-bottom:1.5rem;letter-spacing:.5px;}
+.hero h1{font-family:'Syne',sans-serif;font-size:clamp(36px,6vw,64px);font-weight:800;line-height:1.05;letter-spacing:-2px;margin-bottom:1rem;}
+.hero h1 span{color:var(--gold);}
+.hero p{color:var(--text2);font-size:16px;max-width:500px;margin:0 auto 2.5rem;}
+.hero-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.btn-gold{padding:10px 24px;background:var(--gold);color:#0a0a0a;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;transition:opacity .15s;}
+.btn-gold:hover{opacity:.87;}
+.btn-outline{padding:10px 24px;background:transparent;color:var(--text);border:.5px solid var(--border2);border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;transition:all .15s;}
+.btn-outline:hover{border-color:var(--text2);}
+
+/* SECTION */
+.section{padding:80px 2rem;max-width:900px;margin:0 auto;}
+.section-tag{font-family:'DM Mono',monospace;font-size:11px;color:var(--gold);letter-spacing:.8px;text-transform:uppercase;margin-bottom:.75rem;}
+.section-title{font-family:'Syne',sans-serif;font-size:clamp(24px,4vw,36px);font-weight:700;letter-spacing:-1px;margin-bottom:.75rem;}
+.section-sub{color:var(--text2);font-size:15px;margin-bottom:3rem;max-width:580px;}
+
+/* ROLE TABS */
+.role-tabs{display:flex;background:var(--surface);border:.5px solid var(--border2);border-radius:10px;padding:4px;width:fit-content;margin-bottom:2.5rem;}
+.role-tab{padding:7px 20px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--text2);font-family:'DM Sans',sans-serif;transition:all .15s;}
+.role-tab.on{background:var(--gold);color:#0a0a0a;}
+
+/* STEPS */
+.steps{display:flex;flex-direction:column;gap:0;}
+.step{display:grid;grid-template-columns:60px 1fr;gap:0;position:relative;}
+.step:not(:last-child)::after{content:'';position:absolute;left:29px;top:52px;bottom:-1px;width:2px;background:var(--border2);}
+.step-num{display:flex;flex-direction:column;align-items:center;padding-top:4px;}
+.step-circle{width:38px;height:38px;border-radius:50%;background:var(--gold-dim);border:1.5px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--gold);flex-shrink:0;position:relative;z-index:1;}
+.step-body{padding:4px 0 2.5rem 0;}
+.step-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:600;margin-bottom:.5rem;}
+.step-text{color:var(--text2);font-size:14px;line-height:1.7;}
+.step-ill{margin-top:1rem;background:var(--surface);border:.5px solid var(--border);border-radius:12px;overflow:hidden;}
+.step-ill svg{display:block;width:100%;}
+
+/* FEATURE CARDS */
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:2rem;}
+.feat{background:var(--surface);border:.5px solid var(--border);border-radius:12px;padding:1.25rem;}
+.feat-icon{font-size:22px;margin-bottom:.75rem;}
+.feat-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:600;margin-bottom:.4rem;}
+.feat-text{font-size:13px;color:var(--text2);line-height:1.6;}
+
+/* TABLE ILLUSTRATION */
+.table-ill{background:var(--surface);border:.5px solid var(--border);border-radius:12px;overflow:hidden;margin:1.5rem 0;}
+.table-ill-header{display:grid;grid-template-columns:2fr 1fr 1fr 2fr 1fr 1fr;gap:0;background:var(--surface2);border-bottom:.5px solid var(--border);}
+.th{padding:8px 12px;font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;}
+.table-ill-row{display:grid;grid-template-columns:2fr 1fr 1fr 2fr 1fr 1fr;gap:0;border-bottom:.5px solid var(--border);transition:background .1s;}
+.table-ill-row:hover{background:var(--surface2);}
+.table-ill-row:last-child{border-bottom:none;}
+.td{padding:10px 12px;font-size:13px;display:flex;align-items:center;gap:6px;}
+.chk-demo{width:22px;height:22px;border-radius:4px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;}
+.chk-demo.on{background:var(--gold);border-color:var(--gold);color:#0a0a0a;}
+.chk-demo.fu.on{background:var(--blue);border-color:var(--blue);color:#fff;}
+.fu-demo{display:flex;gap:3px;}
+.badge{display:inline-flex;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:500;text-transform:uppercase;}
+.badge.ok{background:rgba(74,240,154,.12);color:var(--green);border:.5px solid rgba(74,240,154,.2);}
+.badge.warn{background:rgba(240,180,74,.12);color:var(--amber);border:.5px solid rgba(240,180,74,.2);}
+.badge.new{background:var(--surface2);color:var(--text3);border:.5px solid var(--border2);}
+.day-badge{padding:2px 6px;border-radius:4px;font-size:11px;font-family:'DM Mono',monospace;font-weight:500;}
+.day-badge.ok{background:rgba(74,240,154,.12);color:var(--green);}
+.day-badge.warn{background:rgba(240,180,74,.12);color:var(--amber);}
+.day-badge.bad{background:rgba(240,90,74,.12);color:var(--red);}
+
+/* STAT CARDS */
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:1.5rem 0;}
+.stat-demo{background:var(--surface);border:.5px solid var(--border);border-radius:10px;padding:.875rem 1rem;}
+.stat-lbl{font-size:9px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.stat-val{font-size:26px;font-weight:600;font-family:'DM Mono',monospace;letter-spacing:-1px;}
+
+/* BINARY VIEW */
+.binary-demo{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:1.5rem 0;}
+.leg-demo{background:var(--surface);border:.5px solid var(--border);border-radius:12px;padding:1.25rem;position:relative;overflow:hidden;}
+.leg-demo::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.leg-demo.left::before{background:var(--blue);}
+.leg-demo.right::before{background:var(--gold);}
+.leg-demo-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:600;margin-bottom:.5rem;}
+.leg-demo-nums{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:.75rem;}
+.leg-num{background:var(--surface2);border-radius:7px;padding:.5rem .75rem;}
+.leg-num-v{font-size:18px;font-weight:600;font-family:'DM Mono',monospace;}
+.leg-num-l{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;}
+
+/* FAQ */
+.faq-list{display:flex;flex-direction:column;gap:8px;}
+.faq-item{background:var(--surface);border:.5px solid var(--border);border-radius:10px;overflow:hidden;}
+.faq-q{padding:1rem 1.25rem;font-size:14px;font-weight:500;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;}
+.faq-q:hover{background:var(--surface2);}
+.faq-arrow{font-size:12px;color:var(--text3);transition:transform .2s;}
+.faq-item.open .faq-arrow{transform:rotate(180deg);}
+.faq-a{padding:0 1.25rem;max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s;color:var(--text2);font-size:14px;line-height:1.7;}
+.faq-item.open .faq-a{max-height:300px;padding:.75rem 1.25rem 1.25rem;}
+
+/* INFO BOX */
+.info-box{background:var(--gold-dim);border:.5px solid rgba(201,168,76,.3);border-radius:10px;padding:1rem 1.25rem;display:flex;gap:10px;align-items:flex-start;margin:1.5rem 0;}
+.info-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+.info-text{font-size:13px;color:var(--text2);line-height:1.6;}
+.info-text strong{color:var(--gold);}
+
+/* DIVIDER */
+.divider{border:none;border-top:.5px solid var(--border);margin:0;}
+
+/* FOOTER */
+footer{padding:2.5rem 2rem;text-align:center;color:var(--text3);font-size:12px;border-top:.5px solid var(--border);}
+footer span{color:var(--gold);}
+
+.hidden-section{display:none;}
+.hidden-section.visible{display:block;}
+
+/* MOBILE */
+@media(max-width:600px){
+  .nav-links{gap:2px;}
+  .nav-link{padding:5px 8px;font-size:12px;}
+  .binary-demo{grid-template-columns:1fr;}
+  .table-ill{overflow-x:auto;}
+  .table-ill-header,.table-ill-row{min-width:480px;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-mark">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="5.5" r="3" fill="#0a0a0a"/>
+        <circle cx="3.5" cy="15" r="2.2" fill="#0a0a0a" opacity=".5"/>
+        <circle cx="16.5" cy="15" r="2.2" fill="#0a0a0a" opacity=".5"/>
+        <line x1="10" y1="8.5" x2="3.5" y2="12.8" stroke="#0a0a0a" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="10" y1="8.5" x2="16.5" y2="12.8" stroke="#0a0a0a" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    Prospect Manager
+  </div>
+  <div class="nav-links">
+    <span class="nav-link active" onclick="showSection('membro')">Membro</span>
+    <span class="nav-link gold" onclick="showSection('leader')">Leader</span>
+    <span class="nav-link" onclick="showSection('faq')">FAQ</span>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">✦ developed by @simonemallamo</div>
+  <h1>Gestisci i tuoi<br><span>prospect</span> in modo<br>professionale</h1>
+  <p>La guida completa per usare Prospect Manager al meglio, che tu sia un membro o un leader del team.</p>
+  <div class="hero-btns">
+    <a class="btn-gold" onclick="showSection('membro')">Guida Membro</a>
+    <a class="btn-outline" onclick="showSection('leader')">Guida Leader</a>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══ SEZIONE MEMBRO ═══ -->
+<div id="section-membro" class="visible hidden-section">
+
+<div class="section">
+  <div class="section-tag">Sezione 01 — Membro</div>
+  <div class="section-title">Tutto quello che devi sapere<br>per iniziare</div>
+  <div class="section-sub">Segui questi passi nell'ordine. In 5 minuti sei operativo.</div>
+
+  <div class="steps">
+
+    <!-- STEP 1 -->
+    <div class="step">
+      <div class="step-num"><div class="step-circle">1</div></div>
+      <div class="step-body">
+        <div class="step-title">Registrati tramite il link del tuo leader</div>
+        <div class="step-text">Il tuo leader ti invia un link personalizzato. Aprilo, clicca <strong>Registrati</strong>, inserisci nome, email e password (minimo 6 caratteri). Non toccare il campo "Codice Leader" — non ti serve.<br><br>
+        ⚠️ Se vedi <em>"Email già registrata"</em> significa che hai già un account — vai su <strong>Accedi</strong> invece di crearne un altro.</div>
+        <div class="step-ill">
+          <svg viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+            <rect width="600" height="200" fill="#141414"/>
+            <rect x="150" y="20" width="300" height="160" rx="12" fill="#1c1c1c" stroke="rgba(255,255,255,0.1)" stroke-width=".5"/>
+            <!-- Logo -->
+            <rect x="168" y="36" width="22" height="22" rx="5" fill="#C9A84C"/>
+            <text x="198" y="51" font-family="sans-serif" font-size="12" font-weight="600" fill="#f0f0f0">Prospect Manager</text>
+            <!-- Tabs -->
+            <rect x="168" y="68" width="120" height="24" rx="5" fill="#252525"/>
+            <rect x="169" y="69" width="58" height="22" rx="4" fill="#f0f0f0"/>
+            <text x="183" y="84" font-family="sans-serif" font-size="10" font-weight="600" fill="#0a0a0a">Accedi</text>
+            <text x="242" y="84" font-family="sans-serif" font-size="10" fill="#888">Registrati</text>
+            <!-- Fields -->
+            <rect x="168" y="102" width="264" height="20" rx="4" fill="#252525" stroke="rgba(255,255,255,0.1)" stroke-width=".5"/>
+            <text x="178" y="116" font-family="sans-serif" font-size="10" fill="#555">Nome completo</text>
+            <rect x="168" y="128" width="264" height="20" rx="4" fill="#252525" stroke="rgba(255,255,255,0.1)" stroke-width=".5"/>
+            <text x="178" y="142" font-family="sans-serif" font-size="10" fill="#555">Email</text>
+            <rect x="168" y="154" width="264" height="22" rx="5" fill="#C9A84C"/>
+            <text x="260" y="169" font-family="sans-serif" font-size="11" font-weight="600" fill="#0a0a0a" text-anchor="middle">Crea account →</text>
+            <!-- Arrow pointing to register tab -->
+            <path d="M320 58 L295 75" stroke="#C9A84C" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#arr)" fill="none"/>
+            <defs><marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#C9A84C"/></marker></defs>
+            <text x="325" y="55" font-family="sans-serif" font-size="10" fill="#C9A84C">Clicca qui</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step">
+      <div class="step-num"><div class="step-circle">2</div></div>
+      <div class="step-body">
+        <div class="step-title">Aggiungi il tuo primo prospect</div>
+        <div class="step-text">Clicca il pulsante dorato <strong>＋ Nuovo prospect</strong> in alto a destra. Inserisci nome, canale di contatto (es. Instagram), provincia e note. Clicca Salva.</div>
+        <div class="step-ill">
+          <svg viewBox="0 0 600 160" xmlns="http://www.w3.org/2000/svg">
+            <rect width="600" height="160" fill="#141414"/>
+            <!-- Modal -->
+            <rect x="150" y="15" width="300" height="130" rx="12" fill="#1c1c1c" stroke="rgba(255,255,255,0.1)" stroke-width=".5"/>
+            <text x="168" y="38" font-family="sans-serif" font-size="13" font-weight="600" fill="#f0f0f0">Nuovo prospect</text>
+            <rect x="168" y="46" width="264" height="18" rx="4" fill="#252525" stroke="rgba(201,168,76,0.5)" stroke-width="1"/>
+            <text x="178" y="59" font-family="sans-serif" font-size="10" fill="#888">Marco Rossi</text>
+            <rect x="168" y="70" width="126" height="18" rx="4" fill="#252525" stroke="rgba(255,255,255,0.1)" stroke-width=".5"/>
+            <text x="178" y="83" font-family="sans-serif" font-size="10" fill="#555">Instagram</text>
+            <rect x="300" y="70" width="132" height="18" rx="4" fill="#252525" stroke="rgba(255,255,255,0.1)" stroke-width=".5"/>
+            <text x="310" y="83" font-family="sans-serif" font-size="10" fill="#555">MI</text>
+            <rect x="168" y="94" width="264" height="18" rx="4" fill="#252525" stroke="rgba(255,255,255,0.1)" stroke-width=".5"/>
+            <text x="178" y="107" font-family="sans-serif" font-size="10" fill="#555">Interessato al business...</text>
+            <rect x="168" y="118" width="264" height="20" rx="5" fill="#C9A84C"/>
+            <text x="300" y="132" font-family="sans-serif" font-size="11" font-weight="600" fill="#0a0a0a" text-anchor="middle">Salva</text>
+            <!-- Labels -->
+            <text x="30" y="58" font-family="sans-serif" font-size="10" fill="#C9A84C" text-anchor="middle">Nome *</text>
+            <line x1="60" y1="56" x2="168" y2="56" stroke="rgba(201,168,76,0.3)" stroke-width=".5" stroke-dasharray="3,2"/>
+            <text x="30" y="82" font-family="sans-serif" font-size="10" fill="#888" text-anchor="middle">Canale</text>
+            <line x1="60" y1="80" x2="168" y2="80" stroke="rgba(255,255,255,0.1)" stroke-width=".5" stroke-dasharray="3,2"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step">
+      <div class="step-num"><div class="step-circle">3</div></div>
+      <div class="step-body">
+        <div class="step-title">Usa i check per tracciare i progressi</div>
+        <div class="step-text">Ogni prospect ha una riga con 6 colonne. Aggiorna i check man mano che avanzi con il contatto. Il contatore <strong>Giorni</strong> si azzera ogni volta che tocchi un check — ti ricorda quando è stata l'ultima interazione.</div>
+
+        <div class="table-ill">
+          <div class="table-ill-header">
+            <div class="th">Nome</div>
+            <div class="th">Giorni</div>
+            <div class="th">Pres.</div>
+            <div class="th">Follow-up</div>
+            <div class="th">Pag.</div>
+            <div class="th">Stato</div>
+          </div>
+          <div class="table-ill-row">
+            <div class="td" style="flex-direction:column;align-items:flex-start;gap:1px;">
+              <span style="font-weight:500;">Marco Rossi</span>
+              <span style="font-size:11px;color:var(--text3);">Instagram</span>
+            </div>
+            <div class="td"><span class="day-badge ok">2g</span></div>
+            <div class="td"><div class="chk-demo on">✓</div></div>
+            <div class="td"><div class="fu-demo"><div class="chk-demo fu on">✓</div><div class="chk-demo fu on">✓</div><div class="chk-demo fu">3</div><div class="chk-demo fu">4</div></div></div>
+            <div class="td"><div style="width:9px;height:9px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.2);"></div></div>
+            <div class="td"><span class="badge ok">Attivo</span></div>
+          </div>
+          <div class="table-ill-row">
+            <div class="td" style="flex-direction:column;align-items:flex-start;gap:1px;">
+              <span style="font-weight:500;">Anna Bianchi</span>
+              <span style="font-size:11px;color:var(--text3);">WhatsApp</span>
+            </div>
+            <div class="td"><span class="day-badge warn">5g</span></div>
+            <div class="td"><div class="chk-demo on">✓</div></div>
+            <div class="td"><div class="fu-demo"><div class="chk-demo fu on">✓</div><div class="chk-demo fu">2</div><div class="chk-demo fu">3</div><div class="chk-demo fu">4</div></div></div>
+            <div class="td"><div style="width:9px;height:9px;border-radius:50%;background:var(--amber);border:1.5px solid var(--amber);"></div></div>
+            <div class="td"><span class="badge warn">In attesa</span></div>
+          </div>
+          <div class="table-ill-row">
+            <div class="td" style="flex-direction:column;align-items:flex-start;gap:1px;">
+              <span style="font-weight:500;">Luca Verde</span>
+              <span style="font-size:11px;color:var(--text3);">LinkedIn · BG</span>
+            </div>
+            <div class="td"><span class="day-badge bad">9g</span></div>
+            <div class="td"><div class="chk-demo"></div></div>
+            <div class="td"><div class="fu-demo"><div class="chk-demo fu">1</div><div class="chk-demo fu">2</div><div class="chk-demo fu">3</div><div class="chk-demo fu">4</div></div></div>
+            <div class="td"><div style="width:9px;height:9px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.2);"></div></div>
+            <div class="td"><span class="badge new">Nuovo</span></div>
+          </div>
+        </div>
+
+        <div class="feat-grid" style="margin-top:1.5rem;">
+          <div class="feat">
+            <div class="feat-icon">🟡</div>
+            <div class="feat-title">Presentazione</div>
+            <div class="feat-text">1 check dorato — spunta quando hai inviato la presentazione del progetto.</div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">🔵</div>
+            <div class="feat-title">Follow-up 1→4</div>
+            <div class="feat-text">4 check blu progressivi. Traccia ogni follow-up effettuato in ordine.</div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">🟠</div>
+            <div class="feat-title">Pagamento</div>
+            <div class="feat-text">Pallino arancio — attivalo quando il prospect è in attesa di completare il pagamento.</div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">⏱️</div>
+            <div class="feat-title">Contatore giorni</div>
+            <div class="feat-text">Verde (0-3gg) → Arancio (4-7gg) → Rosso (oltre 7gg). Si azzera ad ogni check.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step">
+      <div class="step-num"><div class="step-circle">4</div></div>
+      <div class="step-body">
+        <div class="step-title">Filtra e cerca nella lista</div>
+        <div class="step-text">Usa la barra di ricerca per trovare un prospect per nome o canale. Usa i pulsanti filtro per vedere solo un certo stato. Filtra per <strong>Provincia</strong> quando hai eventi locali. Clicca sull'intestazione di una colonna per ordinare.</div>
+        <div class="step-ill">
+          <svg viewBox="0 0 600 70" xmlns="http://www.w3.org/2000/svg">
+            <rect width="600" height="70" fill="#141414"/>
+            <!-- Search -->
+            <rect x="20" y="20" width="140" height="28" rx="6" fill="#1c1c1c" stroke="rgba(255,255,255,0.1)" stroke-width=".5"/>
+            <text x="34" y="38" font-family="sans-serif" font-size="11" fill="#444">🔍 Cerca prospect...</text>
+            <!-- Filters -->
+            <rect x="168" y="20" width="50" height="28" rx="6" fill="rgba(201,168,76,0.12)" stroke="rgba(201,168,76,0.5)" stroke-width=".5"/>
+            <text x="193" y="38" font-family="sans-serif" font-size="11" fill="#C9A84C" text-anchor="middle">Tutti</text>
+            <rect x="224" y="20" width="56" height="28" rx="6" fill="#1c1c1c" stroke="rgba(255,255,255,0.08)" stroke-width=".5"/>
+            <text x="252" y="38" font-family="sans-serif" font-size="11" fill="#666" text-anchor="middle">Nuovo</text>
+            <rect x="286" y="20" width="54" height="28" rx="6" fill="#1c1c1c" stroke="rgba(255,255,255,0.08)" stroke-width=".5"/>
+            <text x="313" y="38" font-family="sans-serif" font-size="11" fill="#666" text-anchor="middle">Attivo</text>
+            <rect x="346" y="20" width="80" height="28" rx="6" fill="#1c1c1c" stroke="rgba(255,255,255,0.08)" stroke-width=".5"/>
+            <text x="386" y="38" font-family="sans-serif" font-size="11" fill="#666" text-anchor="middle">In attesa</text>
+            <!-- Provincia -->
+            <rect x="432" y="20" width="70" height="28" rx="6" fill="#1c1c1c" stroke="rgba(255,255,255,0.08)" stroke-width=".5"/>
+            <text x="467" y="38" font-family="sans-serif" font-size="11" fill="#666" text-anchor="middle">Provincia</text>
+            <!-- Add button -->
+            <rect x="508" y="20" width="72" height="28" rx="6" fill="#C9A84C"/>
+            <text x="544" y="38" font-family="sans-serif" font-size="11" font-weight="600" fill="#0a0a0a" text-anchor="middle">＋ Nuovo</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step">
+      <div class="step-num"><div class="step-circle">5</div></div>
+      <div class="step-body">
+        <div class="step-title">Monitora le tue statistiche</div>
+        <div class="step-text">In cima alla lista trovi 5 riquadri con i tuoi numeri personali aggiornati in tempo reale.</div>
+        <div class="stat-row">
+          <div class="stat-demo"><div class="stat-lbl">Nuovi (7gg)</div><div class="stat-val" style="color:var(--green)">4</div></div>
+          <div class="stat-demo"><div class="stat-lbl">Totale</div><div class="stat-val" style="color:var(--gold)">23</div></div>
+          <div class="stat-demo"><div class="stat-lbl">Presentazioni</div><div class="stat-val" style="color:var(--blue)">15</div></div>
+          <div class="stat-demo"><div class="stat-lbl">Attesa pag.</div><div class="stat-val" style="color:var(--amber)">3</div></div>
+          <div class="stat-demo"><div class="stat-lbl">FU completi</div><div class="stat-val" style="color:var(--green)">8</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end steps -->
+
+  <div class="info-box">
+    <span class="info-icon">💡</span>
+    <div class="info-text"><strong>Vuoi diventare Leader?</strong> Vai su <strong>Impostazioni</strong> (in alto a destra) → inserisci il Codice Leader che ti fornisce Simone → la Dashboard Team si attiva immediatamente senza fare logout.</div>
+  </div>
+
+</div><!-- end section -->
+</div><!-- end membro -->
+
+<!-- ═══ SEZIONE LEADER ═══ -->
+<div id="section-leader" class="hidden-section">
+<div class="section">
+  <div class="section-tag">Sezione 02 — Leader</div>
+  <div class="section-title">Gestisci il tuo team<br>e la tua struttura</div>
+  <div class="section-sub">Oltre a tutte le funzionalità dei membri, hai accesso alla Dashboard Team con i dati aggregati di tutta la tua rete.</div>
+
+  <div class="steps">
+
+    <!-- STEP L1 -->
+    <div class="step">
+      <div class="step-num"><div class="step-circle">1</div></div>
+      <div class="step-body">
+        <div class="step-title">Genera e condividi il tuo link di invito</div>
+        <div class="step-text">Ogni Leader ha un link di invito personale. Chi si registra tramite il tuo link viene automaticamente collegato al tuo team — senza che tu debba fare nulla.<br><br>
+        Vai su <strong>Impostazioni</strong> → sezione "Il tuo link di invito" → clicca <strong>Copia</strong> → invialo via WhatsApp, Telegram o email.</div>
+        <div class="step-ill">
+          <svg viewBox="0 0 600 120" xmlns="http://www.w3.org/2000/svg">
+            <rect width="600" height="120" fill="#141414"/>
+            <rect x="100" y="15" width="400" height="90" rx="12" fill="#1c1c1c" stroke="rgba(255,255,255,0.1)" stroke-width=".5"/>
+            <text x="120" y="40" font-family="sans-serif" font-size="12" font-weight="600" fill="#f0f0f0">🔗 Il tuo link di invito</text>
+            <text x="120" y="58" font-family="sans-serif" font-size="10" fill="#666">Condividi con i tuoi diretti per collegarli al tuo team.</text>
+            <rect x="120" y="67" width="290" height="24" rx="5" fill="#252525" stroke="rgba(255,255,255,0.08)" stroke-width=".5"/>
+            <text x="130" y="83" font-family="monospace" font-size="9" fill="#C9A84C">https://tuonome.github.io/...?invite=abc123</text>
+            <rect x="416" y="67" width="64" height="24" rx="5" fill="#C9A84C"/>
+            <text x="448" y="83" font-family="sans-serif" font-size="11" font-weight="600" fill="#0a0a0a" text-anchor="middle">Copia</text>
+            <!-- Arrow and person icons -->
+            <text x="300" y="108" font-family="sans-serif" font-size="10" fill="#555" text-anchor="middle">Il link è permanente — non scade mai</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP L2 -->
+    <div class="step">
+      <div class="step-num"><div class="step-circle">2</div></div>
+      <div class="step-body">
+        <div class="step-title">Dashboard Team — i numeri della tua struttura</div>
+        <div class="step-text">Clicca la tab <strong>Dashboard Team</strong> in alto. Vedi le statistiche aggregate di tutta la tua rete in tempo reale — diretti, downline di secondo livello e oltre.</div>
+        <div class="stat-row">
+          <div class="stat-demo"><div class="stat-lbl">Diretti</div><div class="stat-val" style="color:var(--gold)">6</div></div>
+          <div class="stat-demo"><div class="stat-lbl">Struttura</div><div class="stat-val" style="color:var(--blue)">24</div></div>
+          <div class="stat-demo"><div class="stat-lbl">Nuovi (7gg)</div><div class="stat-val" style="color:var(--green)">11</div></div>
+          <div class="stat-demo"><div class="stat-lbl">Presentaz.</div><div class="stat-val" style="color:var(--blue)">38</div></div>
+          <div class="stat-demo"><div class="stat-lbl">Attesa pag.</div><div class="stat-val" style="color:var(--amber)">5</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP L3 -->
+    <div class="step">
+      <div class="step-num"><div class="step-circle">3</div></div>
+      <div class="step-body">
+        <div class="step-title">Gambe destra e sinistra (struttura binaria Jifu)</div>
+        <div class="step-text">La sezione <strong>Confronto gambe</strong> mostra i numeri divisi tra gamba sinistra e destra. Usa il filtro per leader per vedere la suddivisione di un leader specifico nella sua struttura.<br><br>
+        Puoi assegnare la gamba direttamente dalla scheda di ogni membro nella Dashboard — senza passare dall'Admin.</div>
+        <div class="binary-demo">
+          <div class="leg-demo left">
+            <div class="leg-demo-title" style="color:var(--blue)">👈 GAMBA SINISTRA</div>
+            <div style="font-size:11px;color:var(--text3);">12 persone · 52% dei prospect</div>
+            <div class="leg-demo-nums">
+              <div class="leg-num"><div class="leg-num-v" style="color:var(--blue)">47</div><div class="leg-num-l">Prospect</div></div>
+              <div class="leg-num"><div class="leg-num-v" style="color:var(--green)">6</div><div class="leg-num-l">Nuovi sett.</div></div>
+              <div class="leg-num"><div class="leg-num-v" style="color:var(--blue)">28</div><div class="leg-num-l">Presentaz.</div></div>
+              <div class="leg-num"><div class="leg-num-v" style="color:var(--amber)">3</div><div class="leg-num-l">Attesa pag.</div></div>
+            </div>
+          </div>
+          <div class="leg-demo right">
+            <div class="leg-demo-title" style="color:var(--gold)">👉 GAMBA DESTRA</div>
+            <div style="font-size:11px;color:var(--text3);">12 persone · 48% dei prospect</div>
+            <div class="leg-demo-nums">
+              <div class="leg-num"><div class="leg-num-v" style="color:var(--gold)">43</div><div class="leg-num-l">Prospect</div></div>
+              <div class="leg-num"><div class="leg-num-v" style="color:var(--green)">5</div><div class="leg-num-l">Nuovi sett.</div></div>
+              <div class="leg-num"><div class="leg-num-v" style="color:var(--blue)">24</div><div class="leg-num-l">Presentaz.</div></div>
+              <div class="leg-num"><div class="leg-num-v" style="color:var(--amber)">2</div><div class="leg-num-l">Attesa pag.</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="info-box">
+          <span class="info-icon">⚠️</span>
+          <div class="info-text">Se un membro appare nel riquadro arancio <strong>"senza gamba assegnata"</strong> — vai nella sua scheda nella Dashboard e clicca 👈 Sinistra o 👉 Destra per assegnarla.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP L4 -->
+    <div class="step">
+      <div class="step-num"><div class="step-circle">4</div></div>
+      <div class="step-body">
+        <div class="step-title">Come funziona la struttura ad albero</div>
+        <div class="step-text">Ogni persona ha un upline diretto — il leader che l'ha invitata. I livelli nella Dashboard mostrano la profondità:</div>
+        <div class="feat-grid" style="margin-top:1rem;">
+          <div class="feat">
+            <div class="feat-icon" style="color:var(--gold)">👑</div>
+            <div class="feat-title">Diretto <span style="color:var(--gold)">(Livello 1)</span></div>
+            <div class="feat-text">Chi si è registrato direttamente tramite il tuo link.</div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon" style="color:var(--blue)">📂</div>
+            <div class="feat-title">Livello 2</div>
+            <div class="feat-text">Chi è stato invitato dai tuoi diretti.</div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">📄</div>
+            <div class="feat-title">Livello 3+</div>
+            <div class="feat-text">Tutta la struttura in profondità — visibile solo a te come leader.</div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">🔀</div>
+            <div class="feat-title">Spillover</div>
+            <div class="feat-text">Puoi piazzare un membro nella gamba di un tuo diretto — gestito dall'Admin.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP L5 -->
+    <div class="step">
+      <div class="step-num"><div class="step-circle">5</div></div>
+      <div class="step-body">
+        <div class="step-title">Correggere un membro senza upline</div>
+        <div class="step-text">Se qualcuno si registra senza usare il link di invito, non viene collegato a nessun team. Per collegarlo:</div>
+        <div style="margin-top:.75rem;display:flex;flex-direction:column;gap:.5rem;">
+          <div style="display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:.5px solid var(--border);border-radius:8px;padding:.875rem;">
+            <div style="width:22px;height:22px;border-radius:50%;background:var(--gold-dim);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">1</div>
+            <div style="font-size:13px;color:var(--text2);">Apri il tab <strong style="color:var(--text)">⚙ Admin</strong> e inserisci il codice Admin</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:.5px solid var(--border);border-radius:8px;padding:.875rem;">
+            <div style="width:22px;height:22px;border-radius:50%;background:var(--gold-dim);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">2</div>
+            <div style="font-size:13px;color:var(--text2);">Nell'<strong style="color:var(--text)">Albero del network</strong> o nella tabella trova la persona (usa l'ID #numero)</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:.5px solid var(--border);border-radius:8px;padding:.875rem;">
+            <div style="width:22px;height:22px;border-radius:50%;background:var(--gold-dim);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">3</div>
+            <div style="font-size:13px;color:var(--text2);">Clicca <strong style="color:var(--text)">Modifica</strong> → seleziona l'upline corretto → salva</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end steps -->
+</div>
+</div><!-- end leader -->
+
+<!-- ═══ FAQ ═══ -->
+<div id="section-faq" class="hidden-section">
+<div class="section">
+  <div class="section-tag">Domande frequenti</div>
+  <div class="section-title">FAQ</div>
+  <div class="section-sub">Le risposte alle domande più comuni.</div>
+
+  <div class="faq-list">
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Ho dimenticato la password, come faccio? <span class="faq-arrow">▼</span></div>
+      <div class="faq-a">Contatta Simone o il tuo leader diretto. La reimpostazione della password viene gestita tramite Firebase. In futuro sarà aggiunta la funzione di recupero automatico via email.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Posso vedere i prospect degli altri? <span class="faq-arrow">▼</span></div>
+      <div class="faq-a">No. Ogni membro vede solo la propria lista. I Leader vedono i numeri aggregati del loro team nella Dashboard, ma non i dettagli dei singoli prospect degli altri.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Il contatore giorni non si aggiorna <span class="faq-arrow">▼</span></div>
+      <div class="faq-a">Il contatore si aggiorna in tempo reale quando tocchi un check. Se non si aggiorna prova a ricaricare la pagina. Ricorda: si azzera solo quando clicchi un check — non quando apri la scheda del prospect.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Posso usare l'app da telefono? <span class="faq-arrow">▼</span></div>
+      <div class="faq-a">Sì, funziona su qualsiasi browser mobile. Per un'esperienza ottimale usa Chrome su Android o Safari su iPhone. Puoi anche aggiungerla alla schermata home del telefono per aprirla come un'app.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Mi sono registrato senza il link di invito, cosa succede? <span class="faq-arrow">▼</span></div>
+      <div class="faq-a">Non vieni collegato a nessun team automaticamente. Contatta il tuo leader o Simone indicando il tuo ID utente (#numero visibile nelle Impostazioni) per essere collegato manualmente alla struttura corretta.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Come faccio l'upgrade da Membro a Leader? <span class="faq-arrow">▼</span></div>
+      <div class="faq-a">Clicca "Impostazioni" in alto a destra → sezione "Upgrade a Team Leader" → inserisci il Codice Leader che ti fornisce Simone → clicca "Attiva". La Dashboard Team appare immediatamente senza fare logout.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">I numeri della dashboard si resettano ogni settimana? <span class="faq-arrow">▼</span></div>
+      <div class="faq-a">No — i dati non si cancellano mai. I contatori "Nuovi (7gg)" e "Presentazioni sett." mostrano sempre gli ultimi 7 giorni mobili rispetto a oggi. Non c'è un reset fisso settimanale.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Ho inserito un prospect con email sbagliata, posso correggerla? <span class="faq-arrow">▼</span></div>
+      <div class="faq-a">Sì — clicca "Modifica" sulla riga del prospect nella tabella, aggiorna il campo note o canale, e salva. Puoi modificare qualsiasi campo del prospect in qualsiasi momento.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Come trovo tutti i prospect di una certa provincia? <span class="faq-arrow">▼</span></div>
+      <div class="faq-a">Nella toolbar della tua lista prospect c'è il menu "Provincia" che si popola automaticamente con le province che hai usato. Seleziona la provincia e la lista si filtra istantaneamente — utile per organizzare eventi locali.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Come assegno la gamba a un membro? <span class="faq-arrow">▼</span></div>
+      <div class="faq-a">Vai nella Dashboard Team → trova la scheda del membro → in fondo alla scheda trovi i pulsanti "👈 Sinistra" e "👉 Destra". Clicca quello corretto — si aggiorna immediatamente senza ricaricare la pagina. Puoi anche farlo dal pannello Admin.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Il sito dà "Site not available" <span class="faq-arrow">▼</span></div>
+      <div class="faq-a">Se il sito è su Netlify potrebbe aver raggiunto i limiti del piano gratuito mensile — si riattiva automaticamente il primo del mese. L'alternativa è usare GitHub Pages che non ha limiti di banda. Contatta Simone per assistenza.</div>
+    </div>
+  </div>
+
+  <div class="info-box" style="margin-top:2rem;">
+    <span class="info-icon">📞</span>
+    <div class="info-text"><strong>Serve aiuto?</strong> Per qualsiasi problema tecnico contatta Simone su Instagram <strong>@simonemallamo</strong>. Includi sempre il tuo <strong>ID utente</strong> (#numero visibile nelle Impostazioni) e una descrizione del problema.</div>
+  </div>
+
+</div>
+</div><!-- end faq -->
+
+<footer>
+  <p>Prospect Manager — <span>developed by @simonemallamo</span></p>
+  <p style="margin-top:6px;">Tutti i dati sono salvati su Firebase (Google) e non vengono mai condivisi con terze parti.</p>
+</footer>
+
+<script>
+function showSection(name) {
+  document.querySelectorAll('.hidden-section').forEach(s=>s.classList.remove('visible'));
+  document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));
+  document.getElementById('section-'+name).classList.add('visible');
+  event.target.classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function toggleFaq(el) {
+  const item = el.parentElement;
+  item.classList.toggle('open');
+}
+// Show membro by default
+document.getElementById('section-membro').classList.add('visible');
+</script>
+</body>
+</html>
