@@ -420,6 +420,84 @@ td{padding:9px 13px;vertical-align:middle;}
   </div>
 </div>
 
+
+<!-- Settings Modal -->
+<div id="s-overlay" class="overlay hidden">
+  <div class="modal">
+    <div class="modal-title">Impostazioni account</div>
+    <div class="modal-info">
+      <div class="mi-name" id="s-name">—</div>
+      <div class="mi-sub" id="s-email">—</div>
+      <div style="margin-top:8px;" id="s-role-badge"></div>
+    </div>
+    <div id="s-upgrade">
+      <div style="font-size:13px;font-weight:500;margin-bottom:5px;">Upgrade a Team Leader</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:.75rem;line-height:1.6;">Inserisci il codice Leader per sbloccare la Dashboard Team.</div>
+      <div class="fg"><label>Codice Leader</label><input type="password" id="s-lcode" placeholder="Inserisci il codice..."></div>
+      <div class="modal-err" id="s-upgrade-err"></div>
+      <button class="btn-primary" style="margin-top:6px;" onclick="doUpgrade()">Attiva accesso Leader →</button>
+    </div>
+    <div id="s-already-leader" class="hidden" style="text-align:center;padding:.75rem 0;font-size:13px;color:var(--green);">✅ Sei già Team Leader</div>
+    <div id="s-invite" class="hidden">
+      <div class="invite-box">
+        <div class="invite-box-title">🔗 Il tuo link di invito</div>
+        <div class="invite-box-sub">Condividi con i tuoi diretti. Chi si registra tramite questo link viene collegato automaticamente al tuo team.</div>
+        <div class="invite-row">
+          <input class="invite-input" type="text" id="invite-input" readonly>
+          <button class="btn-copy" id="copy-btn" onclick="copyInvite()">Copia</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeSettings()">Chiudi</button></div>
+  </div>
+</div>
+
+<!-- Admin Login Modal -->
+<div id="al-overlay" class="overlay hidden">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-title">🔐 Accesso Admin</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:1rem;">Inserisci il codice Admin per gestire utenti e network.</div>
+    <div class="fg"><label>Codice Admin</label><input type="password" id="al-code" placeholder="••••••••••"></div>
+    <div class="modal-err" id="al-err"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeAdminLogin()">Annulla</button>
+      <button class="btn-save" onclick="verifyAdmin()">Accedi →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit User Modal -->
+<div id="eu-overlay" class="overlay hidden">
+  <div class="modal">
+    <div class="modal-title">✏️ Modifica utente</div>
+    <div class="modal-info">
+      <div class="mi-name" id="eu-name">—</div>
+      <div class="mi-sub" id="eu-email">—</div>
+      <div style="margin-top:5px;" id="eu-num"></div>
+      <div style="margin-top:4px;font-size:10px;color:var(--text3);font-family:monospace;word-break:break-all;" id="eu-uid"></div>
+    </div>
+    <div class="fg"><label>Ruolo</label>
+      <select id="eu-role"><option value="member">Membro</option><option value="leader">Team Leader</option></select>
+    </div>
+    <div class="fg"><label>Sposta upline diretto</label>
+      <select id="eu-upline"></select>
+    </div>
+    <div class="fg"><label>Gamba nel team dell'upline</label>
+      <select id="eu-leg">
+        <option value="">— Non assegnata —</option>
+        <option value="right">Destra 👉</option>
+        <option value="left">Sinistra 👈</option>
+      </select>
+    </div>
+    <div class="modal-err" id="eu-err"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEditUser()">Annulla</button>
+      <button class="btn-danger" onclick="deleteUser()">Elimina</button>
+      <button class="btn-save" onclick="saveEditUser()">Salva</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ FIREBASE ══ -->
 <script type="module">
 import { initializeApp }        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
