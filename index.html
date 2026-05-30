@@ -412,21 +412,10 @@ td{padding:9px 13px;vertical-align:middle;}
         <option value="">— Seleziona prima il paese —</option>
       </select>
     </div>
-    <div class="fg"><label>Sposta upline diretto</label>
-      <select id="eu-upline"></select>
-    </div>
-    <div class="fg"><label>Gamba nel team dell'upline</label>
-      <select id="eu-leg">
-        <option value="">— Non assegnata —</option>
-        <option value="right">Destra 👉</option>
-        <option value="left">Sinistra 👈</option>
-      </select>
-    </div>
-    <div class="modal-err" id="eu-err"></div>
+    <div class="fg"><label>Note</label><input type="text" id="p-note" placeholder="Es. Interessato al business..."></div>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeEditUser()">Annulla</button>
-      <button class="btn-danger" onclick="deleteUser()">Elimina</button>
-      <button class="btn-save" onclick="saveEditUser()">Salva</button>
+      <button class="btn-cancel" onclick="closeProspectModal()">Annulla</button>
+      <button class="btn-save" onclick="saveProspect()">Salva</button>
     </div>
   </div>
 </div>
@@ -736,7 +725,7 @@ window.renderTable = () => {
     return 0;
   });
   const tb = id('p-tbody');
-  if (!rows.length){tb.innerHTML=`<tr><td colspan="7"><div class="empty">📋 Nessun prospect. Aggiungine uno!</div></td></tr>`;return;}
+  if (!rows.length){tb.innerHTML=`<tr><td colspan="9"><div class="empty">📋 Nessun prospect. Aggiungine uno!</div></td></tr>`;return;}
   tb.innerHTML = rows.map(p=>{
     const d=days(p), dc=d<=3?'ok':d<=7?'warn':'bad';
     const fu=p.followUps||[false,false,false,false];
@@ -749,7 +738,8 @@ window.renderTable = () => {
       <td><div class="fu-row">${[0,1,2,3].map(i=>`<button class="chk fu${fu[i]?' on':''}" onclick="tFu('${p.id}',${i},${!fu[i]})">${fu[i]?'✓':(i+1)}</button>`).join('')}</div></td>
       <td><div class="pay-row" onclick="tField('${p.id}','payment',${!p.payment})"><div class="pay-dot${p.payment?' on':''}"></div><span class="pay-lbl${p.payment?' on':''}">${p.payment?'In attesa':'—'}</span></div></td>
       <td><span class="pill ${st}">${pt}</span></td>
-      <td>${p.provincia?`<span style="font-family:monospace;font-size:11px;font-weight:500;padding:2px 6px;background:var(--surface2);border-radius:4px;border:.5px solid var(--border2);">${x(p.provincia)}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
+      <td style="white-space:nowrap;">${p.country?`<div style="font-size:12px;font-weight:500;">${x(p.country)}</div>`:''} ${p.provincia?`<div style="font-family:monospace;font-size:10px;color:var(--text3);">${x(p.provincia)}</div>`:''}${!p.country&&!p.provincia?'<span style="color:var(--text3)">—</span>':''}</td>
+      <td><button class="chk${p.iscritto?' on':''}" onclick="tField('${p.id}','iscritto',${!p.iscritto})" title="Segna come iscritto">${p.iscritto?'✓':''}</button></td>
       <td><div class="act-btns"><button class="act-btn" onclick="editProspect('${p.id}')">Modifica</button><button class="act-btn del" onclick="delProspect('${p.id}','${x(p.name)}')">Elimina</button></div></td>
     </tr>`;
   }).join('');
