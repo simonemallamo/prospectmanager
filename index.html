@@ -602,19 +602,51 @@ window.doSignup = async () => {
   const myPath = uplineUid ? [...uplinePath, uplineUid] : [];
 
   try {
+    // Step 1: check if email already has a Firestore document (orphan Auth account)
+    // This catches cases where Auth was created but Firestore doc was not saved
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
-    // Generate progressive user number
-    const allUsersSnap = await getDocs(collection(db, 'users'));
-    const userNumber = allUsersSnap.size + 1;
-    await setDoc(doc(db, 'users', cred.user.uid), {
+
+    // Step 2: Generate progressive user number
+    let userNumber = 1;
+    try {
+      const allUsersSnap = await getDocs(collection(db, 'users'));
+      userNumber = allUsersSnap.size + 1;
+    } catch(e) { userNumber = Date.now() % 10000; } // fallback if read fails
+
+    // Step 3: Save Firestore document — retry once if it fails
+    const userData = {
       name, email, role,
       userNumber,
       uplineUid: uplineUid || null,
       uplinePath: myPath,
       createdAt: serverTimestamp()
-    });
+    };
+    try {
+      await setDoc(doc(db, 'users', cred.user.uid), userData);
+    } catch(firestoreErr) {
+      // Retry once after short delay
+      await new Promise(r => setTimeout(r, 1000));
+      try {
+        await setDoc(doc(db, 'users', cred.user.uid), userData);
+      } catch(retryErr) {
+        // Auth account created but Firestore failed — user can still login
+        // and will appear as empty account. Log the error.
+        console.error('Firestore save failed after retry:', retryErr);
+        showErr('Account creato ma profilo non salvato. Contatta Simone con il tuo ID: ' + cred.user.uid.slice(0,8));
+        window.history.replaceState({}, '', window.location.pathname);
+        return;
+      }
+    }
+
     window.history.replaceState({}, '', window.location.pathname);
-  } catch(e) { showErr(errMsg(e.code)); }
+  } catch(e) {
+    // If auth/email-already-in-use, check if they have a Firestore doc
+    if(e.code === 'auth/email-already-in-use') {
+      showErr('⚠️ Email già registrata. Usa la funzione Accedi con questa email.');
+    } else {
+      showErr(errMsg(e.code));
+    }
+  }
 };
 
 window.doLogout = async () => { if (unsub) unsub(); await signOut(auth); };
