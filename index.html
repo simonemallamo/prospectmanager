@@ -402,77 +402,15 @@ td{padding:9px 13px;vertical-align:middle;}
     <div class="modal-title" id="p-modal-title">Nuovo prospect</div>
     <div class="fg"><label>Nome e cognome *</label><input type="text" id="p-name" placeholder="Es. Luca Bianchi"></div>
     <div class="fg"><label>Canale di contatto</label><input type="text" id="p-channel" placeholder="Es. Instagram, WhatsApp..."></div>
-    <div class="fg"><label>Provincia</label><select id="p-provincia"><option value="">— Seleziona provincia —</option><option>AG</option><option>AL</option><option>AN</option><option>AO</option><option>AQ</option><option>AR</option><option>AP</option><option>AT</option><option>AV</option><option>BA</option><option>BT</option><option>BL</option><option>BN</option><option>BG</option><option>BI</option><option>BO</option><option>BZ</option><option>BS</option><option>BR</option><option>CA</option><option>CL</option><option>CB</option><option>CI</option><option>CE</option><option>CT</option><option>CZ</option><option>CH</option><option>CO</option><option>CS</option><option>CR</option><option>KR</option><option>CN</option><option>EN</option><option>FM</option><option>FE</option><option>FI</option><option>FG</option><option>FC</option><option>FR</option><option>GE</option><option>GO</option><option>GR</option><option>IM</option><option>IS</option><option>SP</option><option>AQ</option><option>LT</option><option>LE</option><option>LC</option><option>LI</option><option>LO</option><option>LU</option><option>MC</option><option>MN</option><option>MS</option><option>MT</option><option>ME</option><option>MI</option><option>MO</option><option>MB</option><option>NA</option><option>NO</option><option>NU</option><option>OG</option><option>OT</option><option>OR</option><option>PD</option><option>PA</option><option>PR</option><option>PV</option><option>PG</option><option>PU</option><option>PE</option><option>PC</option><option>PI</option><option>PT</option><option>PN</option><option>PZ</option><option>PO</option><option>RG</option><option>RA</option><option>RC</option><option>RE</option><option>RI</option><option>RN</option><option>RM</option><option>RO</option><option>SA</option><option>VS</option><option>SS</option><option>SV</option><option>SI</option><option>SR</option><option>SO</option><option>TA</option><option>TE</option><option>TR</option><option>TO</option><option>TP</option><option>TN</option><option>TV</option><option>TS</option><option>UD</option><option>VA</option><option>VE</option><option>VB</option><option>VC</option><option>VR</option><option>VV</option><option>VI</option><option>VT</option></select></div>
-    <div class="fg"><label>Note</label><input type="text" id="p-note" placeholder="Es. Interessato al business..."></div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeProspectModal()">Annulla</button>
-      <button class="btn-save" onclick="saveProspect()">Salva</button>
+    <div class="fg"><label>Paese</label>
+      <select id="p-country" onchange="updateRegions('p-country','p-provincia')">
+        <option value="">— Seleziona paese —</option>
+      </select>
     </div>
-  </div>
-</div>
-
-<!-- Settings -->
-<div id="s-overlay" class="overlay hidden">
-  <div class="modal">
-    <div class="modal-title">Impostazioni account</div>
-    <div class="modal-info">
-      <div class="mi-name" id="s-name">—</div>
-      <div class="mi-sub" id="s-email">—</div>
-      <div style="margin-top:8px;" id="s-role-badge"></div>
-    </div>
-
-    <!-- Upgrade to leader -->
-    <div id="s-upgrade">
-      <div style="font-size:13px;font-weight:500;margin-bottom:5px;">Upgrade a Team Leader</div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:.75rem;line-height:1.6;">Inserisci il codice Leader per sbloccare la Dashboard Team.</div>
-      <div class="fg"><label>Codice Leader</label><input type="password" id="s-lcode" placeholder="Inserisci il codice..."></div>
-      <div class="modal-err" id="s-upgrade-err"></div>
-      <button class="btn-primary" style="margin-top:6px;" onclick="doUpgrade()">Attiva accesso Leader →</button>
-    </div>
-    <div id="s-already-leader" class="hidden" style="text-align:center;padding:.75rem 0;font-size:13px;color:var(--green);">✅ Sei già Team Leader</div>
-
-    <!-- Invite link (leaders only) -->
-    <div id="s-invite" class="hidden">
-      <div class="invite-box">
-        <div class="invite-box-title">🔗 Il tuo link di invito</div>
-        <div class="invite-box-sub">Condividi con i tuoi diretti. Chi si registra tramite questo link viene collegato automaticamente al tuo team.</div>
-        <div class="invite-row">
-          <input class="invite-input" type="text" id="invite-input" readonly>
-          <button class="btn-copy" id="copy-btn" onclick="copyInvite()">Copia</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="modal-actions"><button class="btn-cancel" onclick="closeSettings()">Chiudi</button></div>
-  </div>
-</div>
-
-<!-- Admin login -->
-<div id="al-overlay" class="overlay hidden">
-  <div class="modal" style="max-width:340px;">
-    <div class="modal-title">🔐 Accesso Admin</div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:1rem;">Inserisci il codice Admin per gestire utenti e network.</div>
-    <div class="fg"><label>Codice Admin</label><input type="password" id="al-code" placeholder="••••••••••"></div>
-    <div class="modal-err" id="al-err"></div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeAdminLogin()">Annulla</button>
-      <button class="btn-save" onclick="verifyAdmin()">Accedi →</button>
-    </div>
-  </div>
-</div>
-
-<!-- Edit user -->
-<div id="eu-overlay" class="overlay hidden">
-  <div class="modal">
-    <div class="modal-title">✏️ Modifica utente</div>
-    <div class="modal-info">
-      <div class="mi-name" id="eu-name">—</div>
-      <div class="mi-sub" id="eu-email">—</div>
-      <div style="margin-top:5px;" id="eu-num"></div>
-      <div style="margin-top:4px;font-size:10px;color:var(--text3);font-family:monospace;word-break:break-all;" id="eu-uid"></div>
-    </div>
-    <div class="fg"><label>Ruolo</label>
-      <select id="eu-role"><option value="member">Membro</option><option value="leader">Team Leader</option></select>
+    <div class="fg"><label>Provincia / Regione</label>
+      <select id="p-provincia" disabled>
+        <option value="">— Seleziona prima il paese —</option>
+      </select>
     </div>
     <div class="fg"><label>Sposta upline diretto</label>
       <select id="eu-upline"></select>
