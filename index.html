@@ -828,15 +828,46 @@ window.editProspect = pid => {
   const p=prospects.find(x=>x.id===pid); if(!p) return;
   editingPid=pid;
   id('p-modal-title').textContent='Modifica prospect';
-  id('p-name').value=p.name||''; id('p-channel').value=p.channel||''; populateCountries('p-country'); id('p-country').value=p.country||''; if(p.country) updateRegions('p-country','p-provincia'); id('p-provincia').value=p.provincia||''; id('p-note').value=p.note||'';
+  id('p-name').value=p.name||''; id('p-channel').value=p.channel||'';
+  if(typeof COUNTRY_LIST !== 'undefined') populateCountries('p-country');
+  id('p-country').value=p.country||'';
+  if(p.country && typeof updateRegions !== 'undefined') { updateRegions('p-country','p-provincia'); setTimeout(()=>{ id('p-provincia').value=p.provincia||''; }, 50); } else { id('p-provincia').value=p.provincia||''; }
+  id('p-note').value=p.note||'';
   id('p-overlay').classList.remove('hidden');
 };
+window.populateCountries = function(selId) {
+  const sel = id(selId);
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Seleziona paese —</option>' +
+    COUNTRY_LIST.map(c=>`<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');
+};
+
+window.updateRegions = function(countrySelId, regionSelId) {
+  const country = id(countrySelId)?.value;
+  const regionSel = id(regionSelId);
+  if(!regionSel) return;
+  if(!country || !COUNTRIES[country]) {
+    regionSel.innerHTML = '<option value="">— Seleziona prima il paese —</option>';
+    regionSel.disabled = true;
+    return;
+  }
+  const regions = COUNTRIES[country];
+  regionSel.innerHTML = '<option value="">— Seleziona regione —</option>' +
+    regions.map(r=>`<option value="${r}">${r}</option>`).join('');
+  regionSel.disabled = false;
+};
+
+
 window.openProspectModal = () => {
   editingPid=null;
   id('p-modal-title').textContent='Nuovo prospect';
   ['p-name','p-channel','p-note'].forEach(k=>id(k).value='');
-  id('p-country').value=''; populateCountries('p-country'); id('p-provincia').value=''; id('p-provincia').disabled=true; id('p-provincia').value='';
+  id('p-country').value='';
+  id('p-provincia').value=''; id('p-provincia').disabled=true;
   id('p-overlay').classList.remove('hidden');
+  // Populate countries after modal is visible
+  if(typeof COUNTRY_LIST !== 'undefined') populateCountries('p-country');
 };
 window.closeProspectModal = () => id('p-overlay').classList.add('hidden');
 window.saveProspect = async () => {
@@ -882,28 +913,6 @@ window.setLeg = async (uid, leg, btn) => {
   }
 };
 
-window.populateCountries = function(selId) {
-  const sel = id(selId);
-  if(!sel) return;
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">— Seleziona paese —</option>' +
-    COUNTRY_LIST.map(c=>`<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');
-};
-
-window.updateRegions = function(countrySelId, regionSelId) {
-  const country = id(countrySelId)?.value;
-  const regionSel = id(regionSelId);
-  if(!regionSel) return;
-  if(!country || !COUNTRIES[country]) {
-    regionSel.innerHTML = '<option value="">— Seleziona prima il paese —</option>';
-    regionSel.disabled = true;
-    return;
-  }
-  const regions = COUNTRIES[country];
-  regionSel.innerHTML = '<option value="">— Seleziona regione —</option>' +
-    regions.map(r=>`<option value="${r}">${r}</option>`).join('');
-  regionSel.disabled = false;
-};
 
 window.setFilter = (btn,f) => {
   pFilter=f;
