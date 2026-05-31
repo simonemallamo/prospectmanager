@@ -1137,50 +1137,96 @@ async function loadAdminPanel() {
 }
 
 function runDiagnostics() {
-  const diag = id('admin-diag');
+  var diag = id('admin-diag');
   if(!diag) return;
-  const issues = [];
+  var issues = [];
 
-  // Check duplicate emails in Firestore
-  const emailMap = {};
-  allUsers.forEach(u => {
-    const em = (u.email||'').toLowerCase().trim();
+  var emailMap = {};
+  allUsers.forEach(function(u) {
+    var em = (u.email||'').toLowerCase().trim();
     if(!em) return;
     if(!emailMap[em]) emailMap[em] = [];
     emailMap[em].push(u);
   });
-  const dupEmails = Object.entries(emailMap).filter(([,us]) => us.length > 1);
+  var dupEmails = Object.entries(emailMap).filter(function(e){return e[1].length > 1;});
+
   if(dupEmails.length > 0) {
-    const rows = dupEmails.map(([email, us]) =>
-      '<span style="color:var(--red);font-size:11px;">'+email+'</span> &mdash; '+
-      us.map(u=>'<span style="background:var(--surface2);padding:1px 6px;border-radius:4px;font-size:11px;">'+
-        (u.name||'?')+' #'+(u.userNumber||'?')+
-        ' <span style="color:var(--text3);font-size:9px;">['+u.id.slice(0,8)+']</span>'+
-        '</span>').join(' + ')
-    ).join('<br>');
-    issues.push('<strong style="color:var(--red)">Email duplicate in Firestore ('+dupEmails.length+'):</strong><br>'+rows);
+    var rows = dupEmails.map(function(entry) {
+      var email = entry[0]; var us = entry[1];
+      return '<span style="color:var(--red);font-size:11px;">'+email+'</span> &mdash; '+
+        us.map(function(u){
+          return '<span style="background:var(--surface2);padding:1px 6px;border-radius:4px;font-size:11px;">'+
+            (u.name||'?')+' #'+(u.userNumber||'?')+
+            ' <span style="color:var(--text3);font-size:9px;">['+u.id.slice(0,8)+']</span></span>';
+        }).join(' + ');
+    }).join('<br>');
+    issues.push(
+      '<strong style="color:var(--red)">Email duplicate in Firestore ('+dupEmails.length+'):</strong><br>'+rows+
+      '<br><div style="margin-top:8px;">'+
+      '<button onclick="autoFixDuplicates()" style="padding:6px 14px;background:var(--red);border:none;border-radius:6px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">'+
+      '&#128295; Risolvi automaticamente</button>'+
+      ' <span style="font-size:11px;color:var(--text3);">Mantiene il profilo piu completo</span></div>'
+    );
   }
 
-  // Check users with no role assigned (could be ghost accounts)
-  const ghosts = allUsers.filter(u => !u.role && !u.userNumber);
+  var ghosts = allUsers.filter(function(u){return !u.role && !u.userNumber;});
   if(ghosts.length > 0) {
-    issues.push('<strong style="color:var(--amber)">Account senza ruolo ne ID ('+ghosts.length+') — potrebbero essere duplicati:</strong><br>'+
-      ghosts.map(u=>'<span style="font-size:11px;">'+(u.name||'?')+' — '+(u.email||'?')+
-        ' <span style="color:var(--text3);font-family:monospace;font-size:9px;">['+u.id+']</span></span>').join('<br>')
+    issues.push('<strong style="color:var(--amber)">Account senza ruolo ne ID ('+ghosts.length+'):</strong><br>'+
+      ghosts.map(function(u){
+        return '<span style="font-size:11px;">'+(u.name||'?')+' &mdash; '+(u.email||'?')+
+          ' <span style="color:var(--text3);font-size:9px;">['+u.id+']</span></span>';
+      }).join('<br>')
     );
   }
 
   if(issues.length > 0) {
-    diag.innerHTML = issues.join('<br><br>') +
-      '<br><br><span style="font-size:11px;color:var(--text3);">'+
-      'Per risolvere: vai su Firebase Console → Authentication → Users, trova l\'email e elimina gli account Auth con UID diverso da quello che vedi in ogni riga qui sotto. L\'UID corretto da tenere è quello che vedi nel pannello Modifica di ogni utente.</span>';
+    diag.innerHTML = issues.join('<br><br>')+
+      '<br><br><span style="font-size:11px;color:var(--text3);">La pulizia automatica rimuove i documenti Firestore duplicati. Gli account Firebase Auth vanno eliminati da Firebase Console.</span>';
     diag.style.display = 'block';
   } else {
-    diag.innerHTML = '<span style="color:var(--green);">✅ Nessun problema rilevato — tutti gli account sono corretti.</span>';
+    diag.innerHTML = '<span style="color:var(--green);">&#10003; Nessun problema rilevato.</span>';
     diag.style.display = 'block';
-    setTimeout(() => { if(diag) diag.style.display='none'; }, 4000);
+    setTimeout(function(){if(diag)diag.style.display='none';}, 3000);
   }
 }
+
+window.autoFixDuplicates = async function() {
+  var emailMap = {};
+  allUsers.forEach(function(u){
+    var em = (u.email||'').toLowerCase().trim();
+    if(!em) return;
+    if(!emailMap[em]) emailMap[em] = [];
+    emailMap[em].push(u);
+  });
+  var dupGroups = Object.entries(emailMap).filter(function(e){return e[1].length>1;});
+  if(!dupGroups.length){alert('Nessun duplicato trovato.');return;}
+  var totalDups = dupGroups.reduce(function(acc,e){return acc+e[1].length-1;},0);
+  if(!confirm('Verranno rimossi '+totalDups+' profili duplicati da Firestore. Continuare?')) return;
+  var deleted = 0;
+  for(var gi=0;gi<dupGroups.length;gi++){
+    var users = dupGroups[gi][1];
+    var scored = users.map(function(u){return {u:u,score:
+      (u.role==='leader'?1000:0)+
+      (u.userNumber?500:0)+
+      (u.uplineUid?100:0)+
+      ((u.uplinePath||[]).length*10)+
+      (u.role==='member'?50:0)
+    };});
+    scored.sort(function(a,b){return b.score-a.score;});
+    var toRemove = scored.slice(1).map(function(s){return s.u;});
+    for(var ri=0;ri<toRemove.length;ri++){
+      var dup = toRemove[ri];
+      try{
+        await deleteDoc(doc(db,'users',dup.id));
+        await setDoc(doc(db,'deleted_users',dup.id),{deletedAt:serverTimestamp(),deletedBy:cUser.uid,email:dup.email||'',name:dup.name||'',reason:'auto-fix'});
+        allUsers = allUsers.filter(function(u){return u.id!==dup.id;});
+        deleted++;
+      }catch(e){console.warn('Could not delete',dup.id,e);}
+    }
+  }
+  renderAdminTable();renderTree();runDiagnostics();
+  alert('Rimossi '+deleted+' duplicati Firestore. Vai su Firebase Console > Authentication > Users per eliminare gli account Auth orfani.');
+};
 
 window.setAdminFilter=(btn,f)=>{
   aFilter=f;
@@ -1350,11 +1396,16 @@ window.openSettings=async()=>{
 window.closeSettings=()=>id('s-overlay').classList.add('hidden');
 
 window.doUpgrade=async()=>{
-  const code=id('s-lcode').value, errEl=id('s-upgrade-err');
+  const code=id('s-lcode').value.trim(), errEl=id('s-upgrade-err');
   if(!code){errEl.textContent='Inserisci il codice';errEl.style.display='block';return;}
-  if(code!==LEADER_CODE){errEl.textContent='Codice non valido. Contatta Simone.';errEl.style.display='block';return;}
+  if(code!==LEADER_CODE){
+    errEl.textContent='Codice non valido ('+code+'). Il codice corretto è RYOUNG.';
+    errEl.style.display='block';return;
+  }
+  errEl.style.display='none';
   try{
-    await updateDoc(doc(db,'users',cUser.uid),{role:'leader'});
+    // Try setDoc first (more permissive than updateDoc for own document)
+    await setDoc(doc(db,'users',cUser.uid),{role:'leader'},{merge:true});
     cData.role='leader';
     id('tab-team').classList.remove('hidden');
     id('s-upgrade').classList.add('hidden');
@@ -1362,7 +1413,10 @@ window.doUpgrade=async()=>{
     id('s-invite').classList.remove('hidden');
     id('s-role-badge').innerHTML='<span class="pill done">Team Leader</span>';
     await genInviteLink();
-  }catch(e){errEl.textContent='Errore. Riprova.';errEl.style.display='block';}
+  }catch(e){
+    errEl.textContent='Errore Firebase: '+e.message+' — Contatta Simone con questo messaggio.';
+    errEl.style.display='block';
+  }
 };
 
 async function genInviteLink(){
