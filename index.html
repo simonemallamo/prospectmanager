@@ -432,7 +432,7 @@ td{padding:9px 13px;vertical-align:middle;}
     </div>
     <div id="s-upgrade">
       <div style="font-size:13px;font-weight:500;margin-bottom:5px;">Upgrade a Team Leader</div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:.75rem;line-height:1.6;">Inserisci il codice Leader per sbloccare la Dashboard Team.</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:.75rem;line-height:1.6;">Inserisci il codice Leader per sbloccare la Dashboard Team. Se il tuo leader ha già cambiato il tuo ruolo, chiudi e riapri le impostazioni.</div>
       <div class="fg"><label>Codice Leader</label><input type="password" id="s-lcode" placeholder="Inserisci il codice..."></div>
       <div class="modal-err" id="s-upgrade-err"></div>
       <button class="btn-primary" style="margin-top:6px;" onclick="doUpgrade()">Attiva accesso Leader →</button>
@@ -447,6 +447,10 @@ td{padding:9px 13px;vertical-align:middle;}
           <button class="btn-copy" id="copy-btn" onclick="copyInvite()">Copia</button>
         </div>
       </div>
+    </div>
+    <div style="margin-top:.75rem;padding-top:.75rem;border-top:.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <span style="font-size:11px;color:var(--text3);">Il tuo ruolo è stato aggiornato dall'admin? Ricarica.</span>
+      <button onclick="reloadSession()" style="padding:5px 12px;border:.5px solid var(--border2);border-radius:6px;background:transparent;color:var(--text2);font-size:12px;cursor:pointer;">🔄 Ricarica sessione</button>
     </div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeSettings()">Chiudi</button></div>
   </div>
@@ -596,24 +600,32 @@ onAuthStateChanged(auth, async user => {
   if (user) {
     cUser = user;
     const snap = await getDoc(doc(db, 'users', user.uid));
-    // If user doc exists in 'users' collection they are valid — ignore deleted_users
+    // If user doc exists in 'users', they are ALWAYS valid — never block them
     if (snap.exists()) {
       cData = snap.data();
       showApp();
       return;
     }
-    // User doc missing from 'users' — check if deliberately deleted by admin
+    // User doc missing from 'users' — check deleted_users
+    // Only block if in deleted_users AND no 'users' doc exists
     try {
       const deletedSnap = await getDoc(doc(db, 'deleted_users', user.uid));
       if (deletedSnap.exists()) {
+        // Double-check: try to re-read 'users' doc (might be a race condition)
+        const recheck = await getDoc(doc(db, 'users', user.uid));
+        if (recheck.exists()) {
+          cData = recheck.data();
+          showApp();
+          return;
+        }
         await signOut(auth);
         showAuth();
-        showErr('Account eliminato. Contatta Simone per assistenza.');
+        showErr('Account non trovato. Contatta Simone indicando la tua email.');
         return;
       }
     } catch(e) {}
-    // Doc missing but not deleted — treat as valid, use empty data
-    cData = {};
+    // No doc anywhere — create a basic profile so they can access the app
+    cData = { email: user.email, role: 'member' };
     showApp();
   } else {
     cUser = null; cData = null;
@@ -1380,11 +1392,19 @@ window.deleteUser=async()=>{
 
 // ── SETTINGS ──
 window.openSettings=async()=>{
+  // Always re-fetch fresh data from Firestore — avoids stale cache after admin changes
+  try {
+    const freshSnap = await getDoc(doc(db,'users',cUser.uid));
+    if(freshSnap.exists()) cData = freshSnap.data();
+  } catch(e) { console.warn('Could not refresh user data:', e); }
+
   const role=cData?.role||'member';
   id('s-name').textContent=cData?.name||'—';
   id('s-email').textContent=cUser?.email||'—';
   const myNum=cData?.userNumber?` <span style="font-family:monospace;font-size:10px;color:var(--accent);background:var(--accent-dim);padding:1px 6px;border-radius:4px;">#${cData.userNumber}</span>`:'';
   id('s-role-badge').innerHTML=(role==='leader'?'<span class="pill done">Team Leader</span>':'<span class="pill nuovo">Membro</span>')+myNum;
+  // Update tab visibility based on fresh data
+  if(role==='leader') id('tab-team').classList.remove('hidden');
   id('s-upgrade').classList.toggle('hidden',role==='leader');
   id('s-already-leader').classList.toggle('hidden',role!=='leader');
   id('s-invite').classList.toggle('hidden',role!=='leader');
@@ -1395,27 +1415,53 @@ window.openSettings=async()=>{
 };
 window.closeSettings=()=>id('s-overlay').classList.add('hidden');
 
+window.reloadSession=async()=>{
+  try{
+    const snap=await getDoc(doc(db,'users',cUser.uid));
+    if(snap.exists()){
+      cData=snap.data();
+      // Update UI based on fresh data
+      const ini=(cData.name||'?').split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
+      id('u-av').textContent=ini;
+      id('u-nm').textContent=cData.name||cUser.email;
+      if(cData.role==='leader') id('tab-team').classList.remove('hidden');
+      closeSettings();
+      // Re-open settings with fresh data
+      await openSettings();
+    }
+  }catch(e){alert('Errore ricarica: '+e.message);}
+};
+
 window.doUpgrade=async()=>{
   const code=id('s-lcode').value.trim(), errEl=id('s-upgrade-err');
   if(!code){errEl.textContent='Inserisci il codice';errEl.style.display='block';return;}
   if(code!==LEADER_CODE){
-    errEl.textContent='Codice non valido ('+code+'). Il codice corretto è RYOUNG.';
+    errEl.textContent='Codice errato. Assicurati di scrivere: RYOUNG';
     errEl.style.display='block';return;
   }
   errEl.style.display='none';
+  const saveBtn = document.querySelector('#s-upgrade .btn-primary');
+  if(saveBtn) saveBtn.textContent='Aggiornamento...';
   try{
-    // Try setDoc first (more permissive than updateDoc for own document)
+    // Update Firestore
     await setDoc(doc(db,'users',cUser.uid),{role:'leader'},{merge:true});
-    cData.role='leader';
+    // Re-fetch to confirm
+    const snap = await getDoc(doc(db,'users',cUser.uid));
+    if(snap.exists()) cData = snap.data();
+    // Update UI
     id('tab-team').classList.remove('hidden');
     id('s-upgrade').classList.add('hidden');
     id('s-already-leader').classList.remove('hidden');
     id('s-invite').classList.remove('hidden');
-    id('s-role-badge').innerHTML='<span class="pill done">Team Leader</span>';
+    const myNum = cData?.userNumber
+      ? ' <span style="font-family:monospace;font-size:10px;color:var(--accent);background:var(--accent-dim);padding:1px 6px;border-radius:4px;">#'+cData.userNumber+'</span>'
+      : '';
+    id('s-role-badge').innerHTML='<span class="pill done">Team Leader</span>'+myNum;
     await genInviteLink();
   }catch(e){
-    errEl.textContent='Errore Firebase: '+e.message+' — Contatta Simone con questo messaggio.';
+    errEl.textContent='Errore: '+e.message;
     errEl.style.display='block';
+    if(saveBtn) saveBtn.textContent='Attiva accesso Leader →';
   }
 };
 
