@@ -603,6 +603,18 @@ onAuthStateChanged(auth, async user => {
     // If user doc exists in 'users', they are ALWAYS valid — never block them
     if (snap.exists()) {
       cData = snap.data();
+      // If member, check if there's a leader doc with same email (UID mismatch fix)
+      if((cData.role||'member')==='member' && user.email) {
+        try {
+          const eq = await getDocs(query(collection(db,'users'),where('email','==',user.email.toLowerCase())));
+          const ld = eq.docs.find(d=>d.data().role==='leader' && d.id!==user.uid);
+          if(ld) {
+            await setDoc(doc(db,'users',user.uid),{...ld.data(),uplineUid:cData.uplineUid||ld.data().uplineUid||null,uplinePath:cData.uplinePath||ld.data().uplinePath||[]},{merge:true});
+            const rs = await getDoc(doc(db,'users',user.uid));
+            if(rs.exists()) cData = rs.data();
+          }
+        } catch(e){}
+      }
       showApp();
       return;
     }
@@ -1392,11 +1404,37 @@ window.deleteUser=async()=>{
 
 // ── SETTINGS ──
 window.openSettings=async()=>{
-  // Always re-fetch fresh data from Firestore — avoids stale cache after admin changes
+  // Step 1: Re-fetch fresh data by UID
   try {
     const freshSnap = await getDoc(doc(db,'users',cUser.uid));
     if(freshSnap.exists()) cData = freshSnap.data();
   } catch(e) { console.warn('Could not refresh user data:', e); }
+
+  // Step 2: If still showing as member, search ALL users by email
+  // This handles the case where admin updated a different UID document
+  if((cData?.role||'member') === 'member' && cUser?.email) {
+    try {
+      const emailQuery = await getDocs(query(
+        collection(db,'users'),
+        where('email','==',cUser.email.toLowerCase())
+      ));
+      const leaderDoc = emailQuery.docs.find(d => d.data().role === 'leader');
+      if(leaderDoc && leaderDoc.id !== cUser.uid) {
+        // Found a leader doc with same email but different UID
+        // Copy the leader role to the current UID's doc
+        const leaderData = leaderDoc.data();
+        await setDoc(doc(db,'users',cUser.uid), {
+          ...leaderData,
+          // Keep current UID's connection data if it exists
+          uplineUid: cData?.uplineUid || leaderData.uplineUid || null,
+          uplinePath: cData?.uplinePath || leaderData.uplinePath || [],
+        }, {merge:true});
+        const recheckSnap = await getDoc(doc(db,'users',cUser.uid));
+        if(recheckSnap.exists()) cData = recheckSnap.data();
+        console.log('Synced leader role from email match');
+      }
+    } catch(e) { console.warn('Email sync check failed:', e); }
+  }
 
   const role=cData?.role||'member';
   id('s-name').textContent=cData?.name||'—';
