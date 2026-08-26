@@ -36,6 +36,12 @@ button{font-family:'DM Sans',sans-serif;cursor:pointer;}
 input,select,textarea{font-family:'DM Sans',sans-serif;}
 .hidden{display:none!important;}
 
+#csv-preview-table th{padding:6px 10px;background:var(--surface2);font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;border-bottom:.5px solid var(--border);text-align:left;white-space:nowrap;}
+#csv-preview-table td{padding:6px 10px;font-size:12px;border-bottom:.5px solid var(--border);color:var(--text2);}
+#csv-preview-table tr:last-child td{border-bottom:none;}
+#csv-preview-table tr:hover td{background:var(--surface2);}
+
+
 /* ── THEME TOGGLE ── */
 .toggle-wrap{display:flex;align-items:center;gap:6px;}
 .toggle-wrap span{font-size:13px;}
@@ -266,6 +272,11 @@ td{padding:9px 13px;vertical-align:middle;}
       <div class="fg"><label>Email</label><input type="email" id="l-email" placeholder="tua@email.com"></div>
       <div class="fg"><label>Password</label><input type="password" id="l-pass" placeholder="••••••••"></div>
       <button class="btn-primary" onclick="doLogin()">Accedi →</button>
+      <div style="text-align:center;margin-top:.75rem;">
+        <button onclick="doResetPassword()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:var(--font);text-decoration:underline;text-underline-offset:3px;">
+          Hai dimenticato la password?
+        </button>
+      </div>
     </div>
 
     <!-- SIGNUP -->
@@ -320,23 +331,40 @@ td{padding:9px 13px;vertical-align:middle;}
         <button class="f-btn" onclick="setFilter(this,'attivo')">Attivo</button>
         <button class="f-btn" onclick="setFilter(this,'paga')">In attesa pag.</button>
         <button class="f-btn" onclick="setFilter(this,'done')">FU completo</button>
+        <button class="f-btn" onclick="setFilter(this,'fu1')">FU 1+</button>
+        <button class="f-btn" onclick="setFilter(this,'fu2')">FU 2+</button>
+        <button class="f-btn" onclick="setFilter(this,'fu3')">FU 3+</button>
         <select class="search" id="prov-filter" onchange="renderTable()" style="width:80px;"><option value="">Prov.</option><option>AG</option><option>AL</option><option>AN</option><option>AO</option><option>AQ</option><option>AR</option><option>AP</option><option>AT</option><option>AV</option><option>BA</option><option>BT</option><option>BL</option><option>BN</option><option>BG</option><option>BI</option><option>BO</option><option>BZ</option><option>BS</option><option>BR</option><option>CA</option><option>CL</option><option>CB</option><option>CE</option><option>CT</option><option>CZ</option><option>CH</option><option>CO</option><option>CS</option><option>CR</option><option>KR</option><option>CN</option><option>EN</option><option>FM</option><option>FE</option><option>FI</option><option>FG</option><option>FC</option><option>FR</option><option>GE</option><option>GO</option><option>GR</option><option>IM</option><option>IS</option><option>SP</option><option>LT</option><option>LE</option><option>LC</option><option>LI</option><option>LO</option><option>LU</option><option>MC</option><option>MN</option><option>MS</option><option>MT</option><option>ME</option><option>MI</option><option>MO</option><option>MB</option><option>NA</option><option>NO</option><option>NU</option><option>OG</option><option>OT</option><option>OR</option><option>PD</option><option>PA</option><option>PR</option><option>PV</option><option>PG</option><option>PU</option><option>PE</option><option>PC</option><option>PI</option><option>PT</option><option>PN</option><option>PZ</option><option>PO</option><option>RG</option><option>RA</option><option>RC</option><option>RE</option><option>RI</option><option>RN</option><option>RM</option><option>RO</option><option>SA</option><option>SS</option><option>SV</option><option>SI</option><option>SR</option><option>SO</option><option>TA</option><option>TE</option><option>TR</option><option>TO</option><option>TP</option><option>TN</option><option>TV</option><option>TS</option><option>UD</option><option>VA</option><option>VE</option><option>VB</option><option>VC</option><option>VR</option><option>VV</option><option>VI</option><option>VT</option></select>
         <select class="search" id="p-prov-filter" onchange="renderTable()" style="width:90px;" title="Filtra per provincia">
           <option value="">Provincia</option>
         </select>
+        <label class="btn-add" style="background:var(--surface);color:var(--text);border:.5px solid var(--border2);cursor:pointer;gap:5px;" title="Importa lead da Facebook Ads CSV">📥 Importa CSV<input type="file" id="csv-import" accept=".csv" style="display:none;" onchange="openImportModal(this)"></label>
         <button class="btn-add" onclick="openProspectModal()">＋ Nuovo prospect</button>
+      </div>
+      <!-- Bulk action bar -->
+      <div id="bulk-bar" style="display:none;background:var(--red-dim);border:.5px solid var(--red-dim);border-radius:8px;padding:8px 14px;margin-bottom:.75rem;display:none;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span id="bulk-count" style="font-size:13px;font-weight:500;color:var(--red);">0 selezionati</span>
+        <button onclick="deleteSelected()" style="padding:5px 14px;background:var(--red);border:none;border-radius:6px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">🗑 Elimina selezionati</button>
+        <button onclick="clearSelection()" style="padding:5px 12px;background:transparent;border:.5px solid var(--border2);border-radius:6px;color:var(--text2);font-size:12px;cursor:pointer;">✕ Deseleziona tutto</button>
+        <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;">
+          <button onclick="selectByChannel('Facebook Ads')" style="padding:4px 10px;background:var(--surface2);border:.5px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;cursor:pointer;">Seleziona tutti "Facebook Ads"</button>
+          <button onclick="selectByChannel('')" style="padding:4px 10px;background:var(--surface2);border:.5px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;cursor:pointer;">Seleziona tutti visibili</button>
+        </div>
       </div>
       <div class="tbl-wrap">
         <table>
           <thead><tr>
+            <th style="width:36px;padding:9px 8px;"><input type="checkbox" id="select-all" onchange="toggleSelectAll(this)" style="cursor:pointer;width:15px;height:15px;accent-color:var(--accent);"></th>
             <th class="th-sort active" id="th-name" onclick="sortBy('name')">Nome / Note <span class="sort-arrow">↕</span></th>
+            <th>Telefono</th>
             <th class="th-sort" id="th-days" onclick="sortBy('days')">Giorni <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-pres" onclick="sortBy('pres')">Presentazione <span class="sort-arrow">↕</span></th>
-            <th>Follow-up 1→4</th>
+            <th class="th-sort" id="th-fu" onclick="sortBy('fu')">Follow-up 1→4 <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-pay" onclick="sortBy('pay')">Pagamento <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-status" onclick="sortBy('status')">Stato <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-prov" onclick="sortBy('prov')">Paese / Reg. <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-iscritto" onclick="sortBy('iscritto')">Iscritto <span class="sort-arrow">↕</span></th>
+            <th class="th-sort" id="th-contattato" onclick="sortBy('contattato')">Contattato <span class="sort-arrow">↕</span></th>
             <th></th>
           </tr></thead>
           <tbody id="p-tbody"></tbody>
@@ -412,6 +440,7 @@ td{padding:9px 13px;vertical-align:middle;}
         <option value="">— Seleziona prima il paese —</option>
       </select>
     </div>
+    <div class="fg"><label>Telefono</label><input type="text" id="p-phone" placeholder="Es. +39 333 123 4567"></div>
     <div class="fg"><label>Note</label><input type="text" id="p-note" placeholder="Es. Interessato al business..."></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeProspectModal()">Annulla</button>
@@ -498,6 +527,107 @@ td{padding:9px 13px;vertical-align:middle;}
       <button class="btn-cancel" onclick="closeEditUser()">Annulla</button>
       <button class="btn-danger" onclick="deleteUser()">Elimina</button>
       <button class="btn-save" onclick="saveEditUser()">Salva</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- CSV IMPORT MODAL -->
+<div id="csv-overlay" class="overlay hidden">
+  <div class="modal" style="max-width:600px;max-height:90vh;overflow-y:auto;">
+    <div class="modal-title">📥 Importa lead da Facebook Ads</div>
+
+    <!-- Step 1: Column mapping -->
+    <div id="csv-step1">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:1rem;line-height:1.6;">
+        Seleziona quale colonna del CSV corrisponde a ciascun campo.
+        <span style="color:var(--text3);font-size:11px;display:block;margin-top:4px;">File: <span id="csv-filename">—</span> · <span id="csv-rows">0</span> righe trovate</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem;">
+        <div class="fg" style="margin:0;"><label>Nome *</label><select id="col-name"><option value="">— seleziona colonna —</option></select></div>
+        <div class="fg" style="margin:0;"><label>Telefono</label><select id="col-phone"><option value="">— nessuna —</option></select></div>
+        <div class="fg" style="margin:0;"><label>Luogo / Isola</label><select id="col-isola"><option value="">— nessuna —</option></select></div>
+        <div class="fg" style="margin:0;"><label>Note aggiuntive</label><select id="col-note"><option value="">— nessuna —</option></select></div>
+      </div>
+      <button onclick="showImportPreview()" class="btn-save" style="margin-bottom:0;">Mostra anteprima →</button>
+    </div>
+
+    <!-- Step 2: Preview -->
+    <div id="csv-step2" class="hidden">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:.75rem;" id="csv-preview-info">—</div>
+      <div style="overflow-x:auto;border:.5px solid var(--border);border-radius:8px;margin-bottom:1rem;max-height:280px;overflow-y:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:400px;" id="csv-preview-table"></table>
+      </div>
+      <div id="csv-dup-warn" class="hidden" style="background:var(--amber-dim);border:.5px solid var(--amber-dim);border-radius:7px;padding:8px 12px;font-size:12px;color:var(--amber);margin-bottom:1rem;"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeImportModal()">Annulla</button>
+      <button class="btn-cancel" id="csv-back-btn" onclick="backToMapping()" style="display:none;">← Torna al mapping</button>
+      <button class="btn-save" id="csv-import-btn" onclick="executeImport()" style="display:none;">✅ Importa prospect</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- IMPORT CSV MODAL -->
+<div id="import-overlay" class="overlay hidden">
+  <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto;">
+    <div class="modal-title">📥 Importa lead da Facebook Ads</div>
+
+    <!-- Step 1: column mapping -->
+    <div id="import-step1">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:1.25rem;line-height:1.7;">
+        Seleziona quale colonna del CSV corrisponde a ogni campo.<br>
+        Il sistema prova a indovinare automaticamente — correggilo se necessario.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:1.25rem;">
+        <div style="display:grid;grid-template-columns:130px 1fr;gap:8px;align-items:center;">
+          <label style="font-size:12px;font-weight:500;color:var(--text2);">Nome *</label>
+          <select id="map-name" style="padding:7px 10px;background:var(--surface2);border:.5px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">
+            <option value="-1">— Seleziona colonna —</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:130px 1fr;gap:8px;align-items:center;">
+          <label style="font-size:12px;font-weight:500;color:var(--text2);">Telefono</label>
+          <select id="map-phone" style="padding:7px 10px;background:var(--surface2);border:.5px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">
+            <option value="-1">— Ignora —</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:130px 1fr;gap:8px;align-items:center;">
+          <label style="font-size:12px;font-weight:500;color:var(--text2);">Isola / Luogo</label>
+          <select id="map-location" style="padding:7px 10px;background:var(--surface2);border:.5px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">
+            <option value="-1">— Ignora —</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:130px 1fr;gap:8px;align-items:center;">
+          <label style="font-size:12px;font-weight:500;color:var(--text2);">Note / Interessi</label>
+          <select id="map-note" style="padding:7px 10px;background:var(--surface2);border:.5px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">
+            <option value="-1">— Ignora —</option>
+          </select>
+        </div>
+      </div>
+      <div id="import-count" style="font-size:12px;color:var(--text2);margin-bottom:1rem;padding:.75rem;background:var(--surface2);border-radius:6px;"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeImportModal()">Annulla</button>
+        <button class="btn-save" onclick="previewImport()">Anteprima →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: preview before import -->
+    <div id="import-step2" class="hidden">
+      <div id="import-summary" style="font-size:13px;margin-bottom:1rem;padding:.75rem 1rem;background:var(--surface2);border-radius:8px;line-height:1.8;"></div>
+      <div style="max-height:240px;overflow-y:auto;border:.5px solid var(--border);border-radius:8px;margin-bottom:1rem;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead id="import-preview-head" style="position:sticky;top:0;background:var(--surface);"></thead>
+          <tbody id="import-preview-body"></tbody>
+        </table>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="backImport()">← Modifica</button>
+        <button class="btn-cancel" style="color:var(--red);border-color:var(--red-dim);" onclick="undoLastImport()">↩ Annulla ultima</button>
+        <button class="btn-save" onclick="confirmImport()">✓ Importa</button>
+      </div>
     </div>
   </div>
 </div>
@@ -791,9 +921,10 @@ function renderStats() {
   const pa = prospects.filter(p=>p.payment).length;
   const fu = prospects.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length;
   const iscr = prospects.filter(p=>p.iscritto).length;
+  const cont = prospects.filter(p=>p.contattato).length;
   id('my-stats').innerHTML =
     sc('Nuovi (7gg)',nw,'g')+sc('Totale',prospects.length,'ac')+
-    sc('Presentazioni',pr,'b')+sc('Attesa pag.',pa,'a')+sc('Iscritti',iscr,'g')+sc('FU completi',fu,'g');
+    sc('Contattati',cont,'b')+sc('Presentazioni',pr,'b')+sc('Attesa pag.',pa,'a')+sc('Iscritti',iscr,'g');
 }
 
 window.renderTable = () => {
@@ -812,7 +943,9 @@ window.renderTable = () => {
       case 'name':   va=(a.name||'').toLowerCase(); vb=(b.name||'').toLowerCase(); break;
       case 'days':   va=days(a); vb=days(b); break;
       case 'prov':   va=(a.country||a.provincia||'').toLowerCase(); vb=(b.country||b.provincia||'').toLowerCase(); break;
+      case 'fu': va=(a.followUps||[]).filter(Boolean).length; vb=(b.followUps||[]).filter(Boolean).length; break;
       case 'iscritto': va=a.iscritto?1:0; vb=b.iscritto?1:0; break;
+      case 'contattato': va=a.contattato?1:0; vb=b.contattato?1:0; break;
       case 'pres':   va=a.presentation?1:0; vb=b.presentation?1:0; break;
       case 'pay':    va=a.payment?1:0; vb=b.payment?1:0; break;
       case 'provincia': va=(a.provincia||''); vb=(b.provincia||''); break;
@@ -827,14 +960,16 @@ window.renderTable = () => {
     return 0;
   });
   const tb = id('p-tbody');
-  if (!rows.length){tb.innerHTML=`<tr><td colspan="9"><div class="empty">📋 Nessun prospect. Aggiungine uno!</div></td></tr>`;return;}
+  if (!rows.length){tb.innerHTML=`<tr><td colspan="12"><div class="empty">📋 Nessun prospect. Aggiungine uno!</div></td></tr>`;return;}
   tb.innerHTML = rows.map(p=>{
     const d=days(p), dc=d<=3?'ok':d<=7?'warn':'bad';
     const fu=p.followUps||[false,false,false,false];
     const st=status(p);
     const pt={nuovo:'Nuovo',attivo:'Attivo',paga:'In attesa pag.',done:'Follow-up ✓'}[st];
-    return `<tr>
+    return `<tr data-id="${p.id}">
+      <td style="padding:9px 8px;"><input type="checkbox" class="row-check" value="${p.id}" onchange="updateBulkBar()" style="cursor:pointer;width:15px;height:15px;accent-color:var(--accent);"></td>
       <td><div class="nm">${x(p.name)}</div>${p.channel||p.note?`<div class="note">${x(p.channel||'')}${p.channel&&p.note?' · ':''}${x(p.note||'')}</div>`:''}</td>
+      <td style="white-space:nowrap;font-size:12px;color:var(--text2);">${p.phone?x(p.phone):'—'}</td>
       <td><span class="dbadge ${dc}">${d}g</span></td>
       <td><button class="chk${p.presentation?' on':''}" onclick="tField('${p.id}','presentation',${!p.presentation})">${p.presentation?'✓':''}</button></td>
       <td><div class="fu-row">${[0,1,2,3].map(i=>`<button class="chk fu${fu[i]?' on':''}" onclick="tFu('${p.id}',${i},${!fu[i]})">${fu[i]?'✓':(i+1)}</button>`).join('')}</div></td>
@@ -842,6 +977,7 @@ window.renderTable = () => {
       <td><span class="pill ${st}">${pt}</span></td>
       <td style="white-space:nowrap;">${p.country?`<div style="font-size:12px;font-weight:500;">${x(p.country)}</div>`:''} ${p.provincia?`<div style="font-family:monospace;font-size:10px;color:var(--text3);">${x(p.provincia)}</div>`:''}${!p.country&&!p.provincia?'<span style="color:var(--text3)">—</span>':''}</td>
       <td><button class="chk${p.iscritto?' on':''}" onclick="tField('${p.id}','iscritto',${!p.iscritto})" title="Segna come iscritto">${p.iscritto?'✓':''}</button></td>
+      <td><button class="chk${p.contattato?' on':''}" style="${p.contattato?'background:var(--green);border-color:var(--green);color:#0f0f0f;':''}" onclick="tField('${p.id}','contattato',${!p.contattato})" title="Segna come contattato">${p.contattato?'✓':''}</button></td>
       <td><div class="act-btns"><button class="act-btn" onclick="editProspect('${p.id}')">Modifica</button><button class="act-btn del" onclick="delProspect('${p.id}','${x(p.name)}')">Elimina</button></div></td>
     </tr>`;
   }).join('');
@@ -858,7 +994,7 @@ window.editProspect = pid => {
   const p=prospects.find(x=>x.id===pid); if(!p) return;
   editingPid=pid;
   id('p-modal-title').textContent='Modifica prospect';
-  id('p-name').value=p.name||''; id('p-channel').value=p.channel||'';
+  id('p-name').value=p.name||''; id('p-channel').value=p.channel||''; id('p-phone').value=p.phone||'';
   if(typeof COUNTRY_LIST !== 'undefined') populateCountries('p-country');
   id('p-country').value=p.country||'';
   if(p.country && typeof updateRegions !== 'undefined') { updateRegions('p-country','p-provincia'); setTimeout(()=>{ id('p-provincia').value=p.provincia||''; }, 50); } else { id('p-provincia').value=p.provincia||''; }
@@ -892,7 +1028,7 @@ window.updateRegions = function(countrySelId, regionSelId) {
 window.openProspectModal = () => {
   editingPid=null;
   id('p-modal-title').textContent='Nuovo prospect';
-  ['p-name','p-channel','p-note'].forEach(k=>id(k).value='');
+  ['p-name','p-channel','p-phone','p-note'].forEach(k=>id(k).value='');
   id('p-country').value='';
   id('p-provincia').value=''; id('p-provincia').disabled=true;
   id('p-overlay').classList.remove('hidden');
@@ -903,7 +1039,7 @@ window.closeProspectModal = () => id('p-overlay').classList.add('hidden');
 window.saveProspect = async () => {
   const name=id('p-name').value.trim();
   if(!name){id('p-name').style.borderColor='var(--red)';return;}
-  const data={name,channel:id('p-channel').value.trim(),country:id('p-country').value,provincia:id('p-provincia').value,note:id('p-note').value.trim(),uid:cUser.uid,userName:cData?.name||cUser.email};
+  const data={name,channel:id('p-channel').value.trim(),phone:id('p-phone').value.trim(),country:id('p-country').value,provincia:id('p-provincia').value,note:id('p-note').value.trim(),uid:cUser.uid,userName:cData?.name||cUser.email};
   if(editingPid) await updateDoc(doc(db,'prospects',editingPid),data);
   else await addDoc(collection(db,'prospects'),{...data,presentation:false,followUps:[false,false,false,false],payment:false,createdAt:serverTimestamp(),lastCheckAt:null,_insertedAt:Date.now()});
   closeProspectModal();
@@ -943,6 +1079,488 @@ window.setLeg = async (uid, leg, btn) => {
   }
 };
 
+
+
+window.doResetPassword = async function() {
+  var email = id('l-email').value.trim();
+  if(!email) {
+    showErr('Inserisci prima la tua email nel campo sopra, poi clicca "Hai dimenticato la password?"');
+    return;
+  }
+  try {
+    var { sendPasswordResetEmail } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+    await sendPasswordResetEmail(auth, email);
+    var el = id('auth-err');
+    el.style.background = 'var(--green-dim)';
+    el.style.borderColor = 'var(--green)';
+    el.style.color = 'var(--green)';
+    el.textContent = 'Email di recupero inviata a ' + email + '. Controlla la casella di posta (anche spam).';
+    el.style.display = 'block';
+    setTimeout(function(){
+      el.style.display='none';
+      el.style.background='';
+      el.style.borderColor='';
+      el.style.color='';
+    }, 8000);
+  } catch(e) {
+    showErr(errMsg(e.code) || 'Errore invio email. Verifica che l\'email sia corretta.');
+  }
+};
+
+var csvHeaders = [];
+var csvRows = [];
+var lastImportIds = [];
+
+function parseCSVText(text) {
+  var lines = text.split('\n').filter(function(l){return l.trim();});
+  function parseLine(line){
+    var result=[],inQ=false,field='';
+    for(var i=0;i<line.length;i++){
+      var ch=line[i];
+      if(ch==='"'&&!inQ){inQ=true;}
+      else if(ch==='"'&&inQ){inQ=false;}
+      else if(ch===','&&!inQ){result.push(field.trim().replace(/^"|"$/g,''));field='';}
+      else{field+=ch;}
+    }
+    result.push(field.trim().replace(/^"|"$/g,''));
+    return result;
+  }
+  var headers=parseLine(lines[0]);
+  var rows=[];
+  for(var i=1;i<lines.length;i++){
+    var cols=parseLine(lines[i]);
+    if(cols.some(function(v){return v.trim();})) rows.push(cols);
+  }
+  return {headers:headers,rows:rows};
+}
+
+function buildMapOptions(selId, preferredKeys) {
+  var sel=id(selId);
+  sel.innerHTML='<option value="-1">— Non importare —</option>';
+  csvHeaders.forEach(function(h,i){
+    var example=csvRows.length&&csvRows[0][i]?(' — es: '+csvRows[0][i].slice(0,25)):'';
+    var opt=document.createElement('option');
+    opt.value=i;
+    opt.textContent=h+example;
+    sel.appendChild(opt);
+  });
+  var best=-1;
+  for(var k=0;k<preferredKeys.length;k++){
+    var idx=csvHeaders.findIndex(function(h){return h.toLowerCase().indexOf(preferredKeys[k].toLowerCase())>=0;});
+    if(idx>=0){best=idx;break;}
+  }
+  sel.value=best>=0?best:-1;
+}
+
+window.openImportModal = async function(input) {
+  var file=input.files[0];
+  if(!file) return;
+  input.value='';
+  var text=await file.text();
+  var parsed=parseCSVText(text);
+  csvHeaders=parsed.headers;
+  csvRows=parsed.rows;
+  if(!csvRows.length){alert('File CSV vuoto o non valido.');return;}
+  buildMapOptions('map-name',     ['full name','full_name','nome','name']);
+  buildMapOptions('map-phone',    ['phone','telefono','tel','mobile','cellulare']);
+  buildMapOptions('map-location', ['isola','island','in_che','luogo','location','city']);
+  buildMapOptions('map-note',     ['interest','interesse','messaggio','message','other']);
+  id('import-step1').classList.remove('hidden');
+  id('import-step2').classList.add('hidden');
+  id('import-overlay').classList.remove('hidden');
+};
+
+window.previewImport = function() {
+  var iN=parseInt(id('map-name').value);
+  var iP=parseInt(id('map-phone').value);
+  var iL=parseInt(id('map-location').value);
+  var iNt=parseInt(id('map-note').value);
+  if(iN<0){alert('Seleziona la colonna del Nome per continuare.');return;}
+  var existing=new Set(prospects.map(function(p){return(p.name||'').toLowerCase().trim();}));
+  var toImport=[]; var dups=0;
+  csvRows.forEach(function(row){
+    var name=(row[iN]||'').trim();
+    if(!name) return;
+    if(existing.has(name.toLowerCase())){dups++;return;}
+    toImport.push({
+      name:name,
+      phone:iP>=0?(row[iP]||'').trim():'',
+      location:iL>=0?(row[iL]||'').trim():'',
+      note:iNt>=0?(row[iNt]||'').trim():''
+    });
+  });
+  id('import-summary').innerHTML=
+    '<strong>'+csvRows.length+'</strong> lead nel CSV &nbsp;&middot;&nbsp; '+
+    '<strong style="color:var(--green)">'+toImport.length+'</strong> nuovi &nbsp;&middot;&nbsp; '+
+    '<strong style="color:var(--text3)">'+dups+'</strong> gia presenti (saltati)';
+  var thead=id('import-preview-head');
+  thead.innerHTML='';
+  ['Nome','Telefono','Luogo','Note'].forEach(function(h){
+    var th=document.createElement('th');
+    th.textContent=h;
+    th.style.cssText='padding:6px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase;border-bottom:.5px solid var(--border);white-space:nowrap;';
+    thead.appendChild(th);
+  });
+  var tbody=id('import-preview-body');
+  tbody.innerHTML='';
+  var preview=toImport.slice(0,15);
+  preview.forEach(function(lead){
+    var tr=document.createElement('tr');
+    [lead.name,lead.phone,lead.location,lead.note].forEach(function(v){
+      var td=document.createElement('td');
+      td.textContent=v||'—';
+      td.style.cssText='padding:5px 10px;border-bottom:.5px solid var(--border);color:var(--text2);font-size:12px;';
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  if(toImport.length>15){
+    var tr=document.createElement('tr');var td=document.createElement('td');
+    td.colSpan=4;td.style.cssText='padding:6px 10px;color:var(--text3);font-size:11px;';
+    td.textContent='... e altri '+(toImport.length-15)+' prospect';
+    tr.appendChild(td);tbody.appendChild(tr);
+  }
+  if(!toImport.length){
+    tbody.innerHTML='<tr><td colspan="4" style="padding:1rem;text-align:center;color:var(--text3);">Nessun nuovo prospect da importare.</td></tr>';
+  }
+  window._importQueue=toImport;
+  id('import-step1').classList.add('hidden');
+  id('import-step2').classList.remove('hidden');
+};
+
+window.backImport=function(){
+  id('import-step1').classList.remove('hidden');
+  id('import-step2').classList.add('hidden');
+};
+
+window.confirmImport=async function(){
+  var q=window._importQueue||[];
+  if(!q.length){closeImportModal();return;}
+  lastImportIds=[];
+  var imported=0;
+  for(var j=0;j<q.length;j++){
+    var lead=q[j];
+    try{
+      var ref=await addDoc(collection(db,'prospects'),{
+        name:lead.name, phone:lead.phone, channel:'Facebook Ads',
+        note:lead.location?(lead.note?lead.location+' — '+lead.note:lead.location):(lead.note||''),
+        country:'',provincia:'',uid:cUser.uid,
+        userName:cData?cData.name||cUser.email:cUser.email,
+        presentation:false,followUps:[false,false,false,false],
+        payment:false,iscritto:false,contattato:false,
+        createdAt:serverTimestamp(),lastCheckAt:null,_insertedAt:Date.now()
+      });
+      lastImportIds.push(ref.id);
+      imported++;
+    }catch(e){console.warn('Import error:',lead.name,e);}
+  }
+  closeImportModal();
+  alert(imported+' prospect importati da Facebook Ads!');
+};
+
+window.undoLastImport=async function(){
+  if(!lastImportIds.length){alert('Nessuna importazione recente da annullare. Funziona solo nella stessa sessione.');return;}
+  if(!confirm('Eliminare '+lastImportIds.length+' prospect dell\'ultima importazione?')) return;
+  var deleted=0;
+  for(var i=0;i<lastImportIds.length;i++){
+    try{await deleteDoc(doc(db,'prospects',lastImportIds[i]));deleted++;}
+    catch(e){console.warn(e);}
+  }
+  lastImportIds=[];
+  alert('Eliminati '+deleted+' prospect.');
+};
+
+window.closeImportModal=function(){
+  id('import-overlay').classList.add('hidden');
+  window._importQueue=[];
+};
+
+
+// ── CSV IMPORT SYSTEM ──
+var csvData = []; // parsed rows
+var csvHeaders = []; // header row
+var lastImportBatch = null; // for undo
+
+window.openImportModal = function(input) {
+  var file = input.files[0];
+  if(!file) return;
+  input.value = '';
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var text = e.target.result;
+    // Parse CSV
+    var lines = text.split('\n').filter(function(l){return l.trim();});
+    if(lines.length < 2){alert('File CSV vuoto o non valido.');return;}
+
+    // Parse with quote handling
+    function parseLine(line) {
+      var res=[],inQ=false,f='';
+      for(var i=0;i<line.length;i++){
+        var ch=line[i];
+        if(ch==='"'){inQ=!inQ;}
+        else if(ch===','&&!inQ){res.push(f.trim());f='';}
+        else{f+=ch;}
+      }
+      res.push(f.trim());
+      return res;
+    }
+
+    csvHeaders = parseLine(lines[0]).map(function(h){return h.replace(/"/g,'').trim();});
+    csvData = [];
+    for(var i=1;i<lines.length;i++){
+      var row = parseLine(lines[i]);
+      if(row.every(function(c){return !c.trim();})) continue;
+      csvData.push(row);
+    }
+
+    // Populate column selects
+    var selects = ['col-name','col-phone','col-isola','col-note'];
+    selects.forEach(function(selId){
+      var sel = id(selId);
+      var firstOpt = sel.options[0].outerHTML;
+      sel.innerHTML = firstOpt;
+      csvHeaders.forEach(function(h,i){
+        var opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = h || ('Colonna '+i);
+        sel.appendChild(opt);
+      });
+    });
+
+    // Auto-detect common column names
+    function autoDetect(sel, keywords) {
+      for(var k=0;k<keywords.length;k++){
+        for(var i=0;i<csvHeaders.length;i++){
+          if(csvHeaders[i].toLowerCase().indexOf(keywords[k].toLowerCase())>=0){
+            id(sel).value = i;
+            return;
+          }
+        }
+      }
+    }
+    autoDetect('col-name', ['full name','full_name','nome','name','nominativo']);
+    autoDetect('col-phone', ['phone','telefono','tel','mobile','cell']);
+    autoDetect('col-isola', ['isola','in_che_isola','island','luogo','location','city','citt']);
+    autoDetect('col-note', ['note','message','messaggio','commento']);
+
+    // Update file info
+    id('csv-filename').textContent = file.name;
+    id('csv-rows').textContent = csvData.length;
+
+    // Show step 1
+    id('csv-step1').classList.remove('hidden');
+    id('csv-step2').classList.add('hidden');
+    id('csv-back-btn').style.display = 'none';
+    id('csv-import-btn').style.display = 'none';
+    id('csv-overlay').classList.remove('hidden');
+  };
+  reader.readAsText(file, 'UTF-8');
+};
+
+window.showImportPreview = function() {
+  var iName  = id('col-name').value;
+  var iPhone = id('col-phone').value;
+  var iIsola = id('col-isola').value;
+  var iNote  = id('col-note').value;
+
+  if(iName === ''){alert('Seleziona la colonna Nome.');return;}
+
+  // Build preview leads
+  var leads = csvData.map(function(row){
+    return {
+      name:  (row[iName]||'').replace(/"/g,'').trim(),
+      phone: iPhone!=='' ? (row[iPhone]||'').replace(/"/g,'').trim() : '',
+      isola: iIsola!=='' ? (row[iIsola]||'').replace(/"/g,'').trim() : '',
+      note:  iNote!==''  ? (row[iNote]||'').replace(/"/g,'').trim() : '',
+    };
+  }).filter(function(l){return l.name;});
+
+  if(!leads.length){alert('Nessun lead con nome trovato. Controlla la colonna selezionata.');return;}
+
+  // Check duplicates
+  var existingNames = new Set(prospects.map(function(p){return(p.name||'').toLowerCase();}));
+  var newLeads  = leads.filter(function(l){return !existingNames.has(l.name.toLowerCase());});
+  var dupLeads  = leads.filter(function(l){return  existingNames.has(l.name.toLowerCase());});
+
+  // Build preview table (first 10 rows)
+  var preview = leads.slice(0,10);
+  var tableHTML = '<thead><tr><th>#</th><th>Nome</th><th>Telefono</th><th>Isola / Luogo</th><th>Note</th><th>Stato</th></tr></thead><tbody>';
+  preview.forEach(function(l,i){
+    var isDup = existingNames.has(l.name.toLowerCase());
+    tableHTML += '<tr>' +
+      '<td style="color:var(--text3);">'+(i+1)+'</td>' +
+      '<td style="font-weight:500;'+(isDup?'color:var(--amber)':'')+'">'+x(l.name)+'</td>' +
+      '<td>'+x(l.phone||'—')+'</td>' +
+      '<td>'+x(l.isola||'—')+'</td>' +
+      '<td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+x(l.note||'—')+'</td>' +
+      '<td>'+(isDup?'<span style="color:var(--amber);font-size:10px;">GIA PRESENTE</span>':'<span style="color:var(--green);font-size:10px;">NUOVO</span>')+'</td>' +
+    '</tr>';
+  });
+  if(leads.length > 10) tableHTML += '<tr><td colspan="6" style="text-align:center;color:var(--text3);font-size:11px;">... e altri '+(leads.length-10)+' lead</td></tr>';
+  tableHTML += '</tbody>';
+  id('csv-preview-table').innerHTML = tableHTML;
+
+  // Summary
+  id('csv-preview-info').innerHTML =
+    '<strong>'+leads.length+'</strong> lead totali &nbsp;·&nbsp; '+
+    '<span style="color:var(--green)"><strong>'+newLeads.length+'</strong> nuovi</span> &nbsp;·&nbsp; '+
+    '<span style="color:var(--amber)"><strong>'+dupLeads.length+'</strong> già presenti (verranno saltati)</span>';
+
+  // Dup warning
+  if(dupLeads.length > 0) {
+    id('csv-dup-warn').textContent = '⚠️ '+dupLeads.length+' prospect sono già presenti nella lista e verranno saltati automaticamente.';
+    id('csv-dup-warn').classList.remove('hidden');
+  } else {
+    id('csv-dup-warn').classList.add('hidden');
+  }
+
+  // Store leads for import
+  window._pendingLeads = newLeads;
+
+  id('csv-step2').classList.remove('hidden');
+  id('csv-back-btn').style.display = 'inline-flex';
+  id('csv-import-btn').style.display = 'inline-flex';
+};
+
+window.backToMapping = function() {
+  id('csv-step2').classList.add('hidden');
+  id('csv-back-btn').style.display = 'none';
+  id('csv-import-btn').style.display = 'none';
+};
+
+window.closeImportModal = function() {
+  id('csv-overlay').classList.add('hidden');
+  csvData = []; csvHeaders = [];
+  window._pendingLeads = null;
+};
+
+window.executeImport = async function() {
+  var leads = window._pendingLeads;
+  if(!leads || !leads.length){alert('Nessun nuovo lead da importare.');return;}
+
+  var btn = id('csv-import-btn');
+  btn.textContent = 'Importazione...';
+  btn.disabled = true;
+
+  var batchId = 'import_'+Date.now();
+  var imported = 0;
+  var importedIds = [];
+
+  for(var j=0;j<leads.length;j++){
+    var lead = leads[j];
+    try{
+      var ref = await addDoc(collection(db,'prospects'),{
+        name:lead.name, phone:lead.phone||'',
+        channel:'Facebook Ads',
+        note: [lead.isola?'Isola: '+lead.isola:'', lead.note].filter(Boolean).join(' — '),
+        country:'', provincia:'',
+        uid:cUser.uid,
+        userName:cData?cData.name||cUser.email:cUser.email,
+        presentation:false, followUps:[false,false,false,false],
+        payment:false, iscritto:false, contattato:false,
+        createdAt:serverTimestamp(), lastCheckAt:null,
+        _insertedAt:Date.now(),
+        _importBatch:batchId
+      });
+      importedIds.push(ref.id);
+      imported++;
+    }catch(e){console.warn('Error importing:',lead.name,e);}
+  }
+
+  lastImportBatch = {batchId:batchId, ids:importedIds, count:imported};
+  closeImportModal();
+
+  // Show undo option
+  var undoDiv = document.createElement('div');
+  undoDiv.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;background:var(--surface);border:.5px solid var(--border2);border-radius:10px;padding:.875rem 1.25rem;font-size:13px;display:flex;align-items:center;gap:12px;z-index:200;box-shadow:var(--shadow);';
+  undoDiv.innerHTML = '✅ Importati <strong>'+imported+'</strong> prospect da Facebook Ads &nbsp;'+
+    '<button onclick="undoImport()" style="padding:5px 12px;background:var(--red-dim);color:var(--red);border:.5px solid var(--red);border-radius:6px;font-size:12px;cursor:pointer;font-family:var(--font);">↩ Annulla importazione</button>';
+  document.body.appendChild(undoDiv);
+  setTimeout(function(){if(undoDiv.parentNode)undoDiv.parentNode.removeChild(undoDiv);}, 12000);
+
+  btn.textContent = '✅ Importa prospect';
+  btn.disabled = false;
+};
+
+window.undoImport = async function() {
+  if(!lastImportBatch){alert('Nessuna importazione recente da annullare.');return;}
+  if(!confirm('Eliminare i '+lastImportBatch.count+' prospect importati ora?')) return;
+  var deleted = 0;
+  for(var i=0;i<lastImportBatch.ids.length;i++){
+    try{
+      await deleteDoc(doc(db,'prospects',lastImportBatch.ids[i]));
+      deleted++;
+    }catch(e){console.warn('Could not delete',lastImportBatch.ids[i]);}
+  }
+  lastImportBatch = null;
+  alert('Annullata importazione: eliminati '+deleted+' prospect.');
+};
+
+
+// ── BULK SELECTION ──
+window.toggleSelectAll = function(cb) {
+  document.querySelectorAll('.row-check').forEach(function(c){c.checked=cb.checked;});
+  updateBulkBar();
+};
+
+window.updateBulkBar = function() {
+  var checked = document.querySelectorAll('.row-check:checked');
+  var bar = id('bulk-bar');
+  var countEl = id('bulk-count');
+  if(checked.length > 0) {
+    bar.style.display = 'flex';
+    countEl.textContent = checked.length + ' selezionat'+(checked.length===1?'o':'i');
+  } else {
+    bar.style.display = 'none';
+  }
+  // Update select-all state
+  var all = document.querySelectorAll('.row-check');
+  var selAll = id('select-all');
+  if(selAll) {
+    selAll.indeterminate = checked.length>0 && checked.length<all.length;
+    selAll.checked = checked.length>0 && checked.length===all.length;
+  }
+};
+
+window.clearSelection = function() {
+  document.querySelectorAll('.row-check').forEach(function(c){c.checked=false;});
+  var selAll = id('select-all');
+  if(selAll){selAll.checked=false;selAll.indeterminate=false;}
+  updateBulkBar();
+};
+
+window.selectByChannel = function(channel) {
+  document.querySelectorAll('.row-check').forEach(function(cb){
+    var pid = cb.value;
+    var p = prospects.find(function(p){return p.id===pid;});
+    if(!p) return;
+    if(channel==='') {
+      cb.checked = true; // select all visible
+    } else {
+      cb.checked = (p.channel||'')=== channel;
+    }
+  });
+  updateBulkBar();
+};
+
+window.deleteSelected = async function() {
+  var checked = Array.from(document.querySelectorAll('.row-check:checked')).map(function(c){return c.value;});
+  if(!checked.length) return;
+  if(!confirm('Eliminare definitivamente '+checked.length+' prospect selezionati? Azione non reversibile.')) return;
+  var deleted = 0;
+  for(var i=0;i<checked.length;i++){
+    try{
+      await deleteDoc(doc(db,'prospects',checked[i]));
+      deleted++;
+    }catch(e){console.warn('Could not delete',checked[i],e);}
+  }
+  clearSelection();
+  // prospects list updates via onSnapshot automatically
+  if(deleted < checked.length) {
+    alert('Eliminati '+deleted+' su '+checked.length+'. Alcuni potrebbero non essere stati rimossi.');
+  }
+};
 
 window.setFilter = (btn,f) => {
   pFilter=f;
@@ -1585,5 +2203,219 @@ function errMsg(code){
   return msgs[code]||('Errore: '+code);
 }
 </script>
+
+<!-- CSV IMPORT MODAL -->
+<div id="import-overlay" class="overlay hidden">
+  <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto;">
+    <div class="modal-title">📥 Importa lead da Facebook Ads</div>
+
+    <div id="import-step1">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:1rem;line-height:1.6;">
+        Seleziona quale colonna corrisponde a ogni campo. Il menu mostra anche un esempio del contenuto.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.25rem;">
+        <div><div style="font-size:10px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Nome *</div>
+          <select id="map-name" style="width:100%;padding:7px 10px;background:var(--surface2);border:.5px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;"></select></div>
+        <div><div style="font-size:10px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Telefono</div>
+          <select id="map-phone" style="width:100%;padding:7px 10px;background:var(--surface2);border:.5px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;"></select></div>
+        <div><div style="font-size:10px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Luogo / Isola</div>
+          <select id="map-location" style="width:100%;padding:7px 10px;background:var(--surface2);border:.5px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;"></select></div>
+        <div><div style="font-size:10px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Note</div>
+          <select id="map-note" style="width:100%;padding:7px 10px;background:var(--surface2);border:.5px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;"></select></div>
+      </div>
+      <button onclick="previewImport()" class="btn-save" style="width:100%;padding:9px;">Anteprima →</button>
+    </div>
+
+    <div id="import-step2" class="hidden">
+      <div id="import-summary" style="font-size:12px;color:var(--text2);margin-bottom:.875rem;padding:8px 12px;background:var(--surface2);border-radius:7px;line-height:1.8;"></div>
+      <div style="max-height:220px;overflow-y:auto;border:.5px solid var(--border);border-radius:8px;margin-bottom:1rem;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:400px;">
+          <thead><tr id="import-preview-head" style="background:var(--surface2);position:sticky;top:0;"></tr></thead>
+          <tbody id="import-preview-body"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="backImport()" class="btn-cancel">← Indietro</button>
+        <button onclick="confirmImport()" class="btn-save" style="flex:1;">✓ Importa tutti</button>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;padding-top:.875rem;border-top:.5px solid var(--border);">
+      <button onclick="closeImportModal()" class="btn-cancel">Chiudi</button>
+      <button onclick="undoLastImport()" style="padding:6px 12px;border:.5px solid var(--red-dim);border-radius:6px;background:transparent;color:var(--red);font-size:12px;cursor:pointer;font-family:var(--font);">↩ Annulla ultima importazione</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
+// ── CSV IMPORT STATE ──
+var _csvHeaders = [];
+var _csvRows = [];
+var _lastImportIds = [];
+
+var IMPORT_FIELDS = [
+  {key:'name',    label:'Nome *',     required:true},
+  {key:'phone',   label:'Telefono',   required:false},
+  {key:'note',    label:'Note',       required:false},
+  {key:'country', label:'Paese',      required:false},
+  {key:'isola',   label:'Isola/Luogo',required:false},
+];
+
+window.openImportModal = async function(input) {
+  var file = input.files[0];
+  if(!file) return;
+  input.value = '';
+
+  var text = await file.text();
+  var lines = text.split('
+').filter(function(l){return l.trim();});
+  if(lines.length < 2){alert('File CSV vuoto o non valido.');return;}
+
+  function parseCSVLine(line){
+    var result=[],inQuote=false,field='';
+    for(var i=0;i<line.length;i++){
+      var ch=line[i];
+      if(ch==='"'&&!inQuote){inQuote=true;}
+      else if(ch==='"'&&inQuote){inQuote=false;}
+      else if(ch===','&&!inQuote){result.push(field.trim().replace(/^"|"$/g,''));field='';}
+      else{field+=ch;}
+    }
+    result.push(field.trim().replace(/^"|"$/g,''));
+    return result;
+  }
+
+  _csvHeaders = parseCSVLine(lines[0]).map(function(h){return h.replace(/"/g,'').trim();});
+  _csvRows = [];
+  for(var i=1;i<lines.length;i++){
+    var row = parseCSVLine(lines[i]);
+    if(row.some(function(v){return v.trim();})) _csvRows.push(row);
+  }
+
+  // Build mapping UI
+  var mapEl = id('import-mapping');
+  mapEl.innerHTML = '';
+  IMPORT_FIELDS.forEach(function(field){
+    var row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:140px 1fr;gap:8px;align-items:center;';
+    var lbl = document.createElement('div');
+    lbl.style.cssText = 'font-size:12px;font-weight:500;color:var(--text2);';
+    lbl.textContent = field.label;
+    var sel = document.createElement('select');
+    sel.id = 'map-'+field.key;
+    sel.style.cssText = 'padding:6px 10px;background:var(--surface2);border:.5px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);';
+    sel.innerHTML = '<option value="">— Ignora —</option>' +
+      _csvHeaders.map(function(h,i){
+        // Auto-detect best match
+        var hl = h.toLowerCase();
+        var autoSelect = false;
+        if(field.key==='name' && (hl.includes('full name')||hl.includes('full_name')||hl==='nome'||hl==='name')) autoSelect=true;
+        if(field.key==='phone' && (hl.includes('phone')||hl.includes('telefono')||hl.includes('tel')||hl.includes('mobile'))) autoSelect=true;
+        if(field.key==='isola' && (hl.includes('isola')||hl.includes('island')||hl.includes('in_che_isola')||hl.includes('luogo'))) autoSelect=true;
+        if(field.key==='note' && (hl.includes('note')||hl.includes('commento'))) autoSelect=true;
+        if(field.key==='country' && (hl.includes('country')||hl.includes('paese')||hl.includes('nation'))) autoSelect=true;
+        return '<option value="'+i+'"'+(autoSelect?' selected':'')+'>'+h+'</option>';
+      }).join('');
+    row.appendChild(lbl);
+    row.appendChild(sel);
+    mapEl.appendChild(row);
+  });
+
+  // Preview
+  var prev = id('import-preview');
+  var previewRows = _csvRows.slice(0,3);
+  prev.innerHTML = '<table style="border-collapse:collapse;min-width:100%;">'+
+    '<tr>'+_csvHeaders.map(function(h){return '<th style="padding:3px 8px;border:.5px solid var(--border);background:var(--surface);text-align:left;font-size:10px;color:var(--text3);">'+x(h)+'</th>';}).join('')+'</tr>'+
+    previewRows.map(function(row){
+      return '<tr>'+_csvHeaders.map(function(_,i){
+        return '<td style="padding:3px 8px;border:.5px solid var(--border);font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+x(row[i]||'')+'</td>';
+      }).join('')+'</tr>';
+    }).join('')+
+  '</table>';
+
+  id('import-count').textContent = _csvRows.length + ' righe trovate nel file.';
+  id('import-step1').classList.remove('hidden');
+  id('import-step2').classList.add('hidden');
+  id('import-overlay').classList.remove('hidden');
+};
+
+window.closeImportModal = function() {
+  id('import-overlay').classList.add('hidden');
+  _csvHeaders = []; _csvRows = [];
+};
+
+window.runImport = async function() {
+  var nameIdx = parseInt(id('map-name')?.value);
+  if(isNaN(nameIdx)||nameIdx===''){alert('Seleziona la colonna per il Nome — è obbligatoria.');return;}
+
+  var getIdx = function(key){
+    var v = id('map-'+key)?.value;
+    return (v!==null&&v!==undefined&&v!=='') ? parseInt(v) : -1;
+  };
+
+  var phoneIdx  = getIdx('phone');
+  var noteIdx   = getIdx('note');
+  var countryIdx= getIdx('country');
+  var isolaIdx  = getIdx('isola');
+
+  // Check duplicates by name
+  var existingNames = new Set(prospects.map(function(p){return(p.name||'').toLowerCase().trim();}));
+  var toImport = _csvRows.filter(function(row){
+    var name = (row[nameIdx]||'').trim();
+    return name && !existingNames.has(name.toLowerCase());
+  });
+  var skipped = _csvRows.length - toImport.length;
+
+  if(!toImport.length){
+    alert('Nessun nuovo lead da importare — tutti i nomi sono già presenti nella lista.');
+    return;
+  }
+
+  if(!confirm(toImport.length+' nuovi prospect da importare.'+(skipped>0?' ('+skipped+' già presenti, saltati)':'')+'.
+
+Continuare?')) return;
+
+  _lastImportIds = [];
+  var imported = 0;
+  for(var i=0;i<toImport.length;i++){
+    var row = toImport[i];
+    var name  = (row[nameIdx]||'').trim();
+    var phone = phoneIdx>=0 ? (row[phoneIdx]||'').trim() : '';
+    var note  = noteIdx>=0  ? (row[noteIdx]||'').trim()  : '';
+    var country = countryIdx>=0 ? (row[countryIdx]||'').trim() : '';
+    var isola = isolaIdx>=0 ? (row[isolaIdx]||'').trim() : '';
+    if(isola) note = (note ? note+' — ' : '')+'Isola: '+isola;
+    try{
+      var ref = await addDoc(collection(db,'prospects'),{
+        name:name, phone:phone, note:note, country:country,
+        channel:'Facebook Ads', provincia:'',
+        uid:cUser.uid, userName:cData?cData.name||cUser.email:cUser.email,
+        presentation:false, followUps:[false,false,false,false],
+        payment:false, iscritto:false, contattato:false,
+        createdAt:serverTimestamp(), lastCheckAt:null, _insertedAt:Date.now()
+      });
+      _lastImportIds.push(ref.id);
+      imported++;
+    }catch(e){console.warn('Import error:',name,e);}
+  }
+
+  id('import-result-title').textContent = 'Importati '+imported+' prospect!';
+  id('import-result-sub').textContent = (skipped>0?skipped+' duplicati saltati. ':'')+'Puoi annullare l'importazione se necessario.';
+  id('import-step1').classList.add('hidden');
+  id('import-step2').classList.remove('hidden');
+};
+
+window.undoImport = async function() {
+  if(!_lastImportIds.length){alert('Nessuna importazione da annullare.');return;}
+  if(!confirm('Eliminare i '+_lastImportIds.length+' prospect appena importati?')) return;
+  var deleted=0;
+  for(var i=0;i<_lastImportIds.length;i++){
+    try{await deleteDoc(doc(db,'prospects',_lastImportIds[i]));deleted++;}
+    catch(e){console.warn('Could not delete',_lastImportIds[i],e);}
+  }
+  _lastImportIds=[];
+  alert('Annullati '+deleted+' prospect importati.');
+  closeImportModal();
+};
+
+
