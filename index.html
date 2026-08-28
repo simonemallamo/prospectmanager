@@ -632,6 +632,42 @@ td{padding:9px 13px;vertical-align:middle;}
   </div>
 </div>
 
+
+<!-- Member detail side panel -->
+<div id="member-overlay" onclick="closeMemberDetail()" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:199;display:none;"></div>
+<div id="member-detail" class="member-detail">
+  <div class="member-detail-head">
+    <div id="md-av" style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;flex-shrink:0;"></div>
+    <div>
+      <div id="md-name" style="font-weight:600;font-size:15px;"></div>
+      <div id="md-role" style="font-size:11px;color:var(--text3);margin-top:2px;"></div>
+    </div>
+    <button onclick="closeMemberDetail()" style="margin-left:auto;background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;">✕</button>
+  </div>
+  <div class="member-detail-body">
+    <div class="detail-stat">
+      <div class="detail-stat-title">Ultimi 7 giorni</div>
+      <div class="detail-nums">
+        <div class="detail-num"><div class="detail-num-val" id="md-wk-new" style="color:var(--green)">—</div><div class="detail-num-lbl">Nuovi</div></div>
+        <div class="detail-num"><div class="detail-num-val" id="md-wk-pres" style="color:var(--blue)">—</div><div class="detail-num-lbl">Presentaz.</div></div>
+        <div class="detail-num"><div class="detail-num-val" id="md-wk-pay" style="color:var(--amber)">—</div><div class="detail-num-lbl">Attesa pag.</div></div>
+      </div>
+    </div>
+    <div class="detail-stat">
+      <div class="detail-stat-title">Totale</div>
+      <div class="detail-nums">
+        <div class="detail-num"><div class="detail-num-val" id="md-tot-pros" style="color:var(--gold)">—</div><div class="detail-num-lbl">Prospect</div></div>
+        <div class="detail-num"><div class="detail-num-val" id="md-tot-pres" style="color:var(--blue)">—</div><div class="detail-num-lbl">Presentaz.</div></div>
+        <div class="detail-num"><div class="detail-num-val" id="md-tot-fu" style="color:var(--green)">—</div><div class="detail-num-lbl">FU completi</div></div>
+      </div>
+    </div>
+    <div class="detail-stat">
+      <div class="detail-stat-title">Prospect aggiunti questa settimana</div>
+      <div id="md-prospect-list" style="margin-top:4px;"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ FIREBASE ══ -->
 <script type="module">
 import { initializeApp }        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -1062,6 +1098,62 @@ window.sortBy = col => {
     if (arrow) arrow.textContent = k === col ? (sortDir === 'asc' ? '↑' : '↓') : '↕';
   });
   renderTable();
+};
+
+
+window.openMemberDetail = function(uid) {
+  var m = (window._cachedUs||[]).find(function(u){return u.id===uid;});
+  if(!m) return;
+  var ps = (window._cachedPs||[]);
+  var wk = window._cachedWk || (Date.now()-7*86400000);
+  var mp = ps.filter(function(p){return p.uid===uid;});
+  var mpWk = mp.filter(function(p){return (p.createdAt&&p.createdAt.toMillis?p.createdAt.toMillis():0)>=wk;});
+
+  var ini = (m.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
+  var colors = ['rgba(201,168,76,.2)','rgba(74,156,240,.2)','rgba(74,240,154,.2)'];
+  var cIdx = uid.charCodeAt(0)%3;
+
+  id('md-av').style.background = colors[cIdx];
+  id('md-av').textContent = ini;
+  id('md-name').textContent = m.name||'—';
+  id('md-role').textContent = (m.role==='leader'?'👑 Team Leader':'Membro')+(m.userNumber?' · #'+m.userNumber:'');
+
+  id('md-wk-new').textContent = mpWk.length;
+  id('md-wk-pres').textContent = mpWk.filter(function(p){return p.presentation;}).length;
+  id('md-wk-pay').textContent = mp.filter(function(p){return p.payment;}).length;
+  id('md-tot-pros').textContent = mp.length;
+  id('md-tot-pres').textContent = mp.filter(function(p){return p.presentation;}).length;
+  id('md-tot-fu').textContent = mp.filter(function(p){return (p.followUps||[]).filter(Boolean).length===4;}).length;
+
+  var listEl = id('md-prospect-list');
+  if(mpWk.length===0){
+    listEl.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:.5rem 0;">Nessun prospect aggiunto questa settimana.</div>';
+  } else {
+    listEl.innerHTML = mpWk.map(function(p){
+      var days = Math.floor((Date.now()-(p._insertedAt||0))/86400000);
+      return '<div class="detail-prospect-row"><span>'+x(p.name||'—')+'</span>'+
+        '<span style="color:var(--text3);font-size:11px;">'+days+'g fa'+(p.presentation?' · 📋':'')+(p.payment?' · ⏳':'')+'</span></div>';
+    }).join('');
+  }
+
+  id('member-overlay').style.display = 'block';
+  id('member-detail').classList.add('open');
+};
+
+window.closeMemberDetail = function() {
+  id('member-overlay').style.display = 'none';
+  id('member-detail').classList.remove('open');
+};
+
+window.toggleHideMember = function(uid, evt) {
+  evt.stopPropagation();
+  if(hiddenMembers.has(uid)){
+    hiddenMembers.delete(uid);
+  } else {
+    hiddenMembers.add(uid);
+  }
+  localStorage.setItem('hiddenMembers', JSON.stringify(Array.from(hiddenMembers)));
+  renderTeamDashboard();
 };
 
 window.setLeg = async (uid, leg, btn) => {
@@ -1740,8 +1832,10 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
     const levelColor=level===1?'var(--accent)':level===2?'var(--blue)':'var(--text3)';
     const roleIcon=m.role==='leader'?'👑 ':'';
     const legTag=m.leg?`<span style="font-size:10px;padding:1px 5px;border-radius:8px;margin-left:4px;background:${m.leg==='right'?'var(--accent-dim)':'var(--blue-dim)'};color:${m.leg==='right'?'var(--accent)':'var(--blue)'};">${m.leg==='right'?'👉':'👈'}</span>`:'';
-    const el=document.createElement('div'); el.className='tc';
-    el.innerHTML=`<div class="tc-head"><div class="tc-av" style="background:${c.bg};color:${c.c}">${ini}</div><div><div class="tc-name">${roleIcon}${x(m.name)}${legTag}</div><div class="tc-role">${mp.length} prospect · <span style="color:${levelColor}">${levelLabel}</span></div></div>${mpWk.length?`<div class="wk-tag">+${mpWk.length} sett.</div>`:''}</div><div class="tc-nums"><div class="tc-num"><div class="tc-num-val" style="color:${c.c}">${mp.filter(p=>p.presentation).length}</div><div class="tc-num-lbl">Presentazioni</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="tc-num-lbl">Attesa pag.</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--green)">${mp.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length}</div><div class="tc-num-lbl">FU completi</div></div></div><div style="margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:var(--text3);">Gamba:</span><button onclick="setLeg('${m.id}','right',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='right'?'var(--accent)':'var(--border2)'};background:${m.leg==='right'?'var(--accent-dim)':'transparent'};color:${m.leg==='right'?'var(--accent)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👉 Destra</button><button onclick="setLeg('${m.id}','left',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='left'?'var(--blue)':'var(--border2)'};background:${m.leg==='left'?'var(--blue-dim)':'transparent'};color:${m.leg==='left'?'var(--blue)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👈 Sinistra</button>${m.leg?`<button onclick="setLeg('${m.id}','',this)" style="padding:3px 8px;border-radius:20px;border:.5px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">✕</button>`:''}</div>`;
+    const isHidden = hiddenMembers.has(m.id);
+    const el=document.createElement('div');
+    el.className='tc'+(isHidden?' tc-hidden':'');
+    el.innerHTML=`<div class="tc-head" style="cursor:pointer;" onclick="openMemberDetail('${m.id}')"><div class="tc-av" style="background:${c.bg};color:${c.c}">${ini}</div><div><div class="tc-name">${roleIcon}${x(m.name)}${legTag}</div><div class="tc-role">${mp.length} prospect · <span style="color:${levelColor}">${levelLabel}</span></div></div>${mpWk.length?`<div class="wk-tag">+${mpWk.length} sett.</div>`:''}</div><div class="tc-nums"><div class="tc-num"><div class="tc-num-val" style="color:${c.c}">${mp.filter(p=>p.presentation).length}</div><div class="tc-num-lbl">Presentazioni</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="tc-num-lbl">Attesa pag.</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--green)">${mp.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length}</div><div class="tc-num-lbl">FU completi</div></div></div><div class="tc-actions"><span style="font-size:11px;color:var(--text3);">Gamba:</span><button onclick="setLeg('${m.id}','right',this)" class="tc-action-btn" style="border-color:${m.leg==='right'?'var(--accent)':'var(--border2)'};background:${m.leg==='right'?'var(--accent-dim)':'transparent'};color:${m.leg==='right'?'var(--accent)':'var(--text2)'};">👉 Destra</button><button onclick="setLeg('${m.id}','left',this)" class="tc-action-btn" style="border-color:${m.leg==='left'?'var(--blue)':'var(--border2)'};background:${m.leg==='left'?'var(--blue-dim)':'transparent'};color:${m.leg==='left'?'var(--blue)':'var(--text2)'};">👈 Sinistra</button>${m.leg?`<button onclick="setLeg('${m.id}','',this)" class="tc-action-btn">✕</button>`:''}<button onclick="toggleHideMember('${m.id}',event)" class="tc-action-btn${isHidden?' danger':''}" style="margin-left:auto;">${isHidden?'👁 Mostra':'🙈 Nascondi'}</button></div>`;
     grid.appendChild(el);
   });
   if(!mdata.length) id('team-grid').innerHTML='<div class="empty">Nessun membro nel team. Condividi il tuo link di invito!</div>';
