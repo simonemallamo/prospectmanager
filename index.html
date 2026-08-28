@@ -633,41 +633,40 @@ td{padding:9px 13px;vertical-align:middle;}
 </div>
 
 
-<!-- Member detail side panel -->
-<div id="member-overlay" onclick="closeMemberDetail()" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:199;display:none;"></div>
+<!-- MEMBER DETAIL PANEL -->
+<div id="md-overlay" onclick="closeMemberDetail()" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:299;display:none;"></div>
 <div id="member-detail" class="member-detail">
-  <div class="member-detail-head">
-    <div id="md-av" style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;flex-shrink:0;"></div>
-    <div>
-      <div id="md-name" style="font-weight:600;font-size:15px;"></div>
-      <div id="md-role" style="font-size:11px;color:var(--text3);margin-top:2px;"></div>
+  <div class="md-head">
+    <div id="md-av" style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0;background:var(--gold-dim);color:var(--gold);"></div>
+    <div style="flex:1;min-width:0;">
+      <div id="md-name" style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+      <div id="md-meta" style="font-size:11px;color:var(--text3);margin-top:2px;"></div>
     </div>
-    <button onclick="closeMemberDetail()" style="margin-left:auto;background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;">✕</button>
+    <button onclick="closeMemberDetail()" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;line-height:1;padding:2px 4px;flex-shrink:0;">✕</button>
   </div>
-  <div class="member-detail-body">
-    <div class="detail-stat">
-      <div class="detail-stat-title">Ultimi 7 giorni</div>
-      <div class="detail-nums">
-        <div class="detail-num"><div class="detail-num-val" id="md-wk-new" style="color:var(--green)">—</div><div class="detail-num-lbl">Nuovi</div></div>
-        <div class="detail-num"><div class="detail-num-val" id="md-wk-pres" style="color:var(--blue)">—</div><div class="detail-num-lbl">Presentaz.</div></div>
-        <div class="detail-num"><div class="detail-num-val" id="md-wk-pay" style="color:var(--amber)">—</div><div class="detail-num-lbl">Attesa pag.</div></div>
+  <div class="md-body">
+    <div class="md-stat">
+      <div class="md-stat-title">Ultimi 7 giorni</div>
+      <div class="md-nums">
+        <div style="text-align:center;"><div class="md-num-val" id="md-wk-new" style="color:var(--green);">—</div><div class="md-num-lbl">Nuovi</div></div>
+        <div style="text-align:center;"><div class="md-num-val" id="md-wk-pres" style="color:var(--blue);">—</div><div class="md-num-lbl">Presentaz.</div></div>
+        <div style="text-align:center;"><div class="md-num-val" id="md-wk-pay" style="color:var(--amber);">—</div><div class="md-num-lbl">Attesa pag.</div></div>
       </div>
     </div>
-    <div class="detail-stat">
-      <div class="detail-stat-title">Totale</div>
-      <div class="detail-nums">
-        <div class="detail-num"><div class="detail-num-val" id="md-tot-pros" style="color:var(--gold)">—</div><div class="detail-num-lbl">Prospect</div></div>
-        <div class="detail-num"><div class="detail-num-val" id="md-tot-pres" style="color:var(--blue)">—</div><div class="detail-num-lbl">Presentaz.</div></div>
-        <div class="detail-num"><div class="detail-num-val" id="md-tot-fu" style="color:var(--green)">—</div><div class="detail-num-lbl">FU completi</div></div>
+    <div class="md-stat">
+      <div class="md-stat-title">Totale</div>
+      <div class="md-nums">
+        <div style="text-align:center;"><div class="md-num-val" id="md-tot-pros" style="color:var(--gold);">—</div><div class="md-num-lbl">Prospect</div></div>
+        <div style="text-align:center;"><div class="md-num-val" id="md-tot-pres" style="color:var(--blue);">—</div><div class="md-num-lbl">Presentaz.</div></div>
+        <div style="text-align:center;"><div class="md-num-val" id="md-tot-fu" style="color:var(--green);">—</div><div class="md-num-lbl">FU completi</div></div>
       </div>
     </div>
-    <div class="detail-stat">
-      <div class="detail-stat-title">Prospect aggiunti questa settimana</div>
-      <div id="md-prospect-list" style="margin-top:4px;"></div>
+    <div class="md-stat">
+      <div class="md-stat-title">Aggiunti questa settimana</div>
+      <div id="md-list" style="margin-top:4px;"></div>
     </div>
   </div>
 </div>
-
 <!-- ══ FIREBASE ══ -->
 <script type="module">
 import { initializeApp }        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -1100,59 +1099,54 @@ window.sortBy = col => {
   renderTable();
 };
 
+var hiddenMembers = new Set();
+try { hiddenMembers = new Set(JSON.parse(localStorage.getItem('pm_hidden')||'[]')); } catch(e){}
 
 window.openMemberDetail = function(uid) {
-  var m = (window._cachedUs||[]).find(function(u){return u.id===uid;});
-  if(!m) return;
-  var ps = (window._cachedPs||[]);
+  var allUs = window._cachedUs || [];
+  var allPs = window._cachedPs || [];
   var wk = window._cachedWk || (Date.now()-7*86400000);
-  var mp = ps.filter(function(p){return p.uid===uid;});
-  var mpWk = mp.filter(function(p){return (p.createdAt&&p.createdAt.toMillis?p.createdAt.toMillis():0)>=wk;});
-
+  var m = allUs.find(function(u){return u.id===uid;});
+  if(!m) return;
+  var mp  = allPs.filter(function(p){return p.uid===uid;});
+  var mpWk = mp.filter(function(p){
+    var t = p.createdAt && p.createdAt.toMillis ? p.createdAt.toMillis() : (p._insertedAt||0);
+    return t >= wk;
+  });
   var ini = (m.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
-  var colors = ['rgba(201,168,76,.2)','rgba(74,156,240,.2)','rgba(74,240,154,.2)'];
-  var cIdx = uid.charCodeAt(0)%3;
-
-  id('md-av').style.background = colors[cIdx];
   id('md-av').textContent = ini;
   id('md-name').textContent = m.name||'—';
-  id('md-role').textContent = (m.role==='leader'?'👑 Team Leader':'Membro')+(m.userNumber?' · #'+m.userNumber:'');
-
-  id('md-wk-new').textContent = mpWk.length;
+  id('md-meta').textContent = (m.role==='leader'?'Team Leader':'Membro')+(m.userNumber?' · #'+m.userNumber:'')+(m.leg?' · '+(m.leg==='right'?'👉 Destra':'👈 Sinistra'):'');
+  id('md-wk-new').textContent  = mpWk.length;
   id('md-wk-pres').textContent = mpWk.filter(function(p){return p.presentation;}).length;
-  id('md-wk-pay').textContent = mp.filter(function(p){return p.payment;}).length;
+  id('md-wk-pay').textContent  = mp.filter(function(p){return p.payment;}).length;
   id('md-tot-pros').textContent = mp.length;
   id('md-tot-pres').textContent = mp.filter(function(p){return p.presentation;}).length;
-  id('md-tot-fu').textContent = mp.filter(function(p){return (p.followUps||[]).filter(Boolean).length===4;}).length;
-
-  var listEl = id('md-prospect-list');
-  if(mpWk.length===0){
-    listEl.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:.5rem 0;">Nessun prospect aggiunto questa settimana.</div>';
+  id('md-tot-fu').textContent   = mp.filter(function(p){return (p.followUps||[]).filter(Boolean).length===4;}).length;
+  var listEl = id('md-list');
+  if(!mpWk.length){
+    listEl.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:.5rem 0;">Nessun prospect questa settimana.</div>';
   } else {
-    listEl.innerHTML = mpWk.map(function(p){
-      var days = Math.floor((Date.now()-(p._insertedAt||0))/86400000);
-      return '<div class="detail-prospect-row"><span>'+x(p.name||'—')+'</span>'+
-        '<span style="color:var(--text3);font-size:11px;">'+days+'g fa'+(p.presentation?' · 📋':'')+(p.payment?' · ⏳':'')+'</span></div>';
-    }).join('');
+    listEl.innerHTML = mpWk.slice(0,12).map(function(p){
+      var t = p._insertedAt || (p.createdAt&&p.createdAt.toMillis?p.createdAt.toMillis():0);
+      var days = Math.floor((Date.now()-t)/86400000);
+      var icons = (p.presentation?'📋 ':'')+(p.payment?'⏳ ':'')+(p.iscritto?'✅ ':'');
+      return '<div class="md-prospect-row"><span style="font-weight:500;">'+x(p.name||'—')+'</span><span style="color:var(--text3);font-size:11px;">'+icons+(days===0?'oggi':days+'g fa')+'</span></div>';
+    }).join('') + (mpWk.length>12?'<div style="font-size:11px;color:var(--text3);padding:.5rem 0;">+altri '+(mpWk.length-12)+'</div>':'');
   }
-
-  id('member-overlay').style.display = 'block';
+  id('md-overlay').style.display = 'block';
   id('member-detail').classList.add('open');
 };
 
 window.closeMemberDetail = function() {
-  id('member-overlay').style.display = 'none';
+  id('md-overlay').style.display = 'none';
   id('member-detail').classList.remove('open');
 };
 
-window.toggleHideMember = function(uid, evt) {
-  evt.stopPropagation();
-  if(hiddenMembers.has(uid)){
-    hiddenMembers.delete(uid);
-  } else {
-    hiddenMembers.add(uid);
-  }
-  localStorage.setItem('hiddenMembers', JSON.stringify(Array.from(hiddenMembers)));
+window.toggleHideMember = function(uid) {
+  if(hiddenMembers.has(uid)) hiddenMembers.delete(uid);
+  else hiddenMembers.add(uid);
+  try { localStorage.setItem('pm_hidden', JSON.stringify(Array.from(hiddenMembers))); } catch(e){}
   renderTeamDashboard();
 };
 
@@ -1832,10 +1826,9 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
     const levelColor=level===1?'var(--accent)':level===2?'var(--blue)':'var(--text3)';
     const roleIcon=m.role==='leader'?'👑 ':'';
     const legTag=m.leg?`<span style="font-size:10px;padding:1px 5px;border-radius:8px;margin-left:4px;background:${m.leg==='right'?'var(--accent-dim)':'var(--blue-dim)'};color:${m.leg==='right'?'var(--accent)':'var(--blue)'};">${m.leg==='right'?'👉':'👈'}</span>`:'';
-    const isHidden = hiddenMembers.has(m.id);
-    const el=document.createElement('div');
-    el.className='tc'+(isHidden?' tc-hidden':'');
-    el.innerHTML=`<div class="tc-head" style="cursor:pointer;" onclick="openMemberDetail('${m.id}')"><div class="tc-av" style="background:${c.bg};color:${c.c}">${ini}</div><div><div class="tc-name">${roleIcon}${x(m.name)}${legTag}</div><div class="tc-role">${mp.length} prospect · <span style="color:${levelColor}">${levelLabel}</span></div></div>${mpWk.length?`<div class="wk-tag">+${mpWk.length} sett.</div>`:''}</div><div class="tc-nums"><div class="tc-num"><div class="tc-num-val" style="color:${c.c}">${mp.filter(p=>p.presentation).length}</div><div class="tc-num-lbl">Presentazioni</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="tc-num-lbl">Attesa pag.</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--green)">${mp.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length}</div><div class="tc-num-lbl">FU completi</div></div></div><div class="tc-actions"><span style="font-size:11px;color:var(--text3);">Gamba:</span><button onclick="setLeg('${m.id}','right',this)" class="tc-action-btn" style="border-color:${m.leg==='right'?'var(--accent)':'var(--border2)'};background:${m.leg==='right'?'var(--accent-dim)':'transparent'};color:${m.leg==='right'?'var(--accent)':'var(--text2)'};">👉 Destra</button><button onclick="setLeg('${m.id}','left',this)" class="tc-action-btn" style="border-color:${m.leg==='left'?'var(--blue)':'var(--border2)'};background:${m.leg==='left'?'var(--blue-dim)':'transparent'};color:${m.leg==='left'?'var(--blue)':'var(--text2)'};">👈 Sinistra</button>${m.leg?`<button onclick="setLeg('${m.id}','',this)" class="tc-action-btn">✕</button>`:''}<button onclick="toggleHideMember('${m.id}',event)" class="tc-action-btn${isHidden?' danger':''}" style="margin-left:auto;">${isHidden?'👁 Mostra':'🙈 Nascondi'}</button></div>`;
+    var isHid = hiddenMembers.has(m.id);
+    const el=document.createElement('div'); el.className='tc'+(isHid?' tc-hidden':'');
+    el.innerHTML=`<div class="tc-head" style="cursor:pointer;" onclick="openMemberDetail('${m.id}')"><div class="tc-av" style="background:${c.bg};color:${c.c}">${ini}</div><div><div class="tc-name">${roleIcon}${x(m.name)}${legTag}</div><div class="tc-role">${mp.length} prospect · <span style="color:${levelColor}">${levelLabel}</span></div></div>${mpWk.length?`<div class="wk-tag">+${mpWk.length} sett.</div>`:''}</div><div class="tc-nums"><div class="tc-num"><div class="tc-num-val" style="color:${c.c}">${mp.filter(p=>p.presentation).length}</div><div class="tc-num-lbl">Presentazioni</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="tc-num-lbl">Attesa pag.</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--green)">${mp.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length}</div><div class="tc-num-lbl">FU completi</div></div></div><div style="margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:var(--text3);">Gamba:</span><button onclick="event.stopPropagation();setLeg('${m.id}','right',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='right'?'var(--accent)':'var(--border2)'};background:${m.leg==='right'?'var(--accent-dim)':'transparent'};color:${m.leg==='right'?'var(--accent)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👉 Destra</button><button onclick="event.stopPropagation();setLeg('${m.id}','left',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='left'?'var(--blue)':'var(--border2)'};background:${m.leg==='left'?'var(--blue-dim)':'transparent'};color:${m.leg==='left'?'var(--blue)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👈 Sinistra</button>${m.leg?`<button onclick="event.stopPropagation();setLeg('${m.id}','',this)" style="padding:3px 8px;border-radius:20px;border:.5px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">✕</button>`:''}<button onclick="event.stopPropagation();toggleHideMember('${m.id}')" style="padding:3px 10px;border-radius:20px;border:.5px solid ${isHid?'var(--red)':'var(--border2)'};background:transparent;color:${isHid?'var(--red)':'var(--text3)'};font-size:10px;cursor:pointer;font-family:var(--font);margin-left:auto;">${isHid?'👁 Mostra':'🙈 Nascondi'}</button></div>`;
     grid.appendChild(el);
   });
   if(!mdata.length) id('team-grid').innerHTML='<div class="empty">Nessun membro nel team. Condividi il tuo link di invito!</div>';
@@ -2297,219 +2290,5 @@ function errMsg(code){
   return msgs[code]||('Errore: '+code);
 }
 </script>
-
-<!-- CSV IMPORT MODAL -->
-<div id="import-overlay" class="overlay hidden">
-  <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto;">
-    <div class="modal-title">📥 Importa lead da Facebook Ads</div>
-
-    <div id="import-step1">
-      <div style="font-size:12px;color:var(--text2);margin-bottom:1rem;line-height:1.6;">
-        Seleziona quale colonna corrisponde a ogni campo. Il menu mostra anche un esempio del contenuto.
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.25rem;">
-        <div><div style="font-size:10px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Nome *</div>
-          <select id="map-name" style="width:100%;padding:7px 10px;background:var(--surface2);border:.5px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;"></select></div>
-        <div><div style="font-size:10px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Telefono</div>
-          <select id="map-phone" style="width:100%;padding:7px 10px;background:var(--surface2);border:.5px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;"></select></div>
-        <div><div style="font-size:10px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Luogo / Isola</div>
-          <select id="map-location" style="width:100%;padding:7px 10px;background:var(--surface2);border:.5px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;"></select></div>
-        <div><div style="font-size:10px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Note</div>
-          <select id="map-note" style="width:100%;padding:7px 10px;background:var(--surface2);border:.5px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;"></select></div>
-      </div>
-      <button onclick="previewImport()" class="btn-save" style="width:100%;padding:9px;">Anteprima →</button>
-    </div>
-
-    <div id="import-step2" class="hidden">
-      <div id="import-summary" style="font-size:12px;color:var(--text2);margin-bottom:.875rem;padding:8px 12px;background:var(--surface2);border-radius:7px;line-height:1.8;"></div>
-      <div style="max-height:220px;overflow-y:auto;border:.5px solid var(--border);border-radius:8px;margin-bottom:1rem;">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:400px;">
-          <thead><tr id="import-preview-head" style="background:var(--surface2);position:sticky;top:0;"></tr></thead>
-          <tbody id="import-preview-body"></tbody>
-        </table>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button onclick="backImport()" class="btn-cancel">← Indietro</button>
-        <button onclick="confirmImport()" class="btn-save" style="flex:1;">✓ Importa tutti</button>
-      </div>
-    </div>
-
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;padding-top:.875rem;border-top:.5px solid var(--border);">
-      <button onclick="closeImportModal()" class="btn-cancel">Chiudi</button>
-      <button onclick="undoLastImport()" style="padding:6px 12px;border:.5px solid var(--red-dim);border-radius:6px;background:transparent;color:var(--red);font-size:12px;cursor:pointer;font-family:var(--font);">↩ Annulla ultima importazione</button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
-// ── CSV IMPORT STATE ──
-var _csvHeaders = [];
-var _csvRows = [];
-var _lastImportIds = [];
-
-var IMPORT_FIELDS = [
-  {key:'name',    label:'Nome *',     required:true},
-  {key:'phone',   label:'Telefono',   required:false},
-  {key:'note',    label:'Note',       required:false},
-  {key:'country', label:'Paese',      required:false},
-  {key:'isola',   label:'Isola/Luogo',required:false},
-];
-
-window.openImportModal = async function(input) {
-  var file = input.files[0];
-  if(!file) return;
-  input.value = '';
-
-  var text = await file.text();
-  var lines = text.split('
-').filter(function(l){return l.trim();});
-  if(lines.length < 2){alert('File CSV vuoto o non valido.');return;}
-
-  function parseCSVLine(line){
-    var result=[],inQuote=false,field='';
-    for(var i=0;i<line.length;i++){
-      var ch=line[i];
-      if(ch==='"'&&!inQuote){inQuote=true;}
-      else if(ch==='"'&&inQuote){inQuote=false;}
-      else if(ch===','&&!inQuote){result.push(field.trim().replace(/^"|"$/g,''));field='';}
-      else{field+=ch;}
-    }
-    result.push(field.trim().replace(/^"|"$/g,''));
-    return result;
-  }
-
-  _csvHeaders = parseCSVLine(lines[0]).map(function(h){return h.replace(/"/g,'').trim();});
-  _csvRows = [];
-  for(var i=1;i<lines.length;i++){
-    var row = parseCSVLine(lines[i]);
-    if(row.some(function(v){return v.trim();})) _csvRows.push(row);
-  }
-
-  // Build mapping UI
-  var mapEl = id('import-mapping');
-  mapEl.innerHTML = '';
-  IMPORT_FIELDS.forEach(function(field){
-    var row = document.createElement('div');
-    row.style.cssText = 'display:grid;grid-template-columns:140px 1fr;gap:8px;align-items:center;';
-    var lbl = document.createElement('div');
-    lbl.style.cssText = 'font-size:12px;font-weight:500;color:var(--text2);';
-    lbl.textContent = field.label;
-    var sel = document.createElement('select');
-    sel.id = 'map-'+field.key;
-    sel.style.cssText = 'padding:6px 10px;background:var(--surface2);border:.5px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);';
-    sel.innerHTML = '<option value="">— Ignora —</option>' +
-      _csvHeaders.map(function(h,i){
-        // Auto-detect best match
-        var hl = h.toLowerCase();
-        var autoSelect = false;
-        if(field.key==='name' && (hl.includes('full name')||hl.includes('full_name')||hl==='nome'||hl==='name')) autoSelect=true;
-        if(field.key==='phone' && (hl.includes('phone')||hl.includes('telefono')||hl.includes('tel')||hl.includes('mobile'))) autoSelect=true;
-        if(field.key==='isola' && (hl.includes('isola')||hl.includes('island')||hl.includes('in_che_isola')||hl.includes('luogo'))) autoSelect=true;
-        if(field.key==='note' && (hl.includes('note')||hl.includes('commento'))) autoSelect=true;
-        if(field.key==='country' && (hl.includes('country')||hl.includes('paese')||hl.includes('nation'))) autoSelect=true;
-        return '<option value="'+i+'"'+(autoSelect?' selected':'')+'>'+h+'</option>';
-      }).join('');
-    row.appendChild(lbl);
-    row.appendChild(sel);
-    mapEl.appendChild(row);
-  });
-
-  // Preview
-  var prev = id('import-preview');
-  var previewRows = _csvRows.slice(0,3);
-  prev.innerHTML = '<table style="border-collapse:collapse;min-width:100%;">'+
-    '<tr>'+_csvHeaders.map(function(h){return '<th style="padding:3px 8px;border:.5px solid var(--border);background:var(--surface);text-align:left;font-size:10px;color:var(--text3);">'+x(h)+'</th>';}).join('')+'</tr>'+
-    previewRows.map(function(row){
-      return '<tr>'+_csvHeaders.map(function(_,i){
-        return '<td style="padding:3px 8px;border:.5px solid var(--border);font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+x(row[i]||'')+'</td>';
-      }).join('')+'</tr>';
-    }).join('')+
-  '</table>';
-
-  id('import-count').textContent = _csvRows.length + ' righe trovate nel file.';
-  id('import-step1').classList.remove('hidden');
-  id('import-step2').classList.add('hidden');
-  id('import-overlay').classList.remove('hidden');
-};
-
-window.closeImportModal = function() {
-  id('import-overlay').classList.add('hidden');
-  _csvHeaders = []; _csvRows = [];
-};
-
-window.runImport = async function() {
-  var nameIdx = parseInt(id('map-name')?.value);
-  if(isNaN(nameIdx)||nameIdx===''){alert('Seleziona la colonna per il Nome — è obbligatoria.');return;}
-
-  var getIdx = function(key){
-    var v = id('map-'+key)?.value;
-    return (v!==null&&v!==undefined&&v!=='') ? parseInt(v) : -1;
-  };
-
-  var phoneIdx  = getIdx('phone');
-  var noteIdx   = getIdx('note');
-  var countryIdx= getIdx('country');
-  var isolaIdx  = getIdx('isola');
-
-  // Check duplicates by name
-  var existingNames = new Set(prospects.map(function(p){return(p.name||'').toLowerCase().trim();}));
-  var toImport = _csvRows.filter(function(row){
-    var name = (row[nameIdx]||'').trim();
-    return name && !existingNames.has(name.toLowerCase());
-  });
-  var skipped = _csvRows.length - toImport.length;
-
-  if(!toImport.length){
-    alert('Nessun nuovo lead da importare — tutti i nomi sono già presenti nella lista.');
-    return;
-  }
-
-  if(!confirm(toImport.length+' nuovi prospect da importare.'+(skipped>0?' ('+skipped+' già presenti, saltati)':'')+'.
-
-Continuare?')) return;
-
-  _lastImportIds = [];
-  var imported = 0;
-  for(var i=0;i<toImport.length;i++){
-    var row = toImport[i];
-    var name  = (row[nameIdx]||'').trim();
-    var phone = phoneIdx>=0 ? (row[phoneIdx]||'').trim() : '';
-    var note  = noteIdx>=0  ? (row[noteIdx]||'').trim()  : '';
-    var country = countryIdx>=0 ? (row[countryIdx]||'').trim() : '';
-    var isola = isolaIdx>=0 ? (row[isolaIdx]||'').trim() : '';
-    if(isola) note = (note ? note+' — ' : '')+'Isola: '+isola;
-    try{
-      var ref = await addDoc(collection(db,'prospects'),{
-        name:name, phone:phone, note:note, country:country,
-        channel:'Facebook Ads', provincia:'',
-        uid:cUser.uid, userName:cData?cData.name||cUser.email:cUser.email,
-        presentation:false, followUps:[false,false,false,false],
-        payment:false, iscritto:false, contattato:false,
-        createdAt:serverTimestamp(), lastCheckAt:null, _insertedAt:Date.now()
-      });
-      _lastImportIds.push(ref.id);
-      imported++;
-    }catch(e){console.warn('Import error:',name,e);}
-  }
-
-  id('import-result-title').textContent = 'Importati '+imported+' prospect!';
-  id('import-result-sub').textContent = (skipped>0?skipped+' duplicati saltati. ':'')+'Puoi annullare l'importazione se necessario.';
-  id('import-step1').classList.add('hidden');
-  id('import-step2').classList.remove('hidden');
-};
-
-window.undoImport = async function() {
-  if(!_lastImportIds.length){alert('Nessuna importazione da annullare.');return;}
-  if(!confirm('Eliminare i '+_lastImportIds.length+' prospect appena importati?')) return;
-  var deleted=0;
-  for(var i=0;i<_lastImportIds.length;i++){
-    try{await deleteDoc(doc(db,'prospects',_lastImportIds[i]));deleted++;}
-    catch(e){console.warn('Could not delete',_lastImportIds[i],e);}
-  }
-  _lastImportIds=[];
-  alert('Annullati '+deleted+' prospect importati.');
-  closeImportModal();
-};
-
-
