@@ -387,11 +387,24 @@ td{padding:9px 13px;vertical-align:middle;}
       </div>
       <div id="binary-view" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem;"></div>
 
+      <!-- Member detail card -->
+      <div id="member-detail" class="md-card"></div>
+
       <!-- Members grid -->
       <div class="dash-title">Tutti i membri</div>
       <div class="team-grid" id="team-grid"></div>
       <div class="dash-title" style="margin-top:1rem;">Ranking nuovi prospect (settimana)</div>
       <div class="rank-table" id="rank-table"></div>
+
+      <!-- Hidden members panel -->
+      <div id="hidden-members-section" style="display:none;margin-top:1.5rem;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:.75rem;">
+          <div class="dash-title" style="margin:0;">Membri disattivati</div>
+          <span id="hidden-count-badge" style="background:var(--surface2);border:.5px solid var(--border2);border-radius:20px;padding:2px 8px;font-size:11px;color:var(--text3);"></span>
+        </div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:.875rem;">Questi membri non appaiono nelle statistiche né nella griglia. Clicca "Riattiva" per includerli di nuovo.</div>
+        <div id="hidden-members-grid" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
     </div>
 
     <!-- ADMIN -->
@@ -633,40 +646,6 @@ td{padding:9px 13px;vertical-align:middle;}
 </div>
 
 
-<!-- MEMBER DETAIL PANEL -->
-<div id="md-overlay" onclick="closeMemberDetail()" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:299;display:none;"></div>
-<div id="member-detail" class="member-detail">
-  <div class="md-head">
-    <div id="md-av" style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0;background:var(--gold-dim);color:var(--gold);"></div>
-    <div style="flex:1;min-width:0;">
-      <div id="md-name" style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-      <div id="md-meta" style="font-size:11px;color:var(--text3);margin-top:2px;"></div>
-    </div>
-    <button onclick="closeMemberDetail()" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;line-height:1;padding:2px 4px;flex-shrink:0;">✕</button>
-  </div>
-  <div class="md-body">
-    <div class="md-stat">
-      <div class="md-stat-title">Ultimi 7 giorni</div>
-      <div class="md-nums">
-        <div style="text-align:center;"><div class="md-num-val" id="md-wk-new" style="color:var(--green);">—</div><div class="md-num-lbl">Nuovi</div></div>
-        <div style="text-align:center;"><div class="md-num-val" id="md-wk-pres" style="color:var(--blue);">—</div><div class="md-num-lbl">Presentaz.</div></div>
-        <div style="text-align:center;"><div class="md-num-val" id="md-wk-pay" style="color:var(--amber);">—</div><div class="md-num-lbl">Attesa pag.</div></div>
-      </div>
-    </div>
-    <div class="md-stat">
-      <div class="md-stat-title">Totale</div>
-      <div class="md-nums">
-        <div style="text-align:center;"><div class="md-num-val" id="md-tot-pros" style="color:var(--gold);">—</div><div class="md-num-lbl">Prospect</div></div>
-        <div style="text-align:center;"><div class="md-num-val" id="md-tot-pres" style="color:var(--blue);">—</div><div class="md-num-lbl">Presentaz.</div></div>
-        <div style="text-align:center;"><div class="md-num-val" id="md-tot-fu" style="color:var(--green);">—</div><div class="md-num-lbl">FU completi</div></div>
-      </div>
-    </div>
-    <div class="md-stat">
-      <div class="md-stat-title">Aggiunti questa settimana</div>
-      <div id="md-list" style="margin-top:4px;"></div>
-    </div>
-  </div>
-</div>
 <!-- ══ FIREBASE ══ -->
 <script type="module">
 import { initializeApp }        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -1108,38 +1087,63 @@ window.openMemberDetail = function(uid) {
   var wk = window._cachedWk || (Date.now()-7*86400000);
   var m = allUs.find(function(u){return u.id===uid;});
   if(!m) return;
-  var mp  = allPs.filter(function(p){return p.uid===uid;});
+  var mp   = allPs.filter(function(p){return p.uid===uid;});
   var mpWk = mp.filter(function(p){
-    var t = p.createdAt && p.createdAt.toMillis ? p.createdAt.toMillis() : (p._insertedAt||0);
+    var t = p.createdAt&&p.createdAt.toMillis ? p.createdAt.toMillis() : (p._insertedAt||0);
     return t >= wk;
   });
   var ini = (m.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
-  id('md-av').textContent = ini;
+  var colors = [
+    {bg:'rgba(201,168,76,.18)',c:'var(--accent)'},
+    {bg:'rgba(74,156,240,.18)',c:'var(--blue)'},
+    {bg:'rgba(74,240,154,.18)',c:'var(--green)'},
+    {bg:'rgba(180,74,240,.18)',c:'#b44af0'},
+    {bg:'rgba(240,90,74,.18)',c:'var(--red)'},
+  ];
+  var col = colors[uid.charCodeAt(0)%colors.length];
+  var avEl = id('md-av');
+  avEl.textContent = ini;
+  avEl.style.background = col.bg;
+  avEl.style.color = col.c;
   id('md-name').textContent = m.name||'—';
-  id('md-meta').textContent = (m.role==='leader'?'Team Leader':'Membro')+(m.userNumber?' · #'+m.userNumber:'')+(m.leg?' · '+(m.leg==='right'?'👉 Destra':'👈 Sinistra'):'');
-  id('md-wk-new').textContent  = mpWk.length;
-  id('md-wk-pres').textContent = mpWk.filter(function(p){return p.presentation;}).length;
-  id('md-wk-pay').textContent  = mp.filter(function(p){return p.payment;}).length;
+  id('md-meta').textContent =
+    (m.role==='leader'?'👑 Team Leader':'Membro')+
+    (m.userNumber?' · #'+m.userNumber:'')+
+    (m.leg?' · '+(m.leg==='right'?'👉 Destra':'👈 Sinistra'):'');
+  id('md-wk-new').textContent   = mpWk.length;
+  id('md-wk-pres').textContent  = mpWk.filter(function(p){return p.presentation;}).length;
+  id('md-wk-pay').textContent   = mp.filter(function(p){return p.payment;}).length;
   id('md-tot-pros').textContent = mp.length;
   id('md-tot-pres').textContent = mp.filter(function(p){return p.presentation;}).length;
   id('md-tot-fu').textContent   = mp.filter(function(p){return (p.followUps||[]).filter(Boolean).length===4;}).length;
   var listEl = id('md-list');
   if(!mpWk.length){
-    listEl.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:.5rem 0;">Nessun prospect questa settimana.</div>';
+    listEl.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:.5rem 0;">Nessun prospect aggiunto questa settimana.</div>';
   } else {
-    listEl.innerHTML = mpWk.slice(0,12).map(function(p){
-      var t = p._insertedAt || (p.createdAt&&p.createdAt.toMillis?p.createdAt.toMillis():0);
+    listEl.innerHTML = mpWk.slice(0,10).map(function(p){
+      var t = p._insertedAt||(p.createdAt&&p.createdAt.toMillis?p.createdAt.toMillis():0);
       var days = Math.floor((Date.now()-t)/86400000);
-      var icons = (p.presentation?'📋 ':'')+(p.payment?'⏳ ':'')+(p.iscritto?'✅ ':'');
-      return '<div class="md-prospect-row"><span style="font-weight:500;">'+x(p.name||'—')+'</span><span style="color:var(--text3);font-size:11px;">'+icons+(days===0?'oggi':days+'g fa')+'</span></div>';
-    }).join('') + (mpWk.length>12?'<div style="font-size:11px;color:var(--text3);padding:.5rem 0;">+altri '+(mpWk.length-12)+'</div>':'');
+      var badges = [
+        p.presentation?'<span style="font-size:10px;padding:1px 5px;border-radius:4px;background:rgba(74,156,240,.15);color:var(--blue);">pres.</span>':'',
+        p.payment?'<span style="font-size:10px;padding:1px 5px;border-radius:4px;background:rgba(240,180,74,.15);color:var(--amber);">pag.</span>':'',
+        p.iscritto?'<span style="font-size:10px;padding:1px 5px;border-radius:4px;background:rgba(201,168,76,.15);color:var(--gold);">iscritto</span>':'',
+      ].filter(Boolean).join(' ');
+      return '<div class="md-prospect-row">'+
+        '<span style="font-weight:500;color:var(--text);">'+x(p.name||'—')+'</span>'+
+        '<span style="display:flex;gap:4px;align-items:center;">'+
+          badges+
+          '<span style="font-size:11px;color:var(--text3);">'+(days===0?'oggi':days+'g fa')+'</span>'+
+        '</span>'+
+      '</div>';
+    }).join('')+(mpWk.length>10?'<div style="font-size:11px;color:var(--text3);padding:.5rem 0;text-align:center;">+ altri '+(mpWk.length-10)+'</div>':'');
   }
-  id('md-overlay').style.display = 'block';
-  id('member-detail').classList.add('open');
+  // Scroll to card and open it
+  var card = id('member-detail');
+  card.classList.add('open');
+  card.scrollIntoView({behavior:'smooth', block:'start'});
 };
 
 window.closeMemberDetail = function() {
-  id('md-overlay').style.display = 'none';
   id('member-detail').classList.remove('open');
 };
 
@@ -1700,9 +1704,10 @@ async function loadTeamDashboard() {
   }
 
   // Global stats
+  const hiddenCount = show.filter(function(u){return hiddenMembers.has(u.id);}).length;
   id('team-stats').innerHTML =
-    sc('Diretti',show.filter(u=>(u.uplinePath||[]).slice(-1)[0]===myUid).length,'ac')+
-    sc('Totale struttura',show.length,'b')+
+    sc('Diretti',show.filter(u=>(u.uplinePath||[]).slice(-1)[0]===myUid&&!hiddenMembers.has(u.id)).length,'ac')+
+    sc('Struttura attiva',show.length-hiddenCount,'b')+
     sc('Nuovi (7gg)',tPs.filter(p=>(p.createdAt?.toMillis()||0)>=wk).length,'g')+
     sc('Presentazioni sett.',tPs.filter(p=>p.presentation&&(p.createdAt?.toMillis()||0)>=wk).length,'b')+
     sc('Attesa pag.',tPs.filter(p=>p.payment).length,'a')+
@@ -1836,7 +1841,32 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
   const rankSorted=[...mdata].sort((a,b)=>b.mpWk.length-a.mpWk.length);
   const max=Math.max(...rankSorted.map(s=>s.mpWk.length),1);
   id('rank-table').innerHTML=rankSorted.length?rankSorted.map(({m,mpWk},i)=>`<div class="rank-row"><div class="rank-pos ${i===0?'top':''}">${i===0?'★':i+1}</div><div class="rank-name">${x(m.name)}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${(mpWk.length/max)*100}%"></div></div><div class="rank-val">${mpWk.length}</div></div>`).join(''):'';
+  // Hidden members panel
+  var hiddenList = show.filter(function(u){return hiddenMembers.has(u.id);});
+  var hSection = id('hidden-members-section');
+  if(hSection) {
+    if(hiddenList.length > 0) {
+      hSection.style.display = 'block';
+      id('hidden-count-badge').textContent = hiddenList.length + (hiddenList.length===1?' membro':' membri');
+      id('hidden-members-grid').innerHTML = hiddenList.map(function(m){
+        var mp = ps.filter(function(p){return p.uid===m.id;});
+        return '<div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:.5px solid var(--border);border-radius:10px;padding:.75rem 1rem;">'+
+          '<div style="width:32px;height:32px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--text3);flex-shrink:0;">'+
+            (m.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase()+
+          '</div>'+
+          '<div style="flex:1;min-width:0;">'+
+            '<div style="font-size:13px;font-weight:500;color:var(--text2);">'+x(m.name||'—')+'</div>'+
+            '<div style="font-size:11px;color:var(--text3);">'+(m.role==='leader'?'Leader':'Membro')+(m.userNumber?' · #'+m.userNumber:'')+' · '+mp.length+' prospect</div>'+
+          '</div>'+
+          '<button onclick="toggleHideMember(\'"+m.id+"\')" style="padding:5px 12px;border-radius:6px;background:var(--green-dim);border:.5px solid var(--green);color:var(--green);font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);">Riattiva</button>'+
+        '</div>';
+      }).join('');
+    } else {
+      hSection.style.display = 'none';
+    }
+  }
 }
+
 
 
 // ── ADMIN ──
