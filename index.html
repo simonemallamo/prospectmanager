@@ -1717,8 +1717,9 @@ window.setFilter = (btn,f) => {
 
 // ── TEAM DASHBOARD ──
 async function loadTeamDashboard() {
-  id('team-grid').innerHTML=loader();
-  id('binary-view').innerHTML=loader();
+  if(id('team-grid-left')) id('team-grid-left').innerHTML=loader();
+  if(id('team-grid-right')) id('team-grid-right').innerHTML=loader();
+  if(id('binary-view')) id('binary-view').innerHTML=loader();
   const [ps,us] = await Promise.all([
     getDocs(collection(db,'prospects')).then(s=>s.docs.map(d=>({id:d.id,...d.data()}))),
     getDocs(collection(db,'users')).then(s=>s.docs.map(d=>({id:d.id,...d.data()})))
