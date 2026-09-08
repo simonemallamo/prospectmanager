@@ -388,7 +388,38 @@ td{padding:9px 13px;vertical-align:middle;}
       <div id="binary-view" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem;"></div>
 
       <!-- Member detail card -->
-      <div id="member-detail" class="md-card"></div>
+      <div id="member-detail" class="md-card">
+        <div class="md-card-head">
+          <div id="md-av" class="md-av"></div>
+          <div style="flex:1;min-width:0;">
+            <div id="md-name" style="font-weight:700;font-size:16px;letter-spacing:-.3px;"></div>
+            <div id="md-meta" style="font-size:11px;color:var(--text3);margin-top:3px;"></div>
+          </div>
+          <button class="md-close-btn" onclick="closeMemberDetail()">✕ Chiudi</button>
+        </div>
+        <div class="md-sections">
+          <div class="md-section">
+            <div class="md-section-title">⚡ Ultimi 7 giorni</div>
+            <div class="md-nums">
+              <div class="md-num"><div class="md-num-val" id="md-wk-new" style="color:var(--green);">0</div><div class="md-num-lbl">Nuovi</div></div>
+              <div class="md-num"><div class="md-num-val" id="md-wk-pres" style="color:var(--blue);">0</div><div class="md-num-lbl">Presentaz.</div></div>
+              <div class="md-num"><div class="md-num-val" id="md-wk-pay" style="color:var(--amber);">0</div><div class="md-num-lbl">Attesa pag.</div></div>
+            </div>
+          </div>
+          <div class="md-section">
+            <div class="md-section-title">📊 Totale</div>
+            <div class="md-nums">
+              <div class="md-num"><div class="md-num-val" id="md-tot-pros" style="color:var(--gold);">0</div><div class="md-num-lbl">Prospect</div></div>
+              <div class="md-num"><div class="md-num-val" id="md-tot-pres" style="color:var(--blue);">0</div><div class="md-num-lbl">Presentaz.</div></div>
+              <div class="md-num"><div class="md-num-val" id="md-tot-fu" style="color:var(--green);">0</div><div class="md-num-lbl">FU completi</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="md-list-section">
+          <div class="md-section-title" style="margin-bottom:.5rem;">📋 Prospect aggiunti questa settimana</div>
+          <div id="md-list"></div>
+        </div>
+      </div>
 
       <!-- Members grid -->
       <div class="dash-title">Tutti i membri</div>
@@ -681,6 +712,7 @@ const COUNTRIES = {
   'Canada': ['Alberta','British Columbia','Manitoba','New Brunswick','Newfoundland','Nova Scotia','Ontario','PEI','Quebec','Saskatchewan','Yukon','NWT','Nunavut'],
   'Capo Verde': ['Boa Vista','Brava','Fogo','Maio','Sal','Santiago','Santo Antão','São Nicolau','São Vicente'],
   'Croazia': ['Bjelovar-Bilogora','Brod-Posavina','Dubrovnik-Neretva','Istria','Karlovac','Koprivnica-Križevci','Krapina-Zagorje','Lika-Senj','Međimurje','Osijek-Baranja','Požega-Slavonia','Primorje-Gorski Kotar','Šibenik-Knin','Sisak-Moslavina','Split-Dalmazia','Varaždin','Virovitica-Podravina','Vukovar-Syrmia','Zadar','Zagabria'],
+  'Emirati Arabi': ['Abu Dhabi','Dubai','Sharjah','Ajman','Umm Al Quwain','Ras Al Khaimah','Fujairah'],
   'Egitto': ['Alessandria','Assiut','Assuan','Beheira','Beni Suef','Cairo','Dakahlia','Damietta','Fayoum','Gharbia','Giza','Ismailia','Kafr el-Sheikh','Luxor','Matruh','Minya','Minufiyya','North Sinai','Nuova Valle','Port Said','Qalyubia','Qena','Red Sea','Sharqia','Sohag','South Sinai','Suez'],
   'Francia': ['Auvergne-Rhône-Alpes','Bourgogne-Franche-Comté','Bretagne','Centre-Val de Loire','Corse','Grand Est','Hauts-de-France','Île-de-France','Normandie','Nouvelle-Aquitaine','Occitanie','Pays de la Loire','Provence-Alpes-Côte d\'Azur'],
   'Germania': ['Baden-Württemberg','Bayern','Berlin','Brandenburg','Bremen','Hamburg','Hessen','Mecklenburg-Vorpommern','Niedersachsen','Nordrhein-Westfalen','Rheinland-Pfalz','Saarland','Sachsen','Sachsen-Anhalt','Schleswig-Holstein','Thüringen'],
@@ -1823,7 +1855,9 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
   const directUids=new Set(show.filter(u=>(u.uplinePath||[]).slice(-1)[0]===myUid).map(u=>u.id));
   const getLevel=u=>{const path=u.uplinePath||[];const myIdx=path.indexOf(myUid);return myIdx===-1?99:path.length-myIdx;};
   const sorted_show=[...show].sort((a,b)=>{const la=getLevel(a),lb=getLevel(b);if(la!==lb)return la-lb;return(a.name||'').localeCompare(b.name||'');});
-  const mdata=sorted_show.map((m,i)=>({m,level:getLevel(m),mp:ps.filter(p=>p.uid===m.id),mpWk:ps.filter(p=>p.uid===m.id&&(p.createdAt?.toMillis()||0)>=(wk||Date.now()-7*86400000)),c:COLS[i%COLS.length]}));
+  // Exclude hidden members from grid — they appear only in "Membri disattivati" section
+  const visibleForGrid = sorted_show.filter(function(u){ return !hiddenMembers.has(u.id); });
+  const mdata=visibleForGrid.map((m,i)=>({m,level:getLevel(m),mp:ps.filter(p=>p.uid===m.id),mpWk:ps.filter(p=>p.uid===m.id&&(p.createdAt?.toMillis()||0)>=(wk||Date.now()-7*86400000)),c:COLS[i%COLS.length]}));
   const grid=id('team-grid'); grid.innerHTML='';
   mdata.forEach(({m,level,mp,mpWk,c})=>{
     const ini=m.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
@@ -1831,9 +1865,8 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
     const levelColor=level===1?'var(--accent)':level===2?'var(--blue)':'var(--text3)';
     const roleIcon=m.role==='leader'?'👑 ':'';
     const legTag=m.leg?`<span style="font-size:10px;padding:1px 5px;border-radius:8px;margin-left:4px;background:${m.leg==='right'?'var(--accent-dim)':'var(--blue-dim)'};color:${m.leg==='right'?'var(--accent)':'var(--blue)'};">${m.leg==='right'?'👉':'👈'}</span>`:'';
-    var isHid = hiddenMembers.has(m.id);
-    const el=document.createElement('div'); el.className='tc'+(isHid?' tc-hidden':'');
-    el.innerHTML=`<div class="tc-head" style="cursor:pointer;" onclick="openMemberDetail('${m.id}')"><div class="tc-av" style="background:${c.bg};color:${c.c}">${ini}</div><div><div class="tc-name">${roleIcon}${x(m.name)}${legTag}</div><div class="tc-role">${mp.length} prospect · <span style="color:${levelColor}">${levelLabel}</span></div></div>${mpWk.length?`<div class="wk-tag">+${mpWk.length} sett.</div>`:''}</div><div class="tc-nums"><div class="tc-num"><div class="tc-num-val" style="color:${c.c}">${mp.filter(p=>p.presentation).length}</div><div class="tc-num-lbl">Presentazioni</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="tc-num-lbl">Attesa pag.</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--green)">${mp.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length}</div><div class="tc-num-lbl">FU completi</div></div></div><div style="margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:var(--text3);">Gamba:</span><button onclick="event.stopPropagation();setLeg('${m.id}','right',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='right'?'var(--accent)':'var(--border2)'};background:${m.leg==='right'?'var(--accent-dim)':'transparent'};color:${m.leg==='right'?'var(--accent)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👉 Destra</button><button onclick="event.stopPropagation();setLeg('${m.id}','left',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='left'?'var(--blue)':'var(--border2)'};background:${m.leg==='left'?'var(--blue-dim)':'transparent'};color:${m.leg==='left'?'var(--blue)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👈 Sinistra</button>${m.leg?`<button onclick="event.stopPropagation();setLeg('${m.id}','',this)" style="padding:3px 8px;border-radius:20px;border:.5px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">✕</button>`:''}<button onclick="event.stopPropagation();toggleHideMember('${m.id}')" style="padding:3px 10px;border-radius:20px;border:.5px solid ${isHid?'var(--red)':'var(--border2)'};background:transparent;color:${isHid?'var(--red)':'var(--text3)'};font-size:10px;cursor:pointer;font-family:var(--font);margin-left:auto;">${isHid?'👁 Mostra':'🙈 Nascondi'}</button></div>`;
+    const el=document.createElement('div'); el.className='tc';
+    el.innerHTML=`<div class="tc-head" style="cursor:pointer;" onclick="openMemberDetail('${m.id}')"><div class="tc-av" style="background:${c.bg};color:${c.c}">${ini}</div><div><div class="tc-name">${roleIcon}${x(m.name)}${legTag}</div><div class="tc-role">${mp.length} prospect · <span style="color:${levelColor}">${levelLabel}</span></div></div>${mpWk.length?`<div class="wk-tag">+${mpWk.length} sett.</div>`:''}</div><div class="tc-nums"><div class="tc-num"><div class="tc-num-val" style="color:${c.c}">${mp.filter(p=>p.presentation).length}</div><div class="tc-num-lbl">Presentazioni</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="tc-num-lbl">Attesa pag.</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--green)">${mp.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length}</div><div class="tc-num-lbl">FU completi</div></div></div><div style="margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:var(--text3);">Gamba:</span><button onclick="event.stopPropagation();setLeg('${m.id}','right',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='right'?'var(--accent)':'var(--border2)'};background:${m.leg==='right'?'var(--accent-dim)':'transparent'};color:${m.leg==='right'?'var(--accent)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👉 Destra</button><button onclick="event.stopPropagation();setLeg('${m.id}','left',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='left'?'var(--blue)':'var(--border2)'};background:${m.leg==='left'?'var(--blue-dim)':'transparent'};color:${m.leg==='left'?'var(--blue)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👈 Sinistra</button>${m.leg?`<button onclick="event.stopPropagation();setLeg('${m.id}','',this)" style="padding:3px 8px;border-radius:20px;border:.5px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">✕</button>`:''}<button onclick="event.stopPropagation();toggleHideMember('${m.id}')" style="padding:3px 10px;border-radius:20px;border:.5px solid var(--border2);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);margin-left:auto;">🙈 Nascondi</button></div>`;
     grid.appendChild(el);
   });
   if(!mdata.length) id('team-grid').innerHTML='<div class="empty">Nessun membro nel team. Condividi il tuo link di invito!</div>';
