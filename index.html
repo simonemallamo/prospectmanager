@@ -1138,6 +1138,78 @@ window.sortBy = col => {
 var hiddenMembers = new Set();
 try { hiddenMembers = new Set(JSON.parse(localStorage.getItem('pm_hidden')||'[]')); } catch(e){}
 
+
+// ── MEMBER ORDERING ──
+window.moveMember = async function(uid, dir) {
+  var allUs = window._cachedUs || [];
+  var u = allUs.find(function(x){return x.id===uid;});
+  if(!u) return;
+  var leg = u.leg || '';
+  // Get siblings in same leg, sorted by legOrder
+  var siblings = allUs
+    .filter(function(x){return x.leg===leg && !hiddenMembers.has(x.id);})
+    .sort(function(a,b){return (a.legOrder??9999)-(b.legOrder??9999)||(a.name||'').localeCompare(b.name||'');});
+  var idx = siblings.findIndex(function(x){return x.id===uid;});
+  if(idx<0) return;
+  var swapIdx = dir==='up' ? idx-1 : idx+1;
+  if(swapIdx<0 || swapIdx>=siblings.length) return;
+  var other = siblings[swapIdx];
+  // Swap orders
+  var myOrder = u.legOrder ?? idx;
+  var otherOrder = other.legOrder ?? swapIdx;
+  try {
+    await updateDoc(doc(db,'users',uid),{legOrder: otherOrder});
+    await updateDoc(doc(db,'users',other.id),{legOrder: myOrder});
+    // Update cache
+    u.legOrder = otherOrder;
+    other.legOrder = myOrder;
+    renderTeamDashboard();
+  } catch(e){console.warn('moveMember error',e);}
+};
+
+window.handleDrop = async function(draggedUid, targetUid, fromGrid, toGrid) {
+  var allUs = window._cachedUs || [];
+  var dragged = allUs.find(function(x){return x.id===draggedUid;});
+  var target  = allUs.find(function(x){return x.id===targetUid;});
+  if(!dragged||!target) return;
+
+  var sameLeg = fromGrid === toGrid;
+
+  if(sameLeg) {
+    // Reorder within same leg — swap legOrder values
+    var leg = dragged.leg || '';
+    var siblings = allUs
+      .filter(function(x){return x.leg===leg && !hiddenMembers.has(x.id);})
+      .sort(function(a,b){return (a.legOrder??9999)-(b.legOrder??9999)||(a.name||'').localeCompare(b.name||'');});
+    var fromIdx = siblings.findIndex(function(x){return x.id===draggedUid;});
+    var toIdx   = siblings.findIndex(function(x){return x.id===targetUid;});
+    if(fromIdx<0||toIdx<0||fromIdx===toIdx) return;
+    // Reassign sequential orders inserting dragged before target
+    siblings.splice(fromIdx,1);
+    siblings.splice(toIdx,0,dragged);
+    var updates = siblings.map(function(u,i){return {uid:u.id,order:i};});
+    try {
+      for(var i=0;i<updates.length;i++){
+        var uu = allUs.find(function(x){return x.id===updates[i].uid;});
+        if(uu) uu.legOrder = updates[i].order;
+        await updateDoc(doc(db,'users',updates[i].uid),{legOrder:updates[i].order});
+      }
+      renderTeamDashboard();
+    } catch(e){console.warn('handleDrop error',e);}
+  } else {
+    // Move to different leg — change leg + assign order at bottom
+    var newLeg = target.leg || '';
+    var newSiblings = allUs.filter(function(x){return x.leg===newLeg && !hiddenMembers.has(x.id);});
+    var maxOrder = newSiblings.reduce(function(m,x){return Math.max(m,x.legOrder??0);},0);
+    try {
+      await updateDoc(doc(db,'users',draggedUid),{leg:newLeg, legOrder:maxOrder+1});
+      dragged.leg = newLeg;
+      dragged.legOrder = maxOrder+1;
+      renderTeamDashboard();
+    } catch(e){console.warn('handleDrop cross-leg error',e);}
+  }
+};
+
 window.openMemberDetail = function(uid) {
   var allUs = window._cachedUs || [];
   var allPs = window._cachedPs || [];
@@ -1902,14 +1974,43 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
       grid.innerHTML = '<div style="padding:.75rem 0;font-size:12px;color:var(--text3);">'+(emptyMsg||'Nessun membro.')+'</div>';
       return;
     }
-    data.forEach(({m,level,mp,mpWk,c})=>{
+    // Sort by legOrder if set, then by name
+    const sorted = [...data].sort((a,b)=>{
+      const oa = a.m.legOrder ?? 9999, ob = b.m.legOrder ?? 9999;
+      if(oa !== ob) return oa - ob;
+      return (a.m.name||'').localeCompare(b.m.name||'');
+    });
+    sorted.forEach(({m,level,mp,mpWk,c})=>{
     const ini=m.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
     const levelLabel=level===1?'Diretto':level===2?'Livello 2':`Livello ${level}`;
     const levelColor=level===1?'var(--accent)':level===2?'var(--blue)':'var(--text3)';
     const roleIcon=m.role==='leader'?'👑 ':'';
     const legTag=m.leg?`<span style="font-size:10px;padding:1px 5px;border-radius:8px;margin-left:4px;background:${m.leg==='right'?'var(--accent-dim)':'var(--blue-dim)'};color:${m.leg==='right'?'var(--accent)':'var(--blue)'};">${m.leg==='right'?'👉':'👈'}</span>`:'';
     const el=document.createElement('div'); el.className='tc';
-    el.innerHTML=`<div class="tc-head" style="cursor:pointer;" onclick="openMemberDetail('${m.id}')"><div class="tc-av" style="background:${c.bg};color:${c.c}">${ini}</div><div><div class="tc-name">${roleIcon}${x(m.name)}${legTag}</div><div class="tc-role">${mp.length} prospect · <span style="color:${levelColor}">${levelLabel}</span></div></div>${mpWk.length?`<div class="wk-tag">+${mpWk.length} sett.</div>`:''}</div><div class="tc-nums"><div class="tc-num"><div class="tc-num-val" style="color:${c.c}">${mp.filter(p=>p.presentation).length}</div><div class="tc-num-lbl">Presentazioni</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="tc-num-lbl">Attesa pag.</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--green)">${mp.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length}</div><div class="tc-num-lbl">FU completi</div></div></div><div style="margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:var(--text3);">Gamba:</span><button onclick="event.stopPropagation();setLeg('${m.id}','right',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='right'?'var(--accent)':'var(--border2)'};background:${m.leg==='right'?'var(--accent-dim)':'transparent'};color:${m.leg==='right'?'var(--accent)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👉 Destra</button><button onclick="event.stopPropagation();setLeg('${m.id}','left',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='left'?'var(--blue)':'var(--border2)'};background:${m.leg==='left'?'var(--blue-dim)':'transparent'};color:${m.leg==='left'?'var(--blue)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👈 Sinistra</button>${m.leg?`<button onclick="event.stopPropagation();setLeg('${m.id}','',this)" style="padding:3px 8px;border-radius:20px;border:.5px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">✕</button>`:''}<button onclick="event.stopPropagation();toggleHideMember('${m.id}')" style="padding:3px 10px;border-radius:20px;border:.5px solid var(--border2);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);margin-left:auto;">🙈 Nascondi</button></div>`;
+    el.innerHTML=`<div class="tc-head" style="cursor:pointer;" onclick="openMemberDetail('${m.id}')"><div class="tc-av" style="background:${c.bg};color:${c.c}">${ini}</div><div><div class="tc-name">${roleIcon}${x(m.name)}${legTag}</div><div class="tc-role">${mp.length} prospect · <span style="color:${levelColor}">${levelLabel}</span></div></div>${mpWk.length?`<div class="wk-tag">+${mpWk.length} sett.</div>`:''}</div><div class="tc-nums"><div class="tc-num"><div class="tc-num-val" style="color:${c.c}">${mp.filter(p=>p.presentation).length}</div><div class="tc-num-lbl">Presentazioni</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="tc-num-lbl">Attesa pag.</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--green)">${mp.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length}</div><div class="tc-num-lbl">FU completi</div></div></div><div style="margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:var(--text3);">Gamba:</span><button onclick="event.stopPropagation();setLeg('${m.id}','right',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='right'?'var(--accent)':'var(--border2)'};background:${m.leg==='right'?'var(--accent-dim)':'transparent'};color:${m.leg==='right'?'var(--accent)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👉 Destra</button><button onclick="event.stopPropagation();setLeg('${m.id}','left',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='left'?'var(--blue)':'var(--border2)'};background:${m.leg==='left'?'var(--blue-dim)':'transparent'};color:${m.leg==='left'?'var(--blue)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👈 Sinistra</button>${m.leg?`<button onclick="event.stopPropagation();setLeg('${m.id}','',this)" style="padding:3px 8px;border-radius:20px;border:.5px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">✕</button>`:''}<span class="tc-drag-handle" draggable="false" title="Trascina per riordinare">⠿</span><div class="tc-move-btns"><button class="tc-move-btn" onclick="event.stopPropagation();moveMember('${m.id}','up')" title="Sposta su">↑</button><button class="tc-move-btn" onclick="event.stopPropagation();moveMember('${m.id}','down')" title="Sposta giù">↓</button></div><button onclick="event.stopPropagation();toggleHideMember('${m.id}')" style="padding:3px 10px;border-radius:20px;border:.5px solid var(--border2);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">🙈 Nascondi</button></div>`;
+      // Drag & drop
+      el.setAttribute('draggable','true');
+      el.dataset.uid = m.id;
+      el.dataset.gridId = gridId;
+      el.addEventListener('dragstart', function(e){
+        e.dataTransfer.setData('text/plain', m.id+'|'+gridId);
+        e.dataTransfer.effectAllowed='move';
+        setTimeout(()=>el.classList.add('dragging'),0);
+      });
+      el.addEventListener('dragend', function(){el.classList.remove('dragging');});
+      el.addEventListener('dragover', function(e){
+        e.preventDefault(); e.dataTransfer.dropEffect='move';
+        el.classList.add('drag-over');
+      });
+      el.addEventListener('dragleave', function(){el.classList.remove('drag-over');});
+      el.addEventListener('drop', function(e){
+        e.preventDefault(); el.classList.remove('drag-over');
+        var payload = e.dataTransfer.getData('text/plain').split('|');
+        var draggedUid = payload[0], fromGridId = payload[1];
+        var targetUid = m.id;
+        if(draggedUid === targetUid) return;
+        handleDrop(draggedUid, targetUid, fromGridId, gridId);
+      });
       grid.appendChild(el);
     });
   }
