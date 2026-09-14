@@ -1633,6 +1633,9 @@ async function loadNetworkTree(){
   us.forEach(u=>{const p=parentOfGlobal(u);if(!childrenByParent.has(p))childrenByParent.set(p,[]);childrenByParent.get(p).push(u);});
   function gd(root){const r=new Set(),q=[root];while(q.length){const c=q.shift();for(const ch of(childrenByParent.get(c)||[])){if(!r.has(ch.id)){r.add(ch.id);q.push(ch.id);}}}return r;}
   const ds=gd(myUid);
+  // SECURITY / VISIBILITY: this viewer can only work with their own downline.
+  // Never expose uplines or unrelated users in the Network Tree or position picker.
+  window._treeDownlineIds = ds;
   const sel=id('tree-root-select');
   if(sel){
     const cv=sel.value;
@@ -1862,16 +1865,25 @@ window._ntpState=null;
 window.closeNetworkPositionModal=function(){const o=id('ntp-overlay');if(o)o.classList.add('hidden');window._ntpState=null;};
 window.openNetworkPositionModal=function(targetUid,parentUid,targetLeg,viewerUid=cUser.uid){
   const us=window._treeUs||[],byId=new Map(us.map(u=>[u.id,u])),parent=byId.get(parentUid),target=targetUid?byId.get(targetUid):null;if(!parent)return;
+  const allowedIds=window._treeDownlineIds||new Set();
+  if(parentUid!==viewerUid && !allowedIds.has(parentUid)){ alert('Puoi gestire solo la tua downline.'); return; }
+  if(targetUid && !allowedIds.has(targetUid)){ alert('Puoi gestire solo la tua downline.'); return; }
   const sel=id('ntp-user'),title=id('ntp-title'),sub=id('ntp-sub'),warn=id('ntp-warning'),err=id('ntp-err');if(!sel)return;
   window._ntpState={targetUid:targetUid||null,parentUid,parentLeg:targetLeg||null,viewerUid};title.textContent=target?`Sostituisci ${target.name||target.email}`:`Posizione ${targetLeg==='left'?'Sinistra':'Destra'}`;sub.textContent=`Sotto: ${parent.name||parent.email||'Upline'} · ${targetLeg==='left'?'👈 Sinistra':'👉 Destra'}`;warn.style.display='none';err.style.display='none';err.textContent='';
-  const candidates=us.filter(u=>u.id!==viewerUid&&u.id!==parentUid&&!visualDescendant(u.id,parentUid,viewerUid,byId)).sort((a,b)=>(a.name||a.email||'').localeCompare(b.name||b.email||'','it',{sensitivity:'base'}));
+  // IMPORTANT: only people in the current viewer's REAL downline are selectable.
+  // A leader's upline, peers outside the downline, and unrelated users are never candidates.
+  const candidates=us.filter(u=>allowedIds.has(u.id)&&u.id!==parentUid&&!visualDescendant(u.id,parentUid,viewerUid,byId)).sort((a,b)=>(a.name||a.email||'').localeCompare(b.name||b.email||'','it',{sensitivity:'base'}));
   sel.innerHTML='<option value="">— Seleziona persona —</option>'+candidates.map(u=>{const pos=getVisualPosition(u,viewerUid),p=pos.parentUid,l=pos.leg;const label=`${u.name||u.email}${u.role==='leader'?' 👑':''}${p&&byId.get(p)?` · attuale: ${(byId.get(p).name||'')} ${l?('· '+(l==='left'?'Sinistra':'Destra')):''}`:''}`;return `<option value="${u.id}">${x(label)}</option>`;}).join('');if(targetUid)sel.value=targetUid;
   sel.onchange=()=>{const chosen=byId.get(sel.value);if(!chosen){warn.style.display='none';return;}const pos=getVisualPosition(chosen,viewerUid);if(pos.parentUid&&pos.parentUid!==parentUid){warn.textContent='⚠ Lo spostamento modifica solo il tuo Network Tree. La struttura reale e il Network Tree degli altri leader rimangono invariati.';warn.style.display='block';}else warn.style.display='none';};
   id('ntp-overlay').classList.remove('hidden');
 };
 window.saveNetworkPosition=async function(){
   const st=window._ntpState,sel=id('ntp-user'),err=id('ntp-err'),btn=id('ntp-save');if(!st||!sel||!sel.value){err.textContent='Seleziona una persona.';err.style.display='block';return;}
-  const us=window._treeUs||[],byId=new Map(us.map(u=>[u.id,u])),chosen=byId.get(sel.value),target=st.targetUid?byId.get(st.targetUid):null;if(!chosen||!byId.get(st.parentUid)){err.textContent='Posizione non valida.';err.style.display='block';return;}
+  const us=window._treeUs||[],byId=new Map(us.map(u=>[u.id,u])),chosen=byId.get(sel.value),target=st.targetUid?byId.get(st.targetUid):null;
+  const allowedIds=window._treeDownlineIds||new Set();
+  if(!chosen||!byId.get(st.parentUid)){err.textContent='Posizione non valida.';err.style.display='block';return;}
+  if(!allowedIds.has(chosen.id)){err.textContent='Puoi posizionare solo persone appartenenti alla tua downline.';err.style.display='block';return;}
+  if(st.parentUid!==st.viewerUid && !allowedIds.has(st.parentUid)){err.textContent='Puoi gestire solo la tua downline.';err.style.display='block';return;}
   if(chosen.id===st.parentUid||visualDescendant(chosen.id,st.parentUid,st.viewerUid,byId)){err.textContent='Non puoi inserire un upline o un suo discendente sotto questa posizione.';err.style.display='block';return;}
   const parent=st.parentUid,targetLeg=st.parentLeg,viewerUid=st.viewerUid||cUser.uid,old=getVisualPosition(chosen,viewerUid);btn.disabled=true;btn.textContent='Salvataggio…';err.style.display='none';
   try{
