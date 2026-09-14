@@ -4,36 +4,40 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Prospect Manager — simonemallamo</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* ── THEMES ── */
 [data-theme="dark"] {
-  --bg:#0f0f0f; --surface:#1a1a1a; --surface2:#222;
-  --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.13);
-  --text:#f0f0f0; --text2:#888; --text3:#555;
-  --accent:#c9a84c; --accent-dim:rgba(201,168,76,0.12);
-  --blue:#4a9cf0; --blue-dim:rgba(74,156,240,0.12);
-  --amber:#f0b44a; --amber-dim:rgba(240,180,74,0.12);
-  --red:#f05a4a; --red-dim:rgba(240,90,74,0.12);
-  --green:#4af09a; --green-dim:rgba(74,240,154,0.12);
-  --shadow:0 2px 16px rgba(0,0,0,0.5);
+  --bg:#141417; --bg-deep:#0E0E11;
+  --surface:#1C1C20; --surface2:#232328; --surface3:#2C2C32;
+  --border:rgba(255,255,255,0.06); --border2:rgba(255,255,255,0.12);
+  --text:#F2F2F4; --text2:#8A8A96; --text3:#4A4A58;
+  --accent:#C9A84C; --accent-dim:rgba(201,168,76,0.11);
+  --accent-hi:#E2C16A; --accent-line:rgba(201,168,76,0.28);
+  --blue:#5B9CF6; --blue-dim:rgba(91,156,246,0.12);
+  --amber:#F5C542; --amber-dim:rgba(245,197,66,0.12);
+  --red:#F06A5A; --red-dim:rgba(240,106,90,0.12);
+  --green:#4ADEA0; --green-dim:rgba(74,222,160,0.12);
+  --shadow:0 4px 24px rgba(0,0,0,0.6), 0 1px 4px rgba(0,0,0,0.4);
 }
 [data-theme="light"] {
-  --bg:#f5f5f0; --surface:#fff; --surface2:#f0f0eb;
-  --border:rgba(0,0,0,0.07); --border2:rgba(0,0,0,0.13);
-  --text:#111; --text2:#666; --text3:#aaa;
-  --accent:#a07830; --accent-dim:rgba(160,120,48,0.1);
-  --blue:#1a6cc4; --blue-dim:rgba(26,108,196,0.1);
-  --amber:#c47a00; --amber-dim:rgba(196,122,0,0.1);
-  --red:#c43020; --red-dim:rgba(196,48,32,0.1);
-  --green:#1a8c4e; --green-dim:rgba(26,140,78,0.1);
-  --shadow:0 2px 16px rgba(0,0,0,0.08);
+  --bg:#F0F0F3; --bg-deep:#E8E8EC;
+  --surface:#FFFFFF; --surface2:#F5F5F8; --surface3:#EBEBEF;
+  --border:rgba(0,0,0,0.06); --border2:rgba(0,0,0,0.12);
+  --text:#0E0E14; --text2:#60606A; --text3:#A0A0AA;
+  --accent:#A07830; --accent-dim:rgba(160,120,48,0.1);
+  --accent-hi:#C09040; --accent-line:rgba(160,120,48,0.28);
+  --blue:#2970DC; --blue-dim:rgba(41,112,220,0.1);
+  --amber:#C07800; --amber-dim:rgba(192,120,0,0.1);
+  --red:#D04040; --red-dim:rgba(208,64,64,0.1);
+  --green:#1A9060; --green-dim:rgba(26,144,96,0.1);
+  --shadow:0 4px 24px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06);
 }
 /* ── BASE ── */
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5;transition:background .2s,color .2s;}
-button{font-family:'DM Sans',sans-serif;cursor:pointer;}
-input,select,textarea{font-family:'DM Sans',sans-serif;}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.55;transition:background .2s,color .2s;-webkit-font-smoothing:antialiased;}
+button{font-family:'Inter',system-ui,sans-serif;cursor:pointer;}
+input,select,textarea{font-family:'Inter',system-ui,sans-serif;}
 .hidden{display:none!important;}
 
 #csv-preview-table th{padding:6px 10px;background:var(--surface2);font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;border-bottom:.5px solid var(--border);text-align:left;white-space:nowrap;}
@@ -50,16 +54,17 @@ input,select,textarea{font-family:'DM Sans',sans-serif;}
 [data-theme="light"] .t-toggle::after{transform:translateX(16px);}
 
 /* ── AUTH ── */
-#auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:var(--bg);}
-.auth-card{background:var(--surface);border:.5px solid var(--border2);border-radius:16px;padding:2.25rem;width:100%;max-width:400px;box-shadow:var(--shadow);}
+#auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:var(--bg);position:relative;overflow:hidden;}
+#auth-screen::before{content:'';position:fixed;top:-150px;left:50%;transform:translateX(-50%);width:600px;height:500px;background:radial-gradient(ellipse at center,rgba(201,168,76,.06) 0%,transparent 70%);pointer-events:none;}
+.auth-card{background:var(--surface);border:.5px solid var(--border2);border-radius:20px;padding:2.25rem;width:100%;max-width:400px;box-shadow:var(--shadow);}
 .auth-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem;}
 .auth-logo{display:flex;align-items:center;gap:10px;}
-.logo-mark{width:36px;height:36px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.logo-mark{width:38px;height:38px;background:linear-gradient(135deg,var(--accent-hi,#E2C16A),var(--accent));border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 12px rgba(201,168,76,.2);}
 [data-theme="dark"] .logo-mark{color:#0f0f0f;}
 [data-theme="light"] .logo-mark{color:#fff;}
-.logo-text{font-size:15px;font-weight:600;letter-spacing:-.3px;}
-.logo-sub{font-size:10px;color:var(--text3);font-family:monospace;margin-top:1px;}
-.auth-title{font-size:21px;font-weight:600;letter-spacing:-.4px;margin-bottom:5px;}
+.logo-text{font-size:16px;font-weight:700;letter-spacing:-.3px;font-family:'Syne','Inter',sans-serif;}
+.logo-sub{font-size:10px;color:var(--text3);font-family:'JetBrains Mono','DM Mono',monospace;margin-top:1px;}
+.auth-title{font-size:24px;font-weight:700;letter-spacing:-.5px;margin-bottom:5px;font-family:'Syne','Inter',sans-serif;}
 .auth-sub{color:var(--text2);font-size:13px;margin-bottom:1.5rem;}
 .auth-tabs{display:flex;background:var(--surface2);border-radius:7px;padding:3px;margin-bottom:1.25rem;}
 .auth-tab{flex:1;padding:7px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;border-radius:5px;transition:all .15s;}
@@ -76,19 +81,19 @@ input,select,textarea{font-family:'DM Sans',sans-serif;}
 .fg input:focus,.fg select:focus{border-color:var(--accent);}
 .fg select option{background:var(--surface);}
 .fg select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
-.btn-primary{width:100%;padding:10px;background:var(--accent);border:none;border-radius:7px;font-size:14px;font-weight:600;transition:opacity .15s;margin-top:2px;}
+.btn-primary{width:100%;padding:10px;background:linear-gradient(135deg,var(--accent-hi,#E2C16A),var(--accent));border:none;border-radius:8px;font-size:14px;font-weight:600;transition:opacity .15s,transform .1s;margin-top:2px;box-shadow:0 2px 10px rgba(201,168,76,.18);letter-spacing:-.1px;}
 [data-theme="dark"] .btn-primary{color:#0f0f0f;}
 [data-theme="light"] .btn-primary{color:#fff;}
 .btn-primary:hover{opacity:.87;}
 
 /* ── APP ── */
 #app-screen{display:none;min-height:100vh;}
-.topbar{display:flex;align-items:center;gap:8px;padding:0 1.25rem;height:54px;background:var(--surface);border-bottom:.5px solid var(--border);position:sticky;top:0;z-index:50;box-shadow:var(--shadow);}
+.topbar{display:flex;align-items:center;gap:8px;padding:0 1.5rem;height:56px;background:rgba(20,20,23,.92);backdrop-filter:blur(14px);border-bottom:.5px solid var(--border);position:sticky;top:0;z-index:50;}
 .topbar-logo{display:flex;align-items:center;gap:8px;margin-right:8px;}
-.topbar-mark{width:26px;height:26px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;}
+.topbar-mark{width:28px;height:28px;background:linear-gradient(135deg,var(--accent-hi,#E2C16A),var(--accent));border-radius:7px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 6px rgba(201,168,76,.2);}
 [data-theme="dark"] .topbar-mark{color:#0f0f0f;}
 [data-theme="light"] .topbar-mark{color:#fff;}
-.topbar-name{font-size:13px;font-weight:600;letter-spacing:-.2px;}
+.topbar-name{font-size:14px;font-weight:700;letter-spacing:-.2px;font-family:'Syne','Inter',sans-serif;}
 .topbar-name span{font-weight:300;color:var(--text3);font-size:11px;margin-left:4px;}
 .t-tab{padding:5px 12px;border:none;background:transparent;color:var(--text2);font-size:12px;font-weight:500;border-radius:6px;transition:all .15s;}
 .t-tab.on{background:var(--surface2);color:var(--text);}
@@ -108,9 +113,10 @@ input,select,textarea{font-family:'DM Sans',sans-serif;}
 
 /* ── STATS ── */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:1.25rem;}
-.sc{background:var(--surface);border:.5px solid var(--border);border-radius:10px;padding:.875rem 1rem;}
+.sc{background:var(--surface);border:.5px solid var(--border);border-radius:12px;padding:1rem 1.125rem;transition:border-color .2s;position:relative;overflow:hidden;}
+.sc:hover{border-color:var(--border2);}
 .sc-lbl{font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
-.sc-val{font-size:26px;font-weight:600;font-family:monospace;letter-spacing:-1px;}
+.sc-val{font-size:26px;font-weight:600;font-family:'JetBrains Mono','DM Mono',monospace;letter-spacing:-1px;}
 .sc-val.g{color:var(--green);} .sc-val.b{color:var(--blue);} .sc-val.a{color:var(--amber);} .sc-val.r{color:var(--red);} .sc-val.ac{color:var(--accent);}
 
 /* ── TOOLBAR ── */
@@ -120,22 +126,23 @@ input,select,textarea{font-family:'DM Sans',sans-serif;}
 .search::placeholder{color:var(--text3);}
 .f-btn{padding:5px 11px;border:.5px solid var(--border);border-radius:6px;background:transparent;color:var(--text2);font-size:12px;font-weight:500;transition:all .15s;}
 .f-btn.on{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
-.btn-add{margin-left:auto;padding:7px 14px;background:var(--accent);border:none;border-radius:6px;font-size:13px;font-weight:600;transition:opacity .15s;}
+.btn-add{margin-left:auto;padding:7px 16px;background:linear-gradient(135deg,var(--accent-hi,#E2C16A),var(--accent));border:none;border-radius:7px;font-size:13px;font-weight:600;transition:opacity .15s,transform .1s;box-shadow:0 2px 10px rgba(201,168,76,.15);letter-spacing:-.1px;}
+.btn-add:hover{opacity:.9;transform:translateY(-1px);}
 [data-theme="dark"] .btn-add{color:#0f0f0f;}
 [data-theme="light"] .btn-add{color:#fff;}
 .btn-add:hover{opacity:.87;}
 
 /* ── TABLE ── */
-.tbl-wrap{background:var(--surface);border:.5px solid var(--border);border-radius:10px;overflow-x:auto;}
+.tbl-wrap{background:var(--surface);border:.5px solid var(--border);border-radius:12px;overflow-x:auto;}
 table{width:100%;border-collapse:collapse;min-width:750px;}
-thead th{padding:9px 13px;text-align:left;font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:.5px solid var(--border);white-space:nowrap;}
+thead th{padding:10px 13px;text-align:left;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:.5px solid var(--border);white-space:nowrap;background:var(--surface2);}
 tbody tr{border-bottom:.5px solid var(--border);transition:background .1s;}
 tbody tr:last-child{border-bottom:none;}
 tbody tr:hover{background:var(--surface2);}
 td{padding:9px 13px;vertical-align:middle;}
 .nm{font-weight:500;font-size:13px;}
 .note{font-size:11px;color:var(--text3);margin-top:1px;}
-.dbadge{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:21px;border-radius:5px;font-size:11px;font-weight:500;font-family:monospace;padding:0 5px;}
+.dbadge{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:21px;border-radius:5px;font-size:11px;font-weight:500;font-family:'JetBrains Mono','DM Mono',monospace;padding:0 5px;}
 .dbadge.ok{background:var(--green-dim);color:var(--green);}
 .dbadge.warn{background:var(--amber-dim);color:var(--amber);}
 .dbadge.bad{background:var(--red-dim);color:var(--red);}
@@ -170,25 +177,27 @@ td{padding:9px 13px;vertical-align:middle;}
 /* ── TEAM DASHBOARD ── */
 .dash-title{font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:.875rem;}
 .team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin-bottom:1.5rem;}
-.tc{background:var(--surface);border:.5px solid var(--border);border-radius:10px;padding:1.125rem;}
+.tc{background:var(--surface);border:.5px solid var(--border);border-radius:13px;padding:1.125rem;transition:border-color .2s,box-shadow .2s;}
+.tc:hover{border-color:var(--border2);box-shadow:0 4px 20px rgba(0,0,0,.35);}
 .tc-head{display:flex;align-items:center;gap:9px;margin-bottom:12px;}
 .tc-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;}
 .tc-name{font-size:13px;font-weight:500;}
 .tc-role{font-size:10px;color:var(--text3);margin-top:1px;}
-.wk-tag{margin-left:auto;font-size:10px;font-weight:500;padding:2px 7px;border-radius:20px;background:var(--green-dim);color:var(--green);font-family:monospace;}
+.wk-tag{margin-left:auto;font-size:10px;font-weight:500;padding:2px 7px;border-radius:20px;background:var(--green-dim);color:var(--green);font-family:'JetBrains Mono','DM Mono',monospace;}
 .tc-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-.tc-num{text-align:center;}
-.tc-num-val{font-size:18px;font-weight:600;font-family:monospace;}
+.tc-num{text-align:center;background:var(--surface2);border-radius:8px;padding:8px 4px;border:.5px solid var(--border);}
+.tc-num-val{font-size:18px;font-weight:600;font-family:'JetBrains Mono','DM Mono',monospace;}
 .tc-num-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;margin-top:1px;}
-.rank-table{background:var(--surface);border:.5px solid var(--border);border-radius:10px;overflow:hidden;}
-.rank-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:.5px solid var(--border);}
-.rank-row:last-child{border-bottom:none;}
-.rank-pos{font-size:11px;font-weight:600;font-family:monospace;color:var(--text3);width:18px;}
+.rank-table{display:flex;flex-direction:column;gap:4px;}
+.rank-row{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface);border:.5px solid var(--border);border-radius:8px;transition:border-color .15s;}
+.rank-row:hover{border-color:var(--border2);}
+
+.rank-pos{font-size:11px;font-weight:600;font-family:'JetBrains Mono','DM Mono',monospace;color:var(--text3);width:18px;}
 .rank-pos.top{color:var(--accent);}
 .rank-name{font-size:13px;font-weight:500;flex:1;}
 .rank-bar-wrap{width:100px;height:3px;background:var(--surface2);border-radius:2px;}
 .rank-bar{height:100%;border-radius:2px;background:var(--accent);}
-.rank-val{font-size:11px;font-family:monospace;color:var(--text2);min-width:24px;text-align:right;}
+.rank-val{font-size:11px;font-family:'JetBrains Mono','DM Mono',monospace;color:var(--text2);min-width:24px;text-align:right;}
 
 /* ── ADMIN ── */
 .admin-badge{display:inline-flex;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:500;text-transform:uppercase;}
@@ -203,7 +212,7 @@ td{padding:9px 13px;vertical-align:middle;}
 
 /* ── MODAL ── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:100;padding:1rem;backdrop-filter:blur(4px);}
-.modal{background:var(--surface);border:.5px solid var(--border2);border-radius:14px;padding:1.625rem;width:100%;max-width:430px;box-shadow:var(--shadow);}
+.modal{background:var(--surface);border:.5px solid var(--border2);border-radius:16px;padding:1.625rem;width:100%;max-width:430px;box-shadow:var(--shadow);max-height:90vh;overflow-y:auto;}
 .modal-title{font-size:15px;font-weight:600;margin-bottom:1.125rem;}
 .modal-info{background:var(--surface2);border-radius:7px;padding:.75rem 1rem;margin-bottom:1.125rem;}
 .modal-info .mi-name{font-size:13px;font-weight:500;}
@@ -221,7 +230,7 @@ td{padding:9px 13px;vertical-align:middle;}
 .invite-box-title{font-size:12px;font-weight:500;margin-bottom:5px;}
 .invite-box-sub{font-size:11px;color:var(--text2);margin-bottom:.75rem;line-height:1.6;}
 .invite-row{display:flex;gap:6px;align-items:center;}
-.invite-input{flex:1;padding:6px 9px;background:var(--surface);border:.5px solid var(--border2);border-radius:5px;color:var(--text);font-size:11px;font-family:monospace;}
+.invite-input{flex:1;padding:6px 9px;background:var(--surface);border:.5px solid var(--border2);border-radius:5px;color:var(--text);font-size:11px;font-family:'JetBrains Mono','DM Mono',monospace;}
 .btn-copy{padding:6px 12px;background:var(--accent);border:none;border-radius:5px;font-size:12px;font-weight:600;white-space:nowrap;}
 [data-theme="dark"] .btn-copy{color:#0f0f0f;}
 [data-theme="light"] .btn-copy{color:#fff;}
@@ -231,6 +240,244 @@ td{padding:9px 13px;vertical-align:middle;}
 .ld{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:ld .8s infinite;}
 .ld:nth-child(2){animation-delay:.15s;} .ld:nth-child(3){animation-delay:.3s;}
 @keyframes ld{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+
+/* ── NETWORK TREE ── */
+.nt-wrap{display:flex;flex-direction:column;align-items:center;}
+.nt-row{display:flex;flex-direction:row;align-items:flex-start;justify-content:center;gap:32px;position:relative;}
+.nt-branch{display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+.nt-vline{width:1.5px;background:var(--border2);margin:0 auto;flex-shrink:0;}
+.nt-leg-label{font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:4px;margin-bottom:5px;flex-shrink:0;}
+.nt-leg-label.left{background:var(--blue-dim);color:var(--blue);}
+.nt-leg-label.right{background:var(--gold-dim);color:var(--gold);}
+.nt-card{width:120px;border-radius:10px;background:var(--surface);border:.5px solid var(--border2);padding:.625rem .625rem .5rem;cursor:pointer;transition:border-color .2s,box-shadow .2s,transform .15s;position:relative;overflow:hidden;flex-shrink:0;user-select:none;}
+.nt-card:hover{border-color:var(--accent);box-shadow:0 4px 20px rgba(201,168,76,.18);transform:translateY(-2px);}
+.nt-card.leader-node::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),#e2c16a);}
+.nt-card.member-node::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--blue);}
+.nt-card.open-slot{border:1.5px dashed var(--border2);background:transparent;cursor:default;display:flex;align-items:center;justify-content:center;height:110px;overflow:hidden;}
+.nt-card.open-slot:hover{border-color:var(--border2);box-shadow:none;transform:none;}
+.nt-card.drop-ready{border-color:var(--gold)!important;background:var(--gold-dim)!important;box-shadow:0 0 0 3px var(--gold-dim);}
+.nt-card.dragging{opacity:.35;transform:scale(.95);}
+.nt-card.drag-over{box-shadow:0 0 0 2px var(--gold);}
+.nt-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:monospace;margin:0 auto .4rem;}
+.nt-name{font-size:11px;font-weight:600;text-align:center;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.nt-role{font-size:9px;color:var(--text3);text-align:center;margin-top:2px;}
+.nt-popover{position:absolute;z-index:999;background:var(--surface);border:.5px solid var(--border2);border-radius:10px;padding:.875rem;width:200px;box-shadow:var(--shadow);left:50%;transform:translateX(-50%);top:calc(100% + 8px);}
+.nt-popover-stats{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:.5rem;}
+.nt-popover-stat{background:var(--surface2);border-radius:6px;padding:6px 4px;text-align:center;border:.5px solid var(--border);}
+.nt-popover-val{font-size:16px;font-weight:600;font-family:monospace;line-height:1;}
+.nt-popover-lbl{font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;margin-top:2px;}
+
+/* =========================================================
+   PROTRACKER — MODERN UI REFRESH
+   Visual-only layer: preserves existing Firebase/app logic.
+   ========================================================= */
+:root{
+  --modern-radius:16px;
+  --modern-radius-sm:11px;
+  --modern-glass:rgba(255,255,255,.055);
+  --modern-glass-strong:rgba(255,255,255,.085);
+  --modern-line:rgba(255,255,255,.09);
+  --modern-shadow:0 20px 55px rgba(0,0,0,.24);
+  --modern-shadow-sm:0 8px 26px rgba(0,0,0,.16);
+}
+[data-theme="dark"]{
+  --bg:#08090d;
+  --surface:#101218;
+  --surface2:#171a22;
+  --border:rgba(255,255,255,.075);
+  --border2:rgba(255,255,255,.12);
+  --text:#f4f5f7;
+  --text2:#b7bcc7;
+  --text3:#747b89;
+}
+[data-theme="light"]{
+  --bg:#f5f6f8;
+  --surface:#ffffff;
+  --surface2:#f0f2f5;
+  --border:rgba(18,24,40,.08);
+  --border2:rgba(18,24,40,.13);
+  --text:#171a21;
+  --text2:#606876;
+  --text3:#8b929e;
+}
+body{
+  background:
+    radial-gradient(circle at 15% -10%, rgba(201,168,76,.10), transparent 30%),
+    radial-gradient(circle at 95% 10%, rgba(74,156,240,.08), transparent 28%),
+    var(--bg);
+}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:-1;
+  opacity:.22;
+  background-image:radial-gradient(rgba(255,255,255,.14) .5px,transparent .5px);
+  background-size:18px 18px;
+}
+.topbar{
+  height:64px;
+  padding:0 22px;
+  background:rgba(10,11,15,.72);
+  border-bottom:1px solid var(--modern-line);
+  box-shadow:0 8px 30px rgba(0,0,0,.12);
+}
+[data-theme="light"] .topbar{
+  background:rgba(255,255,255,.78);
+}
+.topbar-logo{gap:10px;margin-right:14px}
+.topbar-mark{
+  width:34px;height:34px;border-radius:10px;
+  box-shadow:0 5px 20px rgba(201,168,76,.22);
+}
+.topbar-name{font-size:15px;letter-spacing:-.45px}
+.t-tab{
+  padding:8px 13px;
+  border-radius:9px;
+  font-size:12px;
+}
+.t-tab:hover{background:var(--modern-glass)}
+.t-tab.on{
+  background:var(--modern-glass-strong);
+  box-shadow:inset 0 0 0 1px var(--modern-line);
+}
+.user-av{
+  width:34px;height:34px;
+  box-shadow:0 0 0 4px rgba(201,168,76,.06);
+}
+.btn-sm,.f-btn{
+  border-radius:9px;
+  transition:transform .15s,background .15s,border-color .15s;
+}
+.btn-sm:hover,.f-btn:hover{transform:translateY(-1px);background:var(--modern-glass)}
+.search{
+  height:36px;
+  border-radius:10px;
+  background:var(--surface);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+}
+.btn-add,.btn-primary{
+  border-radius:10px;
+  min-height:38px;
+  box-shadow:0 8px 24px rgba(201,168,76,.16);
+}
+.tbl-wrap,.tc,.tree-wrap,.leg-card,.sc,.modal,.auth-card{
+  border-color:var(--modern-line)!important;
+  box-shadow:var(--modern-shadow-sm);
+}
+.tbl-wrap,.tree-wrap{
+  border-radius:16px;
+  overflow:hidden;
+}
+table{min-width:780px}
+thead th{
+  padding:12px 14px;
+  background:linear-gradient(180deg,var(--surface2),rgba(0,0,0,0));
+}
+tbody tr{transition:background .15s,transform .15s}
+tbody tr:hover{background:rgba(255,255,255,.035)}
+td{padding:11px 14px}
+.tc{
+  border-radius:16px;
+  padding:15px;
+  background:linear-gradient(145deg,var(--surface),rgba(255,255,255,.025));
+  transition:transform .18s,box-shadow .18s,border-color .18s;
+}
+.tc:hover{
+  transform:translateY(-3px);
+  box-shadow:0 16px 40px rgba(0,0,0,.22);
+}
+.tc-av{width:40px;height:40px;border-radius:12px}
+.tc-num{
+  border-radius:11px;
+  padding:10px 5px;
+  border-color:var(--modern-line);
+}
+.tc-num-val{font-size:19px}
+.leg-card{
+  border-radius:18px;
+  padding:18px;
+  background:
+    linear-gradient(145deg,rgba(255,255,255,.045),transparent 55%),
+    var(--surface);
+}
+.leg-card:hover{transform:translateY(-2px);transition:transform .18s,box-shadow .18s}
+.leg-visual{display:grid;grid-template-columns:150px 1fr;gap:18px;align-items:center;margin:16px 0 14px;}
+.leg-donut{width:142px;height:142px;border-radius:50%;position:relative;display:grid;place-items:center;flex-shrink:0;box-shadow:inset 0 0 0 1px var(--border);}
+.leg-donut::after{content:'';position:absolute;width:88px;height:88px;border-radius:50%;background:var(--surface);box-shadow:0 3px 14px rgba(0,0,0,.08);}
+.leg-donut-center{position:relative;z-index:2;text-align:center;line-height:1.1;}
+.leg-donut-total{font-size:27px;font-weight:800;letter-spacing:-1px;}
+.leg-donut-label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-top:4px;}
+.leg-legend{display:flex;flex-direction:column;gap:9px;}
+.leg-legend-row{display:grid;grid-template-columns:10px 1fr auto;align-items:center;gap:8px;font-size:11px;}
+.leg-legend-dot{width:9px;height:9px;border-radius:50%;}
+.leg-legend-name{color:var(--text2);}
+.leg-legend-value{font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
+.leg-legend-pct{font-size:10px;color:var(--text3);margin-left:4px;}
+.leg-mini-metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px;}
+.leg-mini-metric{padding:9px 10px;border:1px solid var(--modern-line);border-radius:11px;background:rgba(255,255,255,.025);}
+.leg-mini-value{font-size:17px;font-weight:750;line-height:1.1;}
+.leg-mini-label{font-size:10px;color:var(--text3);margin-top:3px;}
+@media(max-width:700px){.leg-visual{grid-template-columns:1fr;justify-items:center}.leg-legend{width:100%}}
+.leg-stats{gap:10px}
+.leg-stat{
+  border:1px solid var(--modern-line);
+  border-radius:12px;
+  padding:10px 7px;
+  background:rgba(255,255,255,.025);
+}
+.rank-row{
+  border-radius:10px;
+  padding:7px 8px;
+}
+.rank-row:hover{background:var(--modern-glass)}
+.rank-bar-wrap{height:5px;border-radius:10px}
+.rank-bar{border-radius:10px}
+.nt-card{
+  border-radius:14px;
+  box-shadow:0 10px 30px rgba(0,0,0,.12);
+}
+.nt-card:hover{transform:translateY(-4px) scale(1.01)}
+.fg input,.fg select,.fg textarea{
+  min-height:38px;
+  border-radius:10px;
+  border-color:var(--modern-line);
+}
+.fg input:focus,.fg select:focus,.fg textarea:focus{
+  box-shadow:0 0 0 3px rgba(201,168,76,.10);
+}
+.modal{
+  border-radius:20px!important;
+  background:rgba(16,18,24,.94)!important;
+  backdrop-filter:blur(20px);
+}
+[data-theme="light"] .modal{
+  background:rgba(255,255,255,.94)!important;
+}
+.auth-card{
+  border-radius:24px;
+  padding:2.5rem;
+  backdrop-filter:blur(20px);
+  background:linear-gradient(145deg,rgba(255,255,255,.06),rgba(255,255,255,.02)),var(--surface);
+}
+.auth-top{margin-bottom:2rem}
+.auth-logo .logo-mark{width:44px;height:44px;border-radius:12px}
+.pill{border-radius:999px!important}
+.loader{padding:2rem}
+.ld{border-radius:50%}
+@media(max-width:900px){
+  .topbar{padding:0 12px;gap:4px;overflow-x:auto}
+  .topbar-right{min-width:max-content}
+  .topbar-name{display:none}
+  .t-tab{padding:7px 9px}
+}
+@media(max-width:640px){
+  .auth-card{padding:1.5rem;border-radius:18px}
+  .tbl-wrap{border-radius:12px}
+  .tc{padding:12px}
+}
+
 </style>
 </head>
 <body>
@@ -250,8 +497,8 @@ td{padding:9px 13px;vertical-align:middle;}
           </svg>
         </div>
         <div>
-          <div class="logo-text">Prospect Manager</div>
-          <div class="logo-sub">developed by @simonemallamo</div>
+          <div class="logo-text">RY Manager</div>
+          <div class="logo-sub">developed by Simone Mallamo</div>
         </div>
       </div>
       <div class="toggle-wrap">
@@ -306,10 +553,11 @@ td{padding:9px 13px;vertical-align:middle;}
           <line x1="10" y1="8.5" x2="16.5" y2="12.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
       </div>
-      <div class="topbar-name">Prospect Manager <span>developed by @simonemallamo</span></div>
+      <div class="topbar-name">RY Manager<span>developed by Simone Mallamo</span></div>
     </div>
     <button class="t-tab on" id="tab-lista" onclick="switchTab('lista')">Lista Prospect</button>
     <button class="t-tab leader hidden" id="tab-team" onclick="switchTab('team')">Dashboard Team</button>
+    <button class="t-tab leader hidden" id="tab-tree" onclick="switchTab('tree')">🌳 Albero</button>
     <button class="t-tab admin-tab hidden" id="tab-admin" onclick="switchTab('admin')">⚙ Admin</button>
     <div class="topbar-right">
       <div class="toggle-wrap"><span>☀️</span><div class="t-toggle" onclick="toggleTheme()"></div><span>🌙</span></div>
@@ -380,10 +628,10 @@ td{padding:9px 13px;vertical-align:middle;}
       <!-- Binary leg comparison -->
       <div class="dash-title" style="margin-top:.25rem;">Confronto gambe</div>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:1rem;flex-wrap:wrap;">
-        <select id="leg-leader-filter" class="search" style="width:200px;" onchange="renderTeamDashboard()">
+        <select id="leg-leader-filter" class="search" style="width:260px;" onchange="renderTeamDashboard()">
           <option value="">Tutta la struttura</option>
         </select>
-        <span style="font-size:12px;color:var(--text3);">Filtra per leader per vedere le sue gambe</span>
+        <span id="leg-filter-hint" style="font-size:12px;color:var(--text3);">Filtra per leader o membro per vedere le sue gambe</span>
       </div>
       <div id="binary-view" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem;"></div>
 
@@ -463,6 +711,35 @@ td{padding:9px 13px;vertical-align:middle;}
       </div>
     </div>
 
+    <!-- ALBERO NETWORK -->
+    <div id="view-tree" class="hidden">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:18px;font-weight:700;letter-spacing:-.3px;">Albero Network</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:1px;">Trascina una persona su Open o su un'altra persona per spostarla o sostituirla · puoi anche cliccare</div>
+        </div>
+        <select id="tree-root-select" class="search" style="width:190px;margin-left:auto;" onchange="reloadTree()">
+          <option value="">La mia struttura</option>
+        </select>
+        <div style="display:flex;gap:4px;">
+          <button onclick="treeZoom(1.15)" class="f-btn" style="width:30px;padding:0;font-size:18px;line-height:1;">+</button>
+          <button onclick="treeZoom(.87)" class="f-btn" style="width:30px;padding:0;font-size:18px;line-height:1;">−</button>
+          <button onclick="treeFit()" class="f-btn" style="padding:0 10px;" title="Centra albero">⊡</button>
+          <button onclick="resetNetworkTree()" class="f-btn" style="padding:0 10px;" title="Ripristina l'albero usando il posizionamento salvato della Dashboard Team">↻ Reset</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:11px;color:var(--text3);">
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;border-radius:50%;background:var(--gold);display:inline-block;"></span>Leader</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;border-radius:50%;background:var(--blue);display:inline-block;"></span>Membro</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;border-radius:50%;border:1.5px dashed var(--border2);display:inline-block;"></span>Open</span>
+        </div>
+      </div>
+      <div id="tree-canvas-wrap" style="width:100%;height:calc(100vh - 210px);min-height:500px;overflow:hidden;background:var(--surface);border:.5px solid var(--border);border-radius:12px;position:relative;cursor:grab;">
+        <div id="tree-canvas" style="position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform;">
+          <div id="network-tree-root" style="padding:40px;display:inline-flex;min-width:max-content;"></div>
+        </div>
+      </div>
+      <div id="tree-drag-hint" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface);border:.5px solid var(--border2);border-radius:8px;padding:8px 16px;font-size:12px;color:var(--text2);z-index:500;box-shadow:var(--shadow);">💡 Trascina una persona su Open o su un'altra persona per spostarla / sostituirla</div>
+    </div>
     <!-- ADMIN -->
     <div id="view-admin" class="hidden">
       <div class="stats" id="admin-stats"></div>
@@ -518,6 +795,24 @@ td{padding:9px 13px;vertical-align:middle;}
   </div>
 </div>
 
+
+<!-- Network Position Modal -->
+<div id="ntp-overlay" class="overlay hidden">
+  <div class="modal" style="max-width:430px;">
+    <div class="modal-title">📍 Gestisci posizione</div>
+    <div class="modal-info">
+      <div class="mi-name" id="ntp-title">Posizione</div>
+      <div class="mi-sub" id="ntp-sub">—</div>
+    </div>
+    <div class="fg"><label>Persona da inserire</label><select id="ntp-user"></select></div>
+    <div id="ntp-warning" style="display:none;margin-top:8px;padding:9px 10px;border:1px solid var(--amber-dim);background:var(--amber-dim);border-radius:8px;font-size:11px;color:var(--amber);line-height:1.5;"></div>
+    <div class="modal-err" id="ntp-err"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeNetworkPositionModal()">Annulla</button>
+      <button class="btn-save" id="ntp-save" onclick="saveNetworkPosition()">Conferma</button>
+    </div>
+  </div>
+</div>
 
 <!-- Settings Modal -->
 <div id="s-overlay" class="overlay hidden">
@@ -707,7 +1002,7 @@ td{padding:9px 13px;vertical-align:middle;}
 import { initializeApp }        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged }
                                  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc,
+import { getFirestore, collection, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc, writeBatch,
          onSnapshot, query, where, serverTimestamp, getDocs }
                                  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -787,6 +1082,40 @@ let allUsers = [], allProspects = [];
 let editingUid = null;
 let aFilter = 'tutti';
 let unsub = null;
+
+// ── BINARY LEG HELPERS ──
+// Leg assignments are stored per-upline in legMap.<uplineUid>.
+// Older records may still have a legacy `leg` field, so use it only
+// when the user is a direct child of the requested upline.
+function getLegFor(user, refUid) {
+  if(!user || !refUid || user.id === refUid) return null;
+  const map = user.legMap;
+  if(map && Object.prototype.hasOwnProperty.call(map, refUid)) {
+    const leg = map[refUid];
+    return leg === 'left' || leg === 'right' ? leg : null;
+  }
+  if(user.uplineUid === refUid && (user.leg === 'left' || user.leg === 'right')) {
+    return user.leg;
+  }
+  return null;
+}
+
+function getLegForUser(user, refUid, allUsers) {
+  if(!user || !refUid || user.id === refUid) return null;
+  const users = allUsers || window._cachedUs || window._treeUs || [];
+  if(user.uplineUid === refUid) return getLegFor(user, refUid);
+
+  // Walk upward using uplineUid, which is the source of truth for the tree.
+  // The first child below refUid determines the whole descendant's leg.
+  let current = user;
+  let guard = 0;
+  while(current && current.uplineUid && guard++ < 500) {
+    const parentUid = current.uplineUid;
+    if(parentUid === refUid) return getLegFor(current, refUid);
+    current = users.find(u => u.id === parentUid);
+  }
+  return null;
+}
 
 // ── THEME ──
 window.toggleTheme = () => {
@@ -950,6 +1279,7 @@ function showApp() {
   id('u-av').textContent = ini;
   id('u-nm').textContent = cData?.name || cUser.email;
   if (cData?.role === 'leader') id('tab-team').classList.remove('hidden');
+  id('tab-tree').classList.remove('hidden');
   id('tab-admin').classList.remove('hidden'); // always visible, protected by code
   loadProspects();
 }
@@ -1144,10 +1474,10 @@ window.moveMember = async function(uid, dir) {
   var allUs = window._cachedUs || [];
   var u = allUs.find(function(x){return x.id===uid;});
   if(!u) return;
-  var leg = u.leg || '';
+  var leg = getLegFor(u, cUser.uid) || '';
   // Get siblings in same leg, sorted by legOrder
   var siblings = allUs
-    .filter(function(x){return x.leg===leg && !hiddenMembers.has(x.id);})
+    .filter(function(x){return getLegFor(x, cUser.uid)===leg && !hiddenMembers.has(x.id);})
     .sort(function(a,b){return (a.legOrder??9999)-(b.legOrder??9999)||(a.name||'').localeCompare(b.name||'');});
   var idx = siblings.findIndex(function(x){return x.id===uid;});
   if(idx<0) return;
@@ -1177,9 +1507,9 @@ window.handleDrop = async function(draggedUid, targetUid, fromGrid, toGrid) {
 
   if(sameLeg) {
     // Reorder within same leg — swap legOrder values
-    var leg = dragged.leg || '';
+    var leg = getLegFor(dragged, cUser.uid) || '';
     var siblings = allUs
-      .filter(function(x){return x.leg===leg && !hiddenMembers.has(x.id);})
+      .filter(function(x){return getLegFor(x, cUser.uid)===leg && !hiddenMembers.has(x.id);})
       .sort(function(a,b){return (a.legOrder??9999)-(b.legOrder??9999)||(a.name||'').localeCompare(b.name||'');});
     var fromIdx = siblings.findIndex(function(x){return x.id===draggedUid;});
     var toIdx   = siblings.findIndex(function(x){return x.id===targetUid;});
@@ -1198,12 +1528,15 @@ window.handleDrop = async function(draggedUid, targetUid, fromGrid, toGrid) {
     } catch(e){console.warn('handleDrop error',e);}
   } else {
     // Move to different leg — change leg + assign order at bottom
-    var newLeg = target.leg || '';
-    var newSiblings = allUs.filter(function(x){return x.leg===newLeg && !hiddenMembers.has(x.id);});
+    var newLeg = getLegFor(target, cUser.uid) || '';
+    var newSiblings = allUs.filter(function(x){return getLegFor(x, cUser.uid)===newLeg && !hiddenMembers.has(x.id);});
     var maxOrder = newSiblings.reduce(function(m,x){return Math.max(m,x.legOrder??0);},0);
     try {
-      await updateDoc(doc(db,'users',draggedUid),{leg:newLeg, legOrder:maxOrder+1});
-      dragged.leg = newLeg;
+      var crossUpdate = {legOrder:maxOrder+1};
+      crossUpdate['legMap.'+cUser.uid] = newLeg||null;
+      await updateDoc(doc(db,'users',draggedUid),crossUpdate);
+      if(!dragged.legMap) dragged.legMap={};
+      dragged.legMap[cUser.uid] = newLeg;
       dragged.legOrder = maxOrder+1;
       renderTeamDashboard();
     } catch(e){console.warn('handleDrop cross-leg error',e);}
@@ -1283,22 +1616,273 @@ window.toggleHideMember = function(uid) {
   renderTeamDashboard();
 };
 
-window.setLeg = async (uid, leg, btn) => {
-  try {
-    await updateDoc(doc(db,'users',uid), { leg: leg||null });
-    // Update local caches
-    if(window._cachedUs) {
-      const u = window._cachedUs.find(u=>u.id===uid);
-      if(u) u.leg = leg||null;
-    }
-    // Re-render team dashboard with cached data
-    renderTeamDashboard();
-  } catch(e) {
-    alert('Errore: '+e.message);
+
+// ══ NETWORK TREE ══
+async function loadNetworkTree(){
+  const ct=id('network-tree-root');
+  if(ct)ct.innerHTML='<div class="loader"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div>';
+  const[us,ps]=await Promise.all([
+    getDocs(collection(db,'users')).then(s=>s.docs.map(d=>({id:d.id,...d.data()}))),
+    getDocs(collection(db,'prospects')).then(s=>s.docs.map(d=>({id:d.id,...d.data()})))
+  ]);
+  window._treeUs=us; window._treePs=ps;
+  const myUid=cUser.uid;
+  const userById=new Map(us.map(u=>[u.id,u]));
+  const parentOfGlobal=u => u.uplineUid || ((u.uplinePath||[]).length ? u.uplinePath[u.uplinePath.length-1] : null);
+  const childrenByParent=new Map();
+  us.forEach(u=>{const p=parentOfGlobal(u);if(!childrenByParent.has(p))childrenByParent.set(p,[]);childrenByParent.get(p).push(u);});
+  function gd(root){const r=new Set(),q=[root];while(q.length){const c=q.shift();for(const ch of(childrenByParent.get(c)||[])){if(!r.has(ch.id)){r.add(ch.id);q.push(ch.id);}}}return r;}
+  const ds=gd(myUid);
+  const sel=id('tree-root-select');
+  if(sel){
+    const cv=sel.value;
+    const members=us.filter(u=>ds.has(u.id));
+    const alpha=(a,b)=>(a.name||a.email||'').localeCompare(b.name||b.email||'','it',{sensitivity:'base'});
+    const leaders=members.filter(u=>u.role==='leader').sort(alpha), regular=members.filter(u=>u.role!=='leader').sort(alpha);
+    sel.innerHTML='<option value="">La mia struttura</option>'+
+      (leaders.length?'<optgroup label="Leader">'+leaders.map(u=>`<option value="${u.id}"${u.id===cv?' selected':''}>${x(u.name||u.email)}</option>`).join('')+'</optgroup>':'')+
+      (regular.length?'<optgroup label="Membri">'+regular.map(u=>`<option value="${u.id}"${u.id===cv?' selected':''}>${x(u.name||u.email)}</option>`).join('')+'</optgroup>':'');
   }
+  initTreeCanvas(); renderNetworkTree();
+}
+
+window.resetNetworkTree=async function(){
+  const btn=document.querySelector('button[onclick="resetNetworkTree()"]');
+  if(btn){btn.disabled=true;btn.textContent='↻ Reset…';}
+  try{
+    // Reset is PER VIEWER. It never changes the global upline and never changes
+    // another leader's personal Network Tree. It simply clears this viewer's
+    // private layout so the tree is rebuilt from the Team Dashboard hierarchy.
+    await updateDoc(doc(db,'users',cUser.uid),{networkLayout:{}});
+    const me=(window._treeUs||[]).find(u=>u.id===cUser.uid); if(me)me.networkLayout={};
+    _tScale=1;_tX=0;_tY=0;renderNetworkTree();setTimeout(()=>treeFit(),50);
+  }catch(e){console.error('Network Tree reset failed:',e);alert('Errore nel reset: '+(e.message||e));}
+  finally{if(btn){btn.disabled=false;btn.textContent='↻ Reset';}}
+};
+window.reloadTree=function(){renderNetworkTree();};
+
+var _tScale=1,_tX=0,_tY=0,_tDrag=false,_tDx=0,_tDy=0;
+function applyT(){const cv=id('tree-canvas');if(cv)cv.style.transform=`translate(${_tX}px,${_tY}px) scale(${_tScale})`;}
+window.treeZoom=function(f){_tScale=Math.min(Math.max(_tScale*f,.2),3);applyT();};
+window.treeFit=function(){_tScale=1;_tX=0;_tY=0;applyT();};
+function initTreeCanvas(){const w=id('tree-canvas-wrap');if(!w||w._i)return;w._i=true;_tScale=1;_tX=0;_tY=0;
+  w.addEventListener('mousedown',e=>{if(e.target.closest('.nt-card'))return;_tDrag=true;_tDx=e.clientX-_tX;_tDy=e.clientY-_tY;w.style.cursor='grabbing';});
+  window.addEventListener('mousemove',e=>{if(!_tDrag)return;_tX=e.clientX-_tDx;_tY=e.clientY-_tDy;applyT();});
+  window.addEventListener('mouseup',()=>{_tDrag=false;if(w)w.style.cursor='grab';});
+  w.addEventListener('wheel',e=>{e.preventDefault();_tScale=Math.min(Math.max(_tScale*(e.deltaY<0?1.12:.89),.2),3);applyT();},{passive:false});
+}
+
+var _dragUid=null,_popT=null;
+function showPop(card,uid){const us=window._treeUs||[],ps=window._treePs||[],u=us.find(v=>v.id===uid);if(!u)return;const mp=ps.filter(p=>p.uid===uid),wk=Date.now()-7*86400000;if(card.querySelector('.nt-popover'))return;
+  const pop=document.createElement('div');pop.className='nt-popover';pop.innerHTML=`<div style="font-size:12px;font-weight:600;margin-bottom:3px;">${x(u.name||u.email)}</div><div style="font-size:10px;color:var(--text3);margin-bottom:.5rem;">${u.role==='leader'?'👑 Leader':'Membro'}${u.userNumber?' · #'+u.userNumber:''}</div><div class="nt-popover-stats"><div class="nt-popover-stat"><div class="nt-popover-val" style="color:var(--gold)">${mp.length}</div><div class="nt-popover-lbl">Prospect</div></div><div class="nt-popover-stat"><div class="nt-popover-val" style="color:var(--green)">${mp.filter(p=>(p.createdAt?.toMillis()||0)>=wk).length}</div><div class="nt-popover-lbl">Sett.</div></div><div class="nt-popover-stat"><div class="nt-popover-val" style="color:var(--blue)">${mp.filter(p=>p.presentation).length}</div><div class="nt-popover-lbl">Pres.</div></div><div class="nt-popover-stat"><div class="nt-popover-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="nt-popover-lbl">Pag.</div></div></div>`;card.style.overflow='visible';card.appendChild(pop);
+}
+function hidePop(card){const p=card.querySelector('.nt-popover');if(p)p.remove();card.style.overflow='hidden';}
+
+// Private visual layout helpers. `uplineUid` remains the real sponsor/upline used
+// by Team Dashboard. `networkLayout[viewerUid]` is ONLY the viewer's visual tree.
+function getNetworkLayoutFor(viewerUid){
+  const me=(window._treeUs||[]).find(u=>u.id===viewerUid); return me?.networkLayout||{};
+}
+function getVisualPosition(user,viewerUid){
+  const layout=getNetworkLayoutFor(viewerUid)[user.id];
+  if(layout && layout.parentUid) return {parentUid:layout.parentUid,leg:layout.leg||null,order:layout.order??9999,custom:true};
+  const p=user.uplineUid || ((user.uplinePath||[]).length?user.uplinePath[user.uplinePath.length-1]:null);
+  return {parentUid:p,leg:p?getLegFor(user,p):null,order:user.legOrder??9999,custom:false};
+}
+function visualDescendant(candidateId,ancestorId,viewerUid,byId){
+  let cur=candidateId,seen=new Set();
+  while(cur && !seen.has(cur)){seen.add(cur);if(cur===ancestorId)return true;const u=byId.get(cur);if(!u)break;cur=getVisualPosition(u,viewerUid).parentUid;}
+  return false;
+}
+
+window.renderNetworkTree=function(){
+  const us=window._treeUs||[],ps=window._treePs||[],myUid=cUser.uid;
+  const rootUid=id('tree-root-select')?.value||myUid;
+  const ct=id('network-tree-root');if(!ct)return;
+  ct.innerHTML='';
+
+  // IMPORTANT: this is only a visual tree for the selected viewer/root.
+  // The real Team Dashboard hierarchy (uplineUid / legMap) is never changed here.
+  const userById=new Map(us.map(u=>[u.id,u]));
+  const childrenByParent=new Map();
+  us.forEach(u=>{
+    if(u.id===rootUid)return;
+    const pos=getVisualPosition(u,rootUid);
+    if(!pos.parentUid)return;
+    if(!childrenByParent.has(pos.parentUid))childrenByParent.set(pos.parentUid,[]);
+    childrenByParent.get(pos.parentUid).push(u);
+  });
+  const treeSort=(a,b)=>{
+    const pa=getVisualPosition(a,rootUid),pb=getVisualPosition(b,rootUid);
+    if((pa.order??9999)!==(pb.order??9999)) return (pa.order??9999)-(pb.order??9999);
+    return (a.name||a.email||'').localeCompare(b.name||b.email||'','it',{sensitivity:'base'});
+  };
+  const kids=(pid,leg)=>(childrenByParent.get(pid)||[])
+    .filter(u=>getVisualPosition(u,rootUid).leg===leg).sort(treeSort);
+  const unassignedKids=pid=>(childrenByParent.get(pid)||[])
+    .filter(u=>!getVisualPosition(u,rootUid).leg).sort(treeSort);
+
+  function mkCard(u,pid){
+    const isL=u.role==='leader';
+    const ini=(u.name||'?').split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
+    const parts=(u.name||u.email||'').split(' '),fn=parts[0],ln=parts.slice(1).join(' ');
+    const cols=[{bg:'rgba(201,168,76,.18)',c:'var(--gold)'},{bg:'rgba(91,156,246,.18)',c:'var(--blue)'},{bg:'rgba(74,222,160,.18)',c:'var(--green)'},{bg:'rgba(180,74,240,.18)',c:'#b44af0'}];
+    const col=cols[u.id.charCodeAt(0)%cols.length];
+    const el=document.createElement('div');
+    el.className='nt-card '+(isL?'leader-node':'member-node');
+    el.innerHTML=`<div class="nt-av" style="background:${col.bg};color:${col.c};">${ini}</div>
+      <div class="nt-name">${x(fn)}</div>
+      ${ln?`<div class="nt-name" style="font-weight:400;color:var(--text2);font-size:10px;">${x(ln)}</div>`:''}
+      <div class="nt-role">${isL?'👑':''} ${u.userNumber?'#'+u.userNumber:u.role==='leader'?'Leader':'Membro'}</div>`;
+    el.addEventListener('mouseenter',()=>{_popT=setTimeout(()=>showPop(el,u.id),300);});
+    el.addEventListener('mouseleave',()=>{clearTimeout(_popT);hidePop(el);});
+    el.style.cursor=pid?'grab':'default';
+    if(pid){
+      el.title='Trascina per spostare/sostituire · clicca per gestire';
+      el.setAttribute('draggable','true');el.dataset.uid=u.id;
+      el.addEventListener('dragstart',e=>{
+        _dragUid=u.id;e.dataTransfer.setData('text/plain',u.id);e.dataTransfer.effectAllowed='move';
+        setTimeout(()=>el.classList.add('dragging'),0);
+      });
+      el.addEventListener('dragend',()=>{
+        _dragUid=null;el.classList.remove('dragging');
+        document.querySelectorAll('.nt-card.drag-over').forEach(n=>n.classList.remove('drag-over'));
+      });
+      el.addEventListener('dragover',e=>{
+        if(!_dragUid||_dragUid===u.id)return;
+        e.preventDefault();e.stopPropagation();e.dataTransfer.dropEffect='move';el.classList.add('drag-over');
+      });
+      el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
+      el.addEventListener('drop',async e=>{
+        e.preventDefault();e.stopPropagation();el.classList.remove('drag-over');
+        const d=e.dataTransfer.getData('text/plain')||_dragUid;
+        if(d&&d!==u.id)await moveNetworkPositionByDrop(d,u.id,pid,getVisualPosition(u,rootUid).leg,rootUid);
+      });
+      el.addEventListener('click',e=>{
+        if(e.target.closest('.nt-popover'))return;
+        openNetworkPositionModal(u.id,pid,getVisualPosition(u,rootUid).leg,rootUid);
+      });
+    }
+    return el;
+  }
+
+  function mkSlot(pid,leg){
+    const el=document.createElement('div');el.className='nt-card open-slot';
+    el.innerHTML=`<div style="text-align:center;"><div style="font-size:22px;opacity:.2;margin-bottom:4px;">+</div><div style="font-size:10px;color:var(--text3);">Open</div><div style="font-size:9px;color:var(--text3);margin-top:1px;">${leg==='left'?'👈':'👉'}</div></div>`;
+    el.style.cursor='copy';el.title='Trascina qui una persona · oppure clicca per scegliere';
+    el.addEventListener('dragover',e=>{if(!_dragUid)return;e.preventDefault();e.stopPropagation();e.dataTransfer.dropEffect='move';el.classList.add('drag-over');});
+    el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
+    el.addEventListener('drop',async e=>{
+      e.preventDefault();e.stopPropagation();el.classList.remove('drag-over');
+      const d=e.dataTransfer.getData('text/plain')||_dragUid;
+      if(d)await moveNetworkPositionByDrop(d,null,pid,leg,rootUid);_dragUid=null;
+    });
+    el.addEventListener('click',()=>openNetworkPositionModal(null,pid,leg,rootUid));
+    return el;
+  }
+
+  function vl(h){const d=document.createElement('div');d.className='nt-vline';d.style.height=(h||24)+'px';return d;}
+
+  // Preserve the original tree geometry: every node owns a left and right branch,
+  // and descendants are rendered inside the corresponding branch. This avoids the
+  // broken "three columns per depth" layout introduced in V5.
+  function build(uid,pid,depth,path){
+    const u=userById.get(uid);if(!u)return null;
+    const branchPath=path instanceof Set?path:new Set();
+    if(branchPath.has(uid))return null;
+    const nextPath=new Set(branchPath);nextPath.add(uid);
+
+    const wrap=document.createElement('div');wrap.className='nt-wrap';
+    wrap.appendChild(mkCard(u,pid||uid));
+    wrap.appendChild(vl(20));
+
+    const lk=kids(uid,'left').filter(ch=>!nextPath.has(ch.id));
+    const rk=kids(uid,'right').filter(ch=>!nextPath.has(ch.id));
+    const row=document.createElement('div');row.className='nt-row';
+    const hb=document.createElement('div');
+    hb.style.cssText='position:absolute;top:0;left:calc(60px + 1px);right:calc(60px + 1px);height:1.5px;background:var(--border2);pointer-events:none;';
+    row.appendChild(hb);
+
+    const lb=document.createElement('div');lb.className='nt-branch';lb.appendChild(vl(20));
+    const ll=document.createElement('div');ll.className='nt-leg-label left';ll.textContent='👈 Sinistra';lb.appendChild(ll);
+    if(lk.length){lk.forEach(ch=>{const sub=build(ch.id,uid,depth+1,nextPath);if(sub)lb.appendChild(sub);});}
+    else lb.appendChild(mkSlot(uid,'left'));
+    row.appendChild(lb);
+
+    const rb=document.createElement('div');rb.className='nt-branch';rb.appendChild(vl(20));
+    const rl=document.createElement('div');rl.className='nt-leg-label right';rl.textContent='👉 Destra';rb.appendChild(rl);
+    if(rk.length){rk.forEach(ch=>{const sub=build(ch.id,uid,depth+1,nextPath);if(sub)rb.appendChild(sub);});}
+    else rb.appendChild(mkSlot(uid,'right'));
+    row.appendChild(rb);
+
+    const uk=unassignedKids(uid).filter(ch=>!nextPath.has(ch.id));
+    if(uk.length){
+      const ub=document.createElement('div');
+      ub.style.cssText='margin-top:10px;padding:8px 10px;border:1px dashed var(--border2);border-radius:10px;background:var(--surface2);display:flex;flex-wrap:wrap;gap:8px;justify-content:center;';
+      const lab=document.createElement('div');lab.style.cssText='width:100%;font-size:9px;color:var(--amber);text-align:center;margin-bottom:2px;';lab.textContent='⚠ Non assegnati';ub.appendChild(lab);
+      uk.forEach(ch=>{const c=mkCard(ch,uid);c.classList.add('unassigned-node');ub.appendChild(c);});
+      wrap.appendChild(ub);
+    }
+    wrap.appendChild(row);
+    return wrap;
+  }
+
+  const tree=build(rootUid,null,0,new Set());
+  if(tree)ct.appendChild(tree);else ct.innerHTML='<div class="empty">Struttura non trovata.</div>';
+  setTimeout(()=>{const w=id('tree-canvas-wrap'),cv=id('tree-canvas');if(!w||!cv)return;_tX=Math.max(40,(w.offsetWidth-cv.offsetWidth)/2);_tY=32;applyT();},150);
 };
 
+async function savePrivateNetworkLayout(viewerUid,updates){
+  const me=(window._treeUs||[]).find(u=>u.id===viewerUid), current={...(me?.networkLayout||{})};
+  Object.entries(updates).forEach(([uid,val])=>{if(val===null)delete current[uid];else current[uid]=val;});
+  await updateDoc(doc(db,'users',viewerUid),{networkLayout:current});
+  if(me)me.networkLayout=current;
+}
 
+window.moveNetworkPositionByDrop=async function(draggedUid,targetUid,parentUid,targetLeg,viewerUid=cUser.uid){
+  const us=window._treeUs||[],byId=new Map(us.map(u=>[u.id,u])),dragged=byId.get(draggedUid),target=targetUid?byId.get(targetUid):null;
+  if(!dragged||dragged.id===viewerUid||dragged.id===parentUid)return;
+  if(visualDescendant(parentUid,dragged.id,viewerUid,byId)){alert('Non puoi inserire una persona sotto un suo discendente.');return;}
+  const old=getVisualPosition(dragged,viewerUid),oldParent=old.parentUid;
+  try{
+    const layout=getNetworkLayoutFor(viewerUid),updates={};
+    if(target&&target.id!==dragged.id){
+      const tp=getVisualPosition(target,viewerUid), draggedPos={parentUid,leg:targetLeg||null,order:tp.order??9999}, targetPos={parentUid:oldParent||viewerUid,leg:old.leg||null,order:old.order??9999};
+      updates[dragged.id]=draggedPos;updates[target.id]=targetPos;
+    }else{
+      const siblings=(window._treeUs||[]).filter(u=>u.id!==dragged.id&&getVisualPosition(u,viewerUid).parentUid===parentUid&&getVisualPosition(u,viewerUid).leg===targetLeg);
+      const order=siblings.reduce((m,u)=>Math.max(m,getVisualPosition(u,viewerUid).order??-1),-1)+1;
+      updates[dragged.id]={parentUid,leg:targetLeg||null,order};
+    }
+    await savePrivateNetworkLayout(viewerUid,updates);window._treeUs=us;renderNetworkTree();
+  }catch(e){console.error('Private Network Tree drag/drop error:',e);alert('Errore nello spostamento: '+(e.message||e));}finally{_dragUid=null;}
+};
+
+window._ntpState=null;
+window.closeNetworkPositionModal=function(){const o=id('ntp-overlay');if(o)o.classList.add('hidden');window._ntpState=null;};
+window.openNetworkPositionModal=function(targetUid,parentUid,targetLeg,viewerUid=cUser.uid){
+  const us=window._treeUs||[],byId=new Map(us.map(u=>[u.id,u])),parent=byId.get(parentUid),target=targetUid?byId.get(targetUid):null;if(!parent)return;
+  const sel=id('ntp-user'),title=id('ntp-title'),sub=id('ntp-sub'),warn=id('ntp-warning'),err=id('ntp-err');if(!sel)return;
+  window._ntpState={targetUid:targetUid||null,parentUid,parentLeg:targetLeg||null,viewerUid};title.textContent=target?`Sostituisci ${target.name||target.email}`:`Posizione ${targetLeg==='left'?'Sinistra':'Destra'}`;sub.textContent=`Sotto: ${parent.name||parent.email||'Upline'} · ${targetLeg==='left'?'👈 Sinistra':'👉 Destra'}`;warn.style.display='none';err.style.display='none';err.textContent='';
+  const candidates=us.filter(u=>u.id!==viewerUid&&u.id!==parentUid&&!visualDescendant(u.id,parentUid,viewerUid,byId)).sort((a,b)=>(a.name||a.email||'').localeCompare(b.name||b.email||'','it',{sensitivity:'base'}));
+  sel.innerHTML='<option value="">— Seleziona persona —</option>'+candidates.map(u=>{const pos=getVisualPosition(u,viewerUid),p=pos.parentUid,l=pos.leg;const label=`${u.name||u.email}${u.role==='leader'?' 👑':''}${p&&byId.get(p)?` · attuale: ${(byId.get(p).name||'')} ${l?('· '+(l==='left'?'Sinistra':'Destra')):''}`:''}`;return `<option value="${u.id}">${x(label)}</option>`;}).join('');if(targetUid)sel.value=targetUid;
+  sel.onchange=()=>{const chosen=byId.get(sel.value);if(!chosen){warn.style.display='none';return;}const pos=getVisualPosition(chosen,viewerUid);if(pos.parentUid&&pos.parentUid!==parentUid){warn.textContent='⚠ Lo spostamento modifica solo il tuo Network Tree. La struttura reale e il Network Tree degli altri leader rimangono invariati.';warn.style.display='block';}else warn.style.display='none';};
+  id('ntp-overlay').classList.remove('hidden');
+};
+window.saveNetworkPosition=async function(){
+  const st=window._ntpState,sel=id('ntp-user'),err=id('ntp-err'),btn=id('ntp-save');if(!st||!sel||!sel.value){err.textContent='Seleziona una persona.';err.style.display='block';return;}
+  const us=window._treeUs||[],byId=new Map(us.map(u=>[u.id,u])),chosen=byId.get(sel.value),target=st.targetUid?byId.get(st.targetUid):null;if(!chosen||!byId.get(st.parentUid)){err.textContent='Posizione non valida.';err.style.display='block';return;}
+  if(chosen.id===st.parentUid||visualDescendant(chosen.id,st.parentUid,st.viewerUid,byId)){err.textContent='Non puoi inserire un upline o un suo discendente sotto questa posizione.';err.style.display='block';return;}
+  const parent=st.parentUid,targetLeg=st.parentLeg,viewerUid=st.viewerUid||cUser.uid,old=getVisualPosition(chosen,viewerUid);btn.disabled=true;btn.textContent='Salvataggio…';err.style.display='none';
+  try{
+    const updates={};
+    if(target&&target.id!==chosen.id){const tp=getVisualPosition(target,viewerUid);updates[chosen.id]={parentUid:parent,leg:targetLeg||null,order:tp.order??9999};updates[target.id]={parentUid:old.parentUid||viewerUid,leg:old.leg||null,order:old.order??9999};}
+    else{const siblings=us.filter(u=>u.id!==chosen.id&&getVisualPosition(u,viewerUid).parentUid===parent&&getVisualPosition(u,viewerUid).leg===targetLeg);const order=siblings.reduce((m,u)=>Math.max(m,getVisualPosition(u,viewerUid).order??-1),-1)+1;updates[chosen.id]={parentUid:parent,leg:targetLeg||null,order};}
+    await savePrivateNetworkLayout(viewerUid,updates);closeNetworkPositionModal();renderNetworkTree();
+  }catch(e){err.textContent='Errore: '+(e.message||e);err.style.display='block';}finally{btn.disabled=false;btn.textContent='Conferma';}
+};
+
+window.setLeg=async(uid,leg,btn)=>{try{const myUid=cUser.uid,fieldPath='legMap.'+myUid,updateData={};updateData[fieldPath]=leg||null;await updateDoc(doc(db,'users',uid),updateData);const updateCache=arr=>{const u=(arr||[]).find(u=>u.id===uid);if(u){if(!u.legMap)u.legMap={};u.legMap[myUid]=leg||null;}};updateCache(window._cachedUs);updateCache(window._treeUs);renderTeamDashboard();}catch(e){alert('Errore: '+e.message);}};
 
 window.doResetPassword = async function() {
   var email = id('l-email').value.trim();
@@ -1788,62 +2372,70 @@ window.setFilter = (btn,f) => {
 };
 
 // ── TEAM DASHBOARD ──
-async function loadTeamDashboard() {
+async function loadTeamDashboard(force=false) {
   if(id('team-grid-left')) id('team-grid-left').innerHTML=loader();
   if(id('team-grid-right')) id('team-grid-right').innerHTML=loader();
   if(id('binary-view')) id('binary-view').innerHTML=loader();
-  const [ps,us] = await Promise.all([
-    getDocs(collection(db,'prospects')).then(s=>s.docs.map(d=>({id:d.id,...d.data()}))),
-    getDocs(collection(db,'users')).then(s=>s.docs.map(d=>({id:d.id,...d.data()})))
-  ]);
-  const wk=Date.now()-7*86400000, myUid=cUser.uid;
 
-  // Build downline by walking DOWN the tree using uplineUid links only
-  // This is the only reliable method — does NOT depend on uplinePath
-  function buildDownlineSet(rootUid, allUsers) {
-    const result = new Set();
-    const queue = [rootUid];
-    let safety = 0;
-    while(queue.length > 0 && safety < 500) {
-      const current = queue.shift();
-      const children = allUsers.filter(u => u.uplineUid === current);
-      children.forEach(child => {
-        if(!result.has(child.id)) {
-          result.add(child.id);
-          queue.push(child.id);
-        }
-      });
-      safety++;
+  // Fast path: reuse data already loaded during this session.
+  if(!force && window._teamCache && window._teamCache.uid===cUser.uid){
+    const c=window._teamCache;
+    window._cachedUs=c.us; window._cachedPs=c.ps; window._cachedShow=c.show; window._cachedWk=c.wk;
+    renderTeamDashboard(c.us,c.ps,c.show,c.wk);
+    return;
+  }
+
+  try {
+    const rootUid=cUser.uid;
+    const chunk=(arr,n=30)=>{const out=[];for(let i=0;i<arr.length;i+=n)out.push(arr.slice(i,i+n));return out;};
+    const snapUsers = async parentIds => {
+      if(!parentIds.length) return [];
+      const batches=chunk(parentIds,30);
+      const snaps=await Promise.all(batches.map(ids=>getDocs(query(collection(db,'users'),where('uplineUid','in',ids)))));
+      return snaps.flatMap(s=>s.docs.map(d=>({id:d.id,...d.data()})));
+    };
+
+    // Load only this leader's downline, not every user in the database.
+    const collected=[];
+    let frontier=[rootUid];
+    const seen=new Set([rootUid]);
+    while(frontier.length){
+      const children=await snapUsers(frontier);
+      const next=[];
+      for(const child of children){
+        if(!seen.has(child.id)){seen.add(child.id);collected.push(child);next.push(child.id);}
+      }
+      frontier=next;
+      if(seen.size>5000) break;
     }
-    return result;
+    const us=collected;
+    const wk=Date.now()-7*86400000;
+    const uids=us.map(u=>u.id);
+
+    // Fetch prospects only for members actually inside this structure.
+    // `in` batches keep this to a handful of Firestore reads instead of one read per member.
+    const ps=[];
+    for(const ids of chunk(uids,30)){
+      const snap=await getDocs(query(collection(db,'prospects'),where('uid','in',ids)));
+      snap.docs.forEach(d=>ps.push({id:d.id,...d.data()}));
+    }
+
+    const show=us;
+    window._teamCache={uid:rootUid,us,ps,show,wk,at:Date.now()};
+    window._cachedUs=us; window._cachedPs=ps; window._cachedShow=show; window._cachedWk=wk;
+
+    // Small performance diagnostics, visible only in DevTools.
+    console.debug('[Team Dashboard] loaded', {members:us.length, prospects:ps.length, ms:Date.now()-(window._teamLoadStarted||Date.now())});
+    renderTeamDashboard(us,ps,show,wk);
+  } catch(e) {
+    console.error('Team Dashboard load failed:', e);
+    const msg = e?.message || 'Errore sconosciuto durante il caricamento.';
+    const html = `<div style=\"padding:1rem;color:var(--red);font-size:12px;background:var(--red-dim);border:.5px solid var(--red);border-radius:8px;\">⚠️ Impossibile caricare la Dashboard Team.<br><span style=\"color:var(--text2);\">${x(msg)}</span></div>`;
+    if(id('team-grid-left')) id('team-grid-left').innerHTML=html;
+    if(id('team-grid-right')) id('team-grid-right').innerHTML='';
+    if(id('binary-view')) id('binary-view').innerHTML='';
+    if(id('rank-table')) id('rank-table').innerHTML='';
   }
-
-  const downlineIds = buildDownlineSet(myUid, us);
-  const allDownline = us.filter(u => downlineIds.has(u.id));
-  const show = allDownline;
-  const uids = new Set(show.map(m=>m.id));
-  const tPs = ps.filter(p=>uids.has(p.uid));
-
-  // Populate leader filter
-  const leaders = show.filter(u=>u.role==='leader');
-  const legSel = id('leg-leader-filter');
-  if(legSel){
-    const curVal = legSel.value;
-    legSel.innerHTML='<option value="">Tutta la struttura</option>'+
-      leaders.map(l=>`<option value="${l.id}"${l.id===curVal?' selected':''}>${x(l.name||l.email)}</option>`).join('');
-  }
-
-  // Global stats
-  const hiddenCount = show.filter(function(u){return hiddenMembers.has(u.id);}).length;
-  id('team-stats').innerHTML =
-    sc('Diretti',show.filter(u=>(u.uplinePath||[]).slice(-1)[0]===myUid&&!hiddenMembers.has(u.id)).length,'ac')+
-    sc('Struttura attiva',show.length-hiddenCount,'b')+
-    sc('Nuovi (7gg)',tPs.filter(p=>(p.createdAt?.toMillis()||0)>=wk).length,'g')+
-    sc('Presentazioni sett.',tPs.filter(p=>p.presentation&&(p.createdAt?.toMillis()||0)>=wk).length,'b')+
-    sc('Attesa pag.',tPs.filter(p=>p.payment).length,'a')+
-    sc('Prospect totali',tPs.length,'ac');
-
-  renderTeamDashboard(us, ps, show, wk);
 }
 
 // ── Separate render function so filter can re-run it ──
@@ -1859,35 +2451,54 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
 
   const myUid = cUser.uid;
   const filterLeaderId = id('leg-leader-filter')?.value || '';
-
-  // Determine reference node for binary split
   const refUid = filterLeaderId || myUid;
-  const refUser = filterLeaderId ? us.find(u=>u.id===filterLeaderId) : {id:myUid, name:'La mia struttura'};
+  const refUser = filterLeaderId ? us.find(u=>u.id===filterLeaderId) : {id:myUid,name:'La mia struttura'};
 
-  // Get users in each leg relative to refUid
-  // A user is in "right" leg of refUid if their leg===right and refUid is their direct upline,
-  // OR if any ancestor between them and refUid has leg===right from refUid
-  function getLegForUser(u) {
-    const path = u.uplinePath||[];
-    const refIdx = path.indexOf(refUid);
-    if(refIdx === -1 && u.uplineUid !== refUid) return null; // not in this subtree
-    // Find the direct child of refUid in this user's path
-    if(u.uplineUid === refUid) return u.leg||null;
-    // Walk up from user to find first ancestor whose upline is refUid
-    const directChildIdx = refIdx + 1;
-    if(directChildIdx >= path.length) return u.leg||null;
-    const directChildId = path[directChildIdx];
-    const directChild = (window._cachedUs||[]).find(a=>a.id===directChildId);
-    return directChild?.leg||null;
+  // Populate the structure filter with both leaders and members.
+  const leaders = show.filter(u=>u.role==='leader').sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const members = show.filter(u=>u.role!=='leader').sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const legSel = id('leg-leader-filter');
+  if(legSel){
+    const curVal = legSel.value;
+    const leaderOptions = leaders.map(l=>`<option value="${l.id}"${l.id===curVal?' selected':''}>👑 ${x(l.name||l.email)}${l.userNumber?` #${l.userNumber}`:''}</option>`).join('');
+    const memberOptions = members.map(m=>`<option value="${m.id}"${m.id===curVal?' selected':''}>${x(m.name||m.email)}${m.userNumber?` #${m.userNumber}`:''}</option>`).join('');
+    legSel.innerHTML='<option value="">Tutta la struttura</option>'+
+      (leaders.length?`<optgroup label="Leader">${leaderOptions}</optgroup>`:'')+
+      (members.length?`<optgroup label="Membri">${memberOptions}</optgroup>`:'');
+    if(curVal && !us.some(u=>u.id===curVal)) legSel.value='';
+  }
+  const filterHint=id('leg-filter-hint');
+  if(filterHint){
+    filterHint.textContent=filterLeaderId && refUser
+      ? `Diagrammi delle gambe di ${refUser.name||refUser.email}`
+      : 'Filtra per leader o membro per vedere le sue gambe';
   }
 
-  const rightMembers = show.filter(u=>getLegForUser(u)==='right');
-  const leftMembers  = show.filter(u=>getLegForUser(u)==='left');
-  const noLeg        = show.filter(u=>!getLegForUser(u));
+  // Build O(1) lookup maps once. This avoids repeated .find/.filter scans while rendering.
+  const userById = Object.fromEntries(us.map(u=>[u.id,u]));
+  const prospectsByUid = Object.create(null);
+  for(const p of ps){(prospectsByUid[p.uid] ||= []).push(p);}
+  const legMemo = new Map();
+  const effectiveLeg = (u,ref=refUid) => {
+    const key=ref+'|'+u.id;
+    if(legMemo.has(key)) return legMemo.get(key);
+    if(u.id===ref){legMemo.set(key,null);return null;}
+    let cur=u, guard=0, result=null;
+    while(cur && guard++<500){
+      if(cur.uplineUid===ref){result=getLegFor(cur,ref);break;}
+      cur=userById[cur.uplineUid];
+    }
+    legMemo.set(key,result);
+    return result;
+  };
+
+  const rightMembers = show.filter(u=>effectiveLeg(u)==='right');
+  const leftMembers  = show.filter(u=>effectiveLeg(u)==='left');
+  const noLeg        = show.filter(u=>!effectiveLeg(u));
 
   function legStats(members) {
-    const mUids = new Set(members.map(m=>m.id));
-    const mPs = ps.filter(p=>mUids.has(p.uid));
+    const mPs = [];
+    for(const m of members) (prospectsByUid[m.id]||[]).forEach(p=>mPs.push(p));
     return {
       members: members.length,
       prospects: mPs.length,
@@ -1910,16 +2521,20 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
     const pct = Math.round((stats.prospects/total)*100);
     const leaders = members.filter(m=>m.role==='leader');
     const topMembers = members.slice(0,8);
-    return `<div class="leg-card ${side}">
+    const refLabel = filterLeaderId && refUser ? (refUser.name||refUser.email) : 'tutta la struttura';
+    return `<div class="leg-card ${side}" data-ref="${x(refLabel)}">
       <div class="leg-title" style="color:${color}">${label}</div>
       <div class="leg-sub">${stats.members} persone · ${pct}% dei prospect totali</div>
-      <div class="leg-stats">
-        <div class="leg-stat"><div class="leg-stat-val" style="color:${color}">${stats.prospects}</div><div class="leg-stat-lbl">Prospect totali</div></div>
-        <div class="leg-stat"><div class="leg-stat-val" style="color:var(--green)">${stats.newWk}</div><div class="leg-stat-lbl">Nuovi (7gg)</div></div>
-        <div class="leg-stat"><div class="leg-stat-val" style="color:var(--blue)">${stats.presentations}</div><div class="leg-stat-lbl">Presentazioni</div></div>
-        <div class="leg-stat"><div class="leg-stat-val" style="color:var(--amber)">${stats.payment}</div><div class="leg-stat-lbl">Attesa pag.</div></div>
-      </div>
-      <div class="leg-bar-wrap"><div class="leg-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      ${(()=>{
+        const all=members.flatMap(m=>prospectsByUid[m.id]||[]);
+        const stage=p=>{const n=(p.followUps||[]).filter(Boolean).length;if(p.payment)return'payment';if(n===4)return'done';if(p.presentation||n>0)return'active';return'new';};
+        const vals={new:0,active:0,done:0,payment:0}; all.forEach(p=>vals[stage(p)]++);
+        const totalStage=Math.max(all.length,1);
+        const colors={new:'var(--green)',active:'var(--blue)',done:'var(--accent)',payment:'var(--amber)'};
+        const labels={new:'Nuovi',active:'Attivi',done:'FU completi',payment:'Attesa pagamento'};
+        let cursor=0; const stops=Object.keys(vals).map(k=>{const a=cursor/totalStage*100;cursor+=vals[k];const b=cursor/totalStage*100;return `${colors[k]} ${a}% ${b}%`;}).join(',');
+        return `<div class=\"leg-visual\" data-chart-ref=\"${x(refLabel)}\"><div class=\"leg-donut\" role=\"img\" aria-label=\"Distribuzione prospect ${side==='right'?'gamba destra':'gamba sinistra'} per ${x(refLabel)}\" style=\"background:conic-gradient(${stops})\"><div class=\"leg-donut-center\"><div class=\"leg-donut-total\">${stats.prospects}</div><div class=\"leg-donut-label\">Prospect</div></div></div><div class=\"leg-legend\">${Object.keys(vals).map(k=>`<div class=\"leg-legend-row\"><span class=\"leg-legend-dot\" style=\"background:${colors[k]}\"></span><span class=\"leg-legend-name\">${labels[k]}</span><span class=\"leg-legend-value\">${vals[k]} <span class=\"leg-legend-pct\">${Math.round(vals[k]/totalStage*100)}%</span></span></div>`).join('')}</div></div><div class=\"leg-mini-metrics\"><div class=\"leg-mini-metric\"><div class=\"leg-mini-value\" style=\"color:var(--green)\">${stats.newWk}</div><div class=\"leg-mini-label\">Nuovi ultimi 7 giorni</div></div><div class=\"leg-mini-metric\"><div class=\"leg-mini-value\" style=\"color:var(--blue)\">${stats.presentations}</div><div class=\"leg-mini-label\">Presentazioni</div></div></div>`;
+      })()}
       <div style="font-size:11px;color:var(--text3);margin-top:8px;margin-bottom:4px;">Leader in questa gamba (${leaders.length})</div>
       <div class="leg-members">
         ${leaders.map(m=>`<span class="leg-member-tag leader-tag">👑 ${x(m.name||m.email)}${m.userNumber?` #${m.userNumber}`:''}</span>`).join('')||'<span style="font-size:11px;color:var(--text3);">Nessun leader</span>'}
@@ -1955,11 +2570,11 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
   const sorted_show=[...show].sort((a,b)=>{const la=getLevel(a),lb=getLevel(b);if(la!==lb)return la-lb;return(a.name||'').localeCompare(b.name||'');});
   // Exclude hidden members from grid — they appear only in "Membri disattivati" section
   const visibleForGrid = sorted_show.filter(function(u){ return !hiddenMembers.has(u.id); });
-  const mdata=visibleForGrid.map((m,i)=>({m,level:getLevel(m),mp:ps.filter(p=>p.uid===m.id),mpWk:ps.filter(p=>p.uid===m.id&&(p.createdAt?.toMillis()||0)>=(wk||Date.now()-7*86400000)),c:COLS[i%COLS.length]}));
-  // Split mdata by leg
-  const mdLeft  = mdata.filter(d => d.m.leg === 'left');
-  const mdRight = mdata.filter(d => d.m.leg === 'right');
-  const mdNone  = mdata.filter(d => !d.m.leg);
+  const mdata=visibleForGrid.map((m,i)=>{const mp=prospectsByUid[m.id]||[];return {m,level:getLevel(m),mp,mpWk:mp.filter(p=>(p.createdAt?.toMillis()||0)>=(wk||Date.now()-7*86400000)),c:COLS[i%COLS.length]};});
+  const _myUid = cUser.uid;
+  const mdLeft  = mdata.filter(d => effectiveLeg(d.m,_myUid) === 'left');
+  const mdRight = mdata.filter(d => effectiveLeg(d.m,_myUid) === 'right');
+  const mdNone  = mdata.filter(d => !effectiveLeg(d.m,_myUid));
 
   // Update counts
 
@@ -1985,9 +2600,10 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
     const levelLabel=level===1?'Diretto':level===2?'Livello 2':`Livello ${level}`;
     const levelColor=level===1?'var(--accent)':level===2?'var(--blue)':'var(--text3)';
     const roleIcon=m.role==='leader'?'👑 ':'';
-    const legTag=m.leg?`<span style="font-size:10px;padding:1px 5px;border-radius:8px;margin-left:4px;background:${m.leg==='right'?'var(--accent-dim)':'var(--blue-dim)'};color:${m.leg==='right'?'var(--accent)':'var(--blue)'};">${m.leg==='right'?'👉':'👈'}</span>`:'';
+    const _mLeg = effectiveLeg(m, cUser.uid);
+    const legTag=_mLeg?`<span style="font-size:10px;padding:1px 5px;border-radius:8px;margin-left:4px;background:${_mLeg==='right'?'var(--accent-dim)':'var(--blue-dim)'};color:${_mLeg==='right'?'var(--accent)':'var(--blue)'};">${_mLeg==='right'?'👉':'👈'}</span>`:'';
     const el=document.createElement('div'); el.className='tc';
-    el.innerHTML=`<div class="tc-head" style="cursor:pointer;" onclick="openMemberDetail('${m.id}')"><div class="tc-av" style="background:${c.bg};color:${c.c}">${ini}</div><div><div class="tc-name">${roleIcon}${x(m.name)}${legTag}</div><div class="tc-role">${mp.length} prospect · <span style="color:${levelColor}">${levelLabel}</span></div></div>${mpWk.length?`<div class="wk-tag">+${mpWk.length} sett.</div>`:''}</div><div class="tc-nums"><div class="tc-num"><div class="tc-num-val" style="color:${c.c}">${mp.filter(p=>p.presentation).length}</div><div class="tc-num-lbl">Presentazioni</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="tc-num-lbl">Attesa pag.</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--green)">${mp.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length}</div><div class="tc-num-lbl">FU completi</div></div></div><div style="margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:var(--text3);">Gamba:</span><button onclick="event.stopPropagation();setLeg('${m.id}','right',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='right'?'var(--accent)':'var(--border2)'};background:${m.leg==='right'?'var(--accent-dim)':'transparent'};color:${m.leg==='right'?'var(--accent)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👉 Destra</button><button onclick="event.stopPropagation();setLeg('${m.id}','left',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='left'?'var(--blue)':'var(--border2)'};background:${m.leg==='left'?'var(--blue-dim)':'transparent'};color:${m.leg==='left'?'var(--blue)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👈 Sinistra</button>${m.leg?`<button onclick="event.stopPropagation();setLeg('${m.id}','',this)" style="padding:3px 8px;border-radius:20px;border:.5px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">✕</button>`:''}<span class="tc-drag-handle" draggable="false" title="Trascina per riordinare">⠿</span><div class="tc-move-btns"><button class="tc-move-btn" onclick="event.stopPropagation();moveMember('${m.id}','up')" title="Sposta su">↑</button><button class="tc-move-btn" onclick="event.stopPropagation();moveMember('${m.id}','down')" title="Sposta giù">↓</button></div><button onclick="event.stopPropagation();toggleHideMember('${m.id}')" style="padding:3px 10px;border-radius:20px;border:.5px solid var(--border2);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">🙈 Nascondi</button></div>`;
+    el.innerHTML=`<div class="tc-head" style="cursor:pointer;" onclick="openMemberDetail('${m.id}')"><div class="tc-av" style="background:${c.bg};color:${c.c}">${ini}</div><div><div class="tc-name">${roleIcon}${x(m.name)}${legTag}</div><div class="tc-role">${mp.length} prospect · <span style="color:${levelColor}">${levelLabel}</span></div></div>${mpWk.length?`<div class="wk-tag">+${mpWk.length} sett.</div>`:''}</div><div class="tc-nums"><div class="tc-num"><div class="tc-num-val" style="color:${c.c}">${mp.filter(p=>p.presentation).length}</div><div class="tc-num-lbl">Presentazioni</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="tc-num-lbl">Attesa pag.</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--green)">${mp.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length}</div><div class="tc-num-lbl">FU completi</div></div></div><div style="margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:var(--text3);">Gamba:</span><button onclick="event.stopPropagation();setLeg('${m.id}','right',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${_mLeg==='right'?'var(--accent)':'var(--border2)'};background:${_mLeg==='right'?'var(--accent-dim)':'transparent'};color:${_mLeg==='right'?'var(--accent)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👉 Destra</button><button onclick="event.stopPropagation();setLeg('${m.id}','left',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${_mLeg==='left'?'var(--blue)':'var(--border2)'};background:${_mLeg==='left'?'var(--blue-dim)':'transparent'};color:${_mLeg==='left'?'var(--blue)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👈 Sinistra</button>${_mLeg?`<button onclick="event.stopPropagation();setLeg('${m.id}','',this)" style="padding:3px 8px;border-radius:20px;border:.5px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">✕</button>`:''}<span class="tc-drag-handle" draggable="false" title="Trascina per riordinare">⠿</span><div class="tc-move-btns"><button class="tc-move-btn" onclick="event.stopPropagation();moveMember('${m.id}','up')" title="Sposta su">↑</button><button class="tc-move-btn" onclick="event.stopPropagation();moveMember('${m.id}','down')" title="Sposta giù">↓</button></div><button onclick="event.stopPropagation();toggleHideMember('${m.id}')" style="padding:3px 10px;border-radius:20px;border:.5px solid var(--border2);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">🙈 Nascondi</button></div>`;
       // Drag & drop
       el.setAttribute('draggable','true');
       el.dataset.uid = m.id;
@@ -2366,6 +2982,7 @@ window.openSettings=async()=>{
   id('s-role-badge').innerHTML=(role==='leader'?'<span class="pill done">Team Leader</span>':'<span class="pill nuovo">Membro</span>')+myNum;
   // Update tab visibility based on fresh data
   if(role==='leader') id('tab-team').classList.remove('hidden');
+  id('tab-tree').classList.remove('hidden');
   id('s-upgrade').classList.toggle('hidden',role==='leader');
   id('s-already-leader').classList.toggle('hidden',role!=='leader');
   id('s-invite').classList.toggle('hidden',role!=='leader');
@@ -2386,6 +3003,7 @@ window.reloadSession=async()=>{
       id('u-av').textContent=ini;
       id('u-nm').textContent=cData.name||cUser.email;
       if(cData.role==='leader') id('tab-team').classList.remove('hidden');
+  id('tab-tree').classList.remove('hidden');
       closeSettings();
       // Re-open settings with fresh data
       await openSettings();
@@ -2411,6 +3029,7 @@ window.doUpgrade=async()=>{
     if(snap.exists()) cData = snap.data();
     // Update UI
     id('tab-team').classList.remove('hidden');
+  id('tab-tree').classList.remove('hidden');
     id('s-upgrade').classList.add('hidden');
     id('s-already-leader').classList.remove('hidden');
     id('s-invite').classList.remove('hidden');
@@ -2447,7 +3066,7 @@ window.copyInvite=()=>{
 
 // ── TAB SWITCHING ──
 function doSwitchTab(t){
-  ['lista','team','admin'].forEach(v=>{
+  ['lista','team','tree','admin'].forEach(v=>{
     id('view-'+v)?.classList.toggle('hidden',v!==t);
     id('tab-'+v)?.classList.toggle('on',v===t);
   });
@@ -2458,7 +3077,8 @@ window.switchTab=t=>{
     id('al-overlay').classList.remove('hidden'); return;
   }
   doSwitchTab(t);
-  if(t==='team') loadTeamDashboard();
+  if(t==='team'){ window._teamLoadStarted=Date.now(); loadTeamDashboard(); }
+  if(t==='tree') loadNetworkTree();
   if(t==='admin') loadAdminPanel();
 };
 
@@ -2508,5 +3128,19 @@ function errMsg(code){
   return msgs[code]||('Errore: '+code);
 }
 </script>
+
+<script>
+/* ProTracker modern micro-interactions — no data/model changes */
+document.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('pointerdown',()=>btn.classList.add('pressing'));
+    btn.addEventListener('pointerup',()=>btn.classList.remove('pressing'));
+    btn.addEventListener('pointerleave',()=>btn.classList.remove('pressing'));
+  });
+});
+</script>
+<style>
+button.pressing{transform:scale(.98)!important}
+</style>
 </body>
 </html>
