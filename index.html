@@ -916,8 +916,12 @@ td{padding:11px 14px}
     <div class="fg"><label>Sposta upline diretto</label>
       <select id="eu-upline"></select>
     </div>
-    <div style="font-size:11px;color:var(--text3);line-height:1.5;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-top:4px;">
-      ℹ️ La posizione <b>Sinistra/Destra</b> non viene più gestita dall’Admin. Ogni Leader organizza autonomamente i propri diretti nella sua Dashboard Team. L’Admin modifica solo la struttura reale (Upline).
+    <div class="fg"><label>Gamba nel team dell'upline</label>
+      <select id="eu-leg">
+        <option value="">— Non assegnata —</option>
+        <option value="right">Destra 👉</option>
+        <option value="left">Sinistra 👈</option>
+      </select>
     </div>
     <div class="modal-err" id="eu-err"></div>
     <div class="modal-actions">
@@ -1116,41 +1120,67 @@ let editingUid = null;
 let aFilter = 'tutti';
 let unsub = null;
 
-// ── TEAM STRUCTURE / PRIVATE VIEW ──
-// SOURCE OF TRUTH: users/{uid}.uplineUid = real hierarchy.
-// PERSONAL VIEW: users/{viewerUid}.teamLayout = only that viewer's direct-child layout.
-// Legacy `leg`, `legMap` and `legOrder` are intentionally ignored here.
-function getPrivateTeamLayout(viewerUid, users){
-  if(cUser?.uid===viewerUid && cData?.teamLayout) return cData.teamLayout;
-  const me=(users||window._cachedUs||[]).find(u=>u.id===viewerUid);
-  return me?.teamLayout||{};
-}
-
-function getDirectBranch(user, viewerUid, users){
-  if(!user || !viewerUid || user.id===viewerUid) return null;
+// ── BINARY LEG / PRIVATE TEAM LAYOUT ──
+// IMPORTANT: Team Dashboard placement is PRIVATE to the logged-in viewer.
+// It is stored only in users/{viewerUid}.teamLayout and never written to the
+// member's document. Network Tree uses its separate networkLayout field.
+function getLegacyLeg(user, refUid, users){
+  if(!user || !refUid || user.id===refUid) return null;
+  if(user.legMap && Object.prototype.hasOwnProperty.call(user.legMap, refUid)){
+    const v=user.legMap[refUid];
+    if(v==='left'||v==='right') return v;
+  }
+  if(user.uplineUid===refUid && (user.leg==='left'||user.leg==='right')) return user.leg;
   const all=users||window._cachedUs||[];
-  const byId=new Map(all.map(u=>[u.id,u]));
   let cur=user, guard=0;
   while(cur && guard++<500){
     const parent=cur.uplineUid||null;
-    if(parent===viewerUid) return cur;
-    cur=parent?byId.get(parent):null;
+    if(parent===refUid){
+      if(cur.legMap && Object.prototype.hasOwnProperty.call(cur.legMap, refUid)){
+        const v=cur.legMap[refUid];
+        if(v==='left'||v==='right') return v;
+      }
+      if(cur.leg==='left'||cur.leg==='right') return cur.leg;
+      return null;
+    }
+    cur=parent?all.find(u=>u.id===parent):null;
   }
   return null;
 }
 
-function getTeamVisualPosition(user, viewerUid, users){
-  const branch=getDirectBranch(user,viewerUid,users);
-  if(!branch) return {branchUid:null,leg:null,order:9999,custom:false};
-  const layout=getPrivateTeamLayout(viewerUid,users);
-  const explicit=layout?.[branch.id];
-  if(explicit && (explicit.leg==='left'||explicit.leg==='right')){
-    return {branchUid:branch.id,leg:explicit.leg,order:Number.isFinite(explicit.order)?explicit.order:9999,custom:true};
-  }
-  return {branchUid:branch.id,leg:null,order:9999,custom:false};
+function getPrivateTeamLayout(viewerUid){
+  if(cUser?.uid===viewerUid && cData?.teamLayout) return cData.teamLayout;
+  const me=(window._cachedUs||[]).find(u=>u.id===viewerUid);
+  return me?.teamLayout||{};
 }
-function getTeamVisualLeg(user,viewerUid,users){ return getTeamVisualPosition(user,viewerUid,users).leg; }
-function isDirectTeamChild(user,viewerUid){ return !!user && user.uplineUid===viewerUid; }
+
+function getTeamVisualPosition(user, viewerUid, users){
+  if(!user || !viewerUid || user.id===viewerUid) return {branchUid:null,leg:null,order:9999};
+  const layout=getPrivateTeamLayout(viewerUid);
+  // New format: every visible member may have an explicit personal placement.
+  const explicit=layout?.[user.id];
+  if(explicit && (explicit.leg==='left'||explicit.leg==='right')){
+    return {branchUid:user.id,leg:explicit.leg,order:explicit.order??9999,custom:true};
+  }
+  // Legacy/private compatibility: old layouts keyed by the first-level branch.
+  const all=users||window._cachedUs||[];
+  const byId=Object.fromEntries(all.map(u=>[u.id,u]));
+  let cur=user, branch=null, guard=0;
+  while(cur && guard++<500){
+    const parent=cur.uplineUid||((cur.uplinePath||[]).length?cur.uplinePath[cur.uplinePath.length-1]:null);
+    if(parent===viewerUid){branch=cur;break;}
+    cur=parent?byId[parent]:null;
+  }
+  if(branch){
+    const legacy=layout?.[branch.id];
+    if(legacy && (legacy.leg==='left'||legacy.leg==='right')){
+      return {branchUid:branch.id,leg:legacy.leg,order:legacy.order??9999,custom:true};
+    }
+    return {branchUid:branch.id,leg:getLegacyLeg(branch,viewerUid,all),order:branch.legOrder??9999,custom:false};
+  }
+  return {branchUid:null,leg:null,order:9999,custom:false};
+}
+function getTeamVisualLeg(user, viewerUid, users){ return getTeamVisualPosition(user,viewerUid,users).leg; }
 
 // ── THEME ──
 window.toggleTheme = () => {
@@ -1257,8 +1287,6 @@ window.doSignup = async () => {
       userNumber,
       uplineUid: uplineUid || null,
       uplinePath: myPath,
-      teamLayout: {},
-      networkLayout: {},
       createdAt: serverTimestamp()
     };
     try {
@@ -1506,52 +1534,33 @@ var hiddenMembers = new Set();
 try { hiddenMembers = new Set(JSON.parse(localStorage.getItem('pm_hidden')||'[]')); } catch(e){}
 
 
-// ── MEMBER ORDERING / PRIVATE TEAM LAYOUT ──
+// ── MEMBER ORDERING ──
 window.moveMember = async function(uid, dir) {
-  const allUs=window._cachedUs||[], myUid=cUser.uid, u=allUs.find(x=>x.id===uid);
-  if(!u || !isDirectTeamChild(u,myUid)){ alert('Puoi ordinare solo i tuoi membri diretti.'); return; }
-  const layout=getPrivateTeamLayout(myUid,allUs);
-  const pos=layout[uid]||{}; const leg=pos.leg;
-  if(leg!=='left'&&leg!=='right') return;
-  const siblings=allUs.filter(x=>x.uplineUid===myUid && !hiddenMembers.has(x.id) && getTeamVisualLeg(x,myUid,allUs)===leg)
-    .sort((a,b)=>(layout[a.id]?.order??9999)-(layout[b.id]?.order??9999)||(a.name||'').localeCompare(b.name||''));
-  const idx=siblings.findIndex(x=>x.id===uid), swap=dir==='up'?idx-1:idx+1;
-  if(idx<0||swap<0||swap>=siblings.length)return;
-  const other=siblings[swap];
-  const current={...layout};
-  current[uid]={...(current[uid]||{}),leg,order:current[other.id]?.order??swap};
-  current[other.id]={...(current[other.id]||{}),leg,order:pos.order??idx};
+  const allUs=window._cachedUs||[], myUid=cUser.uid, u=allUs.find(x=>x.id===uid); if(!u)return;
+  const pos=getTeamVisualPosition(u,myUid,allUs), leg=pos.leg||'';
+  const siblings=allUs.filter(x=>getTeamVisualLeg(x,myUid,allUs)===leg&&!hiddenMembers.has(x.id)).sort((a,b)=>getTeamVisualPosition(a,myUid,allUs).order-getTeamVisualPosition(b,myUid,allUs).order||(a.name||'').localeCompare(b.name||''));
+  const idx=siblings.findIndex(x=>x.id===uid), swap=dir==='up'?idx-1:idx+1; if(idx<0||swap<0||swap>=siblings.length)return;
+  const other=siblings[swap], myOrder=pos.order, otherOrder=getTeamVisualPosition(other,myUid,allUs).order;
   try{
+    const snap=await getDoc(doc(db,'users',myUid)); const current={...(snap.exists()?snap.data().teamLayout||{}:{})};
+    if(pos.branchUid)current[pos.branchUid]={...(current[pos.branchUid]||{}),leg,order:otherOrder};
+    const op=getTeamVisualPosition(other,myUid,allUs); if(op.branchUid)current[op.branchUid]={...(current[op.branchUid]||{}),leg,order:myOrder};
     await updateDoc(doc(db,'users',myUid),{teamLayout:current});
-    if(cData)cData={...cData,teamLayout:current};
-    if(window._teamCache)window._teamCache=null;
-    await loadTeamDashboard(true);
+    const me=allUs.find(x=>x.id===myUid); if(me)me.teamLayout=current; renderTeamDashboard();
   }catch(e){console.error('moveMember error',e);alert('Errore: '+(e.message||e));}
 };
 
 window.handleDrop = async function(draggedUid,targetUid,fromGrid,toGrid){
-  const allUs=window._cachedUs||[],myUid=cUser.uid,dragged=allUs.find(x=>x.id===draggedUid),target=allUs.find(x=>x.id===targetUid);
-  if(!dragged||!target||!isDirectTeamChild(dragged,myUid)||!isDirectTeamChild(target,myUid)) return;
+  const allUs=window._cachedUs||[],myUid=cUser.uid,dragged=allUs.find(x=>x.id===draggedUid),target=allUs.find(x=>x.id===targetUid); if(!dragged||!target)return;
   try{
     const snap=await getDoc(doc(db,'users',myUid)); const current={...(snap.exists()?snap.data().teamLayout||{}:{})};
-    const fromLeg=current[draggedUid]?.leg||null, toLeg=current[targetUid]?.leg||null;
-    if(!fromLeg||!toLeg) return;
     if(fromGrid===toGrid){
-      const siblings=allUs.filter(x=>x.uplineUid===myUid&&!hiddenMembers.has(x.id)&&current[x.id]?.leg===fromLeg)
-        .sort((a,b)=>(current[a.id]?.order??9999)-(current[b.id]?.order??9999)||(a.name||'').localeCompare(b.name||''));
-      const fi=siblings.findIndex(x=>x.id===draggedUid),ti=siblings.findIndex(x=>x.id===targetUid);
-      if(fi<0||ti<0||fi===ti)return;
-      siblings.splice(fi,1); siblings.splice(ti,0,dragged);
-      siblings.forEach((u,i)=>{current[u.id]={...(current[u.id]||{}),leg:fromLeg,order:i};});
+      const leg=getTeamVisualLeg(dragged,myUid,allUs)||''; let siblings=allUs.filter(x=>getTeamVisualLeg(x,myUid,allUs)===leg&&!hiddenMembers.has(x.id)).sort((a,b)=>getTeamVisualPosition(a,myUid,allUs).order-getTeamVisualPosition(b,myUid,allUs).order||(a.name||'').localeCompare(b.name||''));
+      const fi=siblings.findIndex(x=>x.id===draggedUid),ti=siblings.findIndex(x=>x.id===targetUid); if(fi<0||ti<0||fi===ti)return; siblings.splice(fi,1); siblings.splice(ti,0,dragged); siblings.forEach((u,i)=>{const b=getTeamVisualPosition(u,myUid,allUs).branchUid;if(b)current[b]={...(current[b]||{}),leg,order:i};});
     }else{
-      const siblings=allUs.filter(x=>x.uplineUid===myUid&&!hiddenMembers.has(x.id)&&current[x.id]?.leg===toLeg&&x.id!==draggedUid);
-      const max=siblings.reduce((m,x)=>Math.max(m,current[x.id]?.order??-1),-1);
-      current[draggedUid]={...(current[draggedUid]||{}),leg:toLeg,order:max+1};
+      const newLeg=getTeamVisualLeg(target,myUid,allUs)||'', branch=getTeamVisualPosition(dragged,myUid,allUs).branchUid; if(!branch)return; const sib=allUs.filter(x=>x.id!==draggedUid&&getTeamVisualLeg(x,myUid,allUs)===newLeg&&!hiddenMembers.has(x.id)); const max=sib.reduce((m,x)=>Math.max(m,getTeamVisualPosition(x,myUid,allUs).order),-1); current[branch]={...(current[branch]||{}),leg:newLeg||null,order:max+1};
     }
-    await updateDoc(doc(db,'users',myUid),{teamLayout:current});
-    if(cData)cData={...cData,teamLayout:current};
-    if(window._teamCache)window._teamCache=null;
-    await loadTeamDashboard(true);
+    await updateDoc(doc(db,'users',myUid),{teamLayout:current}); const me=allUs.find(x=>x.id===myUid);if(me)me.teamLayout=current; renderTeamDashboard();
   }catch(e){console.error('handleDrop error',e);alert('Errore: '+(e.message||e));}
 };
 
@@ -1582,7 +1591,8 @@ window.openMemberDetail = function(uid) {
   id('md-name').textContent = m.name||'—';
   id('md-meta').textContent =
     (m.role==='leader'?'👑 Team Leader':'Membro')+
-    (m.userNumber?' · #'+m.userNumber:'');
+    (m.userNumber?' · #'+m.userNumber:'')+
+    (m.leg?' · '+(m.leg==='right'?'👉 Destra':'👈 Sinistra'):'');
   id('md-wk-new').textContent   = mpWk.length;
   id('md-wk-pres').textContent  = mpWk.filter(function(p){return p.presentation;}).length;
   id('md-wk-pay').textContent   = mp.filter(function(p){return p.payment;}).length;
@@ -1760,7 +1770,7 @@ window.renderNetworkTree=function(){
   ct.innerHTML='';
 
   // IMPORTANT: this is only a visual tree for the selected viewer/root.
-  // The real Team Dashboard hierarchy (uplineUid) is never changed here.
+  // The real Team Dashboard hierarchy (uplineUid / legMap) is never changed here.
   const userById=new Map(us.map(u=>[u.id,u]));
   const childrenByParent=new Map();
   us.forEach(u=>{
@@ -1797,7 +1807,7 @@ window.renderNetworkTree=function(){
     el.style.cursor=pid?'grab':'default';
     if(pid){
       el.title='Trascina per spostare/sostituire · clicca per gestire';
-      el.setAttribute('draggable', _canPosition ? 'true' : 'false');el.dataset.uid=u.id;
+      el.setAttribute('draggable','true');el.dataset.uid=u.id;
       el.addEventListener('dragstart',e=>{
         _dragUid=u.id;e.dataTransfer.setData('text/plain',u.id);e.dataTransfer.effectAllowed='move';
         setTimeout(()=>el.classList.add('dragging'),0);
@@ -1985,58 +1995,67 @@ window.saveNetworkPosition=async function(){
 
 
 // ══ TEAM STRUCTURE BACKUP / RESTORE ══
-// Backup is private to the logged-in viewer. It stores only that viewer's
-// teamLayout and NEVER writes leg/legMap/legOrder to member documents.
+// These helpers protect the REAL Team Dashboard placement. They are completely
+// separate from Network Tree's private `networkLayout`.
 window.backupTeamStructure = async function(){
   const us=window._cachedUs||[];
   if(!us.length){alert('Carica prima la Dashboard Team.');return;}
-  const layout=getPrivateTeamLayout(cUser.uid,us);
+  const direct=us.filter(u=>u.uplineUid===cUser.uid || ((u.uplinePath||[]).length && u.uplinePath[u.uplinePath.length-1]===cUser.uid));
   const children={};
-  us.filter(u=>u.uplineUid===cUser.uid).forEach(u=>{
-    const p=layout[u.id]; if(p&&(p.leg==='left'||p.leg==='right')) children[u.id]={leg:p.leg,order:p.order??9999};
-  });
+  direct.forEach(u=>{children[u.id]={leg:getLegFor(u,cUser.uid)||null,order:u.legOrder??9999};});
   try{
-    const backup={savedAt:Date.now(),children};
-    await updateDoc(doc(db,'users',cUser.uid),{teamStructureBackup:backup});
-    if(cData)cData={...cData,teamStructureBackup:backup};
-    alert('Backup della tua posizione Team salvato.');
+    await updateDoc(doc(db,'users',cUser.uid),{teamStructureBackup:{savedAt:Date.now(),children}});
+    if(cData)cData.teamStructureBackup={savedAt:Date.now(),children};
+    alert('Backup della struttura Team salvato.');
   }catch(e){alert('Errore nel backup: '+(e.message||e));}
 };
 window.restoreTeamStructure = async function(){
   try{
     const snap=await getDoc(doc(db,'users',cUser.uid));
     const backup=snap.exists()?snap.data().teamStructureBackup:null;
-    if(!backup||!backup.children){alert('Nessun backup della struttura disponibile.');return;}
-    if(!confirm('Ripristinare il tuo ultimo posizionamento Team? Non verranno modificati Upline, legMap o Network Tree.'))return;
-    const current={...(snap.data().teamLayout||{})};
+    if(!backup||!backup.children||!Object.keys(backup.children).length){alert('Nessun backup della struttura disponibile.');return;}
+    if(!confirm('Ripristinare l’ultimo backup della Dashboard Team? Il Network Tree personale non verrà modificato.'))return;
+    const batch=writeBatch(db);
     Object.entries(backup.children).forEach(([uid,v])=>{
-      if(v&&v.leg) current[uid]={...(current[uid]||{}),leg:v.leg,order:v.order??9999};
-      else delete current[uid];
+      const data={legOrder:v.order??9999};
+      data['legMap.'+cUser.uid]=v.leg||null;
+      batch.update(doc(db,'users',uid),data);
     });
-    await updateDoc(doc(db,'users',cUser.uid),{teamLayout:current});
-    cData={...cData,teamLayout:current};
-    if(window._teamCache)window._teamCache=null;
+    await batch.commit();
+    if(window._teamCache){window._teamCache=null;}
+    window._cachedUs=null;window._cachedPs=null;
     await loadTeamDashboard(true);
-    alert('Posizionamento Team ripristinato.');
+    alert('Struttura Team ripristinata dal backup.');
   }catch(e){console.error('restoreTeamStructure',e);alert('Errore nel ripristino: '+(e.message||e));}
 };
 
 window.setLeg=async(uid,leg,btn)=>{
   try{
-    const myUid=cUser?.uid, allUs=window._cachedUs||[], target=allUs.find(u=>u.id===uid);
-    if(!myUid||!target||target.uplineUid!==myUid){
-      alert('Puoi posizionare solo i tuoi membri diretti.'); return;
+    const myUid=cUser?.uid;
+    const allUs=window._cachedUs||[];
+    const target=allUs.find(u=>u.id===uid);
+    const show=window._cachedShow||[];
+    if(!myUid||!target||!show.some(u=>u.id===uid)){
+      alert('Questa persona non appartiene alla tua struttura.');
+      return;
     }
-    if(leg!=='left'&&leg!=='right'&&leg!=='') return;
+    if(leg!=='left' && leg!=='right' && leg!=='') return;
+
+    // One source of truth: the viewer's own teamLayout.
+    // Never update the member document and never touch uplineUid/uplinePath.
     const snap=await getDoc(doc(db,'users',myUid));
     if(!snap.exists()) throw new Error('Profilo utente non trovato.');
     const current={...(snap.data().teamLayout||{})};
     const old={...(current[uid]||{})};
     if(leg==='') delete current[uid];
-    else current[uid]={...old,leg,order:Number.isFinite(old.order)?old.order:9999};
+    else current[uid]={...old,leg,order:old.order??target.legOrder??9999};
     await updateDoc(doc(db,'users',myUid),{teamLayout:current});
+
     cData={...cData,teamLayout:current};
-    if(window._teamCache)window._teamCache=null;
+    if(window._cachedUs){
+      // Keep the root out of _cachedUs; just invalidate cached render data.
+      window._teamCache=null;
+    }
     await loadTeamDashboard(true);
   }catch(e){
     console.error('setLeg error',e);
@@ -2532,6 +2551,22 @@ window.setFilter = (btn,f) => {
 };
 
 // ── TEAM DASHBOARD ──
+async function ensureInitialTeamBackup(us){
+  if(!us || !us.length || !cUser) return;
+  try{
+    const meSnap=await getDoc(doc(db,'users',cUser.uid));
+    const existing=meSnap.exists()?meSnap.data().teamStructureBackup:null;
+    if(existing && existing.children && Object.keys(existing.children).length) return;
+    const direct=us.filter(u=>u.uplineUid===cUser.uid || ((u.uplinePath||[]).length && u.uplinePath[u.uplinePath.length-1]===cUser.uid));
+    const children={};
+    direct.forEach(u=>{children[u.id]={leg:getLegFor(u,cUser.uid)||null,order:u.legOrder??9999};});
+    if(Object.keys(children).length){
+      await updateDoc(doc(db,'users',cUser.uid),{teamStructureBackup:{savedAt:Date.now(),children}});
+      if(cData)cData.teamStructureBackup={savedAt:Date.now(),children};
+    }
+  }catch(e){console.warn('Initial Team backup skipped:',e);}
+}
+
 async function loadTeamDashboard(force=false) {
   if(id('team-grid-left')) id('team-grid-left').innerHTML=loader();
   if(id('team-grid-right')) id('team-grid-right').innerHTML=loader();
@@ -2712,7 +2747,7 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
     const note = existingNote || document.createElement('div');
     note.id='no-leg-note';
     note.style.cssText='font-size:12px;color:var(--amber);background:var(--amber-dim);border:.5px solid var(--amber-dim);border-radius:8px;padding:8px 12px;margin-bottom:1rem;';
-    note.textContent=filterLeaderId && refUid!==cUser.uid ? `ℹ️ ${noLeg.length} ${noLeg.length===1?'persona non è':'persone non sono'} ancora posizionate nella vista personale di ${refUser?.name||'questo utente'}.` : `⚠️ ${noLeg.length} ${noLeg.length===1?'membro non ha':'membri non hanno'} ancora una gamba assegnata. Puoi assegnarla solo ai tuoi diretti.`;
+    note.textContent=`⚠️ ${noLeg.length} ${noLeg.length===1?'membro non ha':'membri non hanno'} ancora una gamba assegnata. Vai nel pannello Admin per assegnarla.`;
     if(!existingNote) id('binary-view').insertAdjacentElement('afterend', note);
   } else if(existingNote) existingNote.remove();
 
@@ -2725,9 +2760,9 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
   const visibleForGrid = sorted_show.filter(function(u){ return !hiddenMembers.has(u.id); });
   const mdata=visibleForGrid.map((m,i)=>{const mp=prospectsByUid[m.id]||[];return {m,level:getLevel(m),mp,mpWk:mp.filter(p=>(p.createdAt?.toMillis()||0)>=(wk||Date.now()-7*86400000)),c:COLS[i%COLS.length]};});
   const _myUid = cUser.uid;
-  const mdLeft  = mdata.filter(d => effectiveLeg(d.m,refUid) === 'left');
-  const mdRight = mdata.filter(d => effectiveLeg(d.m,refUid) === 'right');
-  const mdNone  = mdata.filter(d => !effectiveLeg(d.m,refUid));
+  const mdLeft  = mdata.filter(d => effectiveLeg(d.m,_myUid) === 'left');
+  const mdRight = mdata.filter(d => effectiveLeg(d.m,_myUid) === 'right');
+  const mdNone  = mdata.filter(d => !effectiveLeg(d.m,_myUid));
 
   // Update counts
 
@@ -2742,9 +2777,9 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
       grid.innerHTML = '<div style="padding:.75rem 0;font-size:12px;color:var(--text3);">'+(emptyMsg||'Nessun membro.')+'</div>';
       return;
     }
-    // Sort by the viewer's private teamLayout order, never by legacy legOrder.
+    // Sort by legOrder if set, then by name
     const sorted = [...data].sort((a,b)=>{
-      const oa = getTeamVisualPosition(a.m, cUser.uid, us).order, ob = getTeamVisualPosition(b.m, cUser.uid, us).order;
+      const oa = a.m.legOrder ?? 9999, ob = b.m.legOrder ?? 9999;
       if(oa !== ob) return oa - ob;
       return (a.m.name||'').localeCompare(b.m.name||'');
     });
@@ -2753,30 +2788,26 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
     const levelLabel=level===1?'Diretto':level===2?'Livello 2':`Livello ${level}`;
     const levelColor=level===1?'var(--accent)':level===2?'var(--blue)':'var(--text3)';
     const roleIcon=m.role==='leader'?'👑 ':'';
-    const _mLeg = effectiveLeg(m, refUid);
-    const _canPosition = (refUid===cUser.uid) && isDirectTeamChild(m, cUser.uid);
+    const _mLeg = effectiveLeg(m, cUser.uid);
     const legTag=_mLeg?`<span style="font-size:10px;padding:1px 5px;border-radius:8px;margin-left:4px;background:${_mLeg==='right'?'var(--accent-dim)':'var(--blue-dim)'};color:${_mLeg==='right'?'var(--accent)':'var(--blue)'};">${_mLeg==='right'?'👉':'👈'}</span>`:'';
     const el=document.createElement('div'); el.className='tc';
-    el.innerHTML=`<div class="tc-head" style="cursor:pointer;" onclick="openMemberDetail('${m.id}')"><div class="tc-av" style="background:${c.bg};color:${c.c}">${ini}</div><div><div class="tc-name">${roleIcon}${x(m.name)}${legTag}</div><div class="tc-role">${mp.length} prospect · <span style="color:${levelColor}">${levelLabel}</span></div></div>${mpWk.length?`<div class="wk-tag">+${mpWk.length} sett.</div>`:''}</div><div class="tc-nums"><div class="tc-num"><div class="tc-num-val" style="color:${c.c}">${mp.filter(p=>p.presentation).length}</div><div class="tc-num-lbl">Presentazioni</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="tc-num-lbl">Attesa pag.</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--green)">${mp.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length}</div><div class="tc-num-lbl">FU completi</div></div></div>${_canPosition?`<div style="margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:var(--text3);">Gamba:</span><button onclick="event.stopPropagation();setLeg('${m.id}','right',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${_mLeg==='right'?'var(--accent)':'var(--border2)'};background:${_mLeg==='right'?'var(--accent-dim)':'transparent'};color:${_mLeg==='right'?'var(--accent)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👉 Destra</button><button onclick="event.stopPropagation();setLeg('${m.id}','left',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${_mLeg==='left'?'var(--blue)':'var(--border2)'};background:${_mLeg==='left'?'var(--blue-dim)':'transparent'};color:${_mLeg==='left'?'var(--blue)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👈 Sinistra</button>${_mLeg?`<button onclick="event.stopPropagation();setLeg('${m.id}','',this)" style="padding:3px 8px;border-radius:20px;border:.5px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">✕</button>`:''}<span class="tc-drag-handle" draggable="false" title="Trascina per riordinare">⠿</span><div class="tc-move-btns"><button class="tc-move-btn" onclick="event.stopPropagation();moveMember('${m.id}','up')" title="Sposta su">↑</button><button class="tc-move-btn" onclick="event.stopPropagation();moveMember('${m.id}','down')" title="Sposta giù">↓</button></div></div>`:`<div style="margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);font-size:10px;color:var(--text3);">Posizione gestita dal tuo upline diretto</div>`};
+    el.innerHTML=`<div class="tc-head" style="cursor:pointer;" onclick="openMemberDetail('${m.id}')"><div class="tc-av" style="background:${c.bg};color:${c.c}">${ini}</div><div><div class="tc-name">${roleIcon}${x(m.name)}${legTag}</div><div class="tc-role">${mp.length} prospect · <span style="color:${levelColor}">${levelLabel}</span></div></div>${mpWk.length?`<div class="wk-tag">+${mpWk.length} sett.</div>`:''}</div><div class="tc-nums"><div class="tc-num"><div class="tc-num-val" style="color:${c.c}">${mp.filter(p=>p.presentation).length}</div><div class="tc-num-lbl">Presentazioni</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="tc-num-lbl">Attesa pag.</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--green)">${mp.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length}</div><div class="tc-num-lbl">FU completi</div></div></div><div style="margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:var(--text3);">Gamba:</span><button onclick="event.stopPropagation();setLeg('${m.id}','right',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${_mLeg==='right'?'var(--accent)':'var(--border2)'};background:${_mLeg==='right'?'var(--accent-dim)':'transparent'};color:${_mLeg==='right'?'var(--accent)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👉 Destra</button><button onclick="event.stopPropagation();setLeg('${m.id}','left',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${_mLeg==='left'?'var(--blue)':'var(--border2)'};background:${_mLeg==='left'?'var(--blue-dim)':'transparent'};color:${_mLeg==='left'?'var(--blue)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👈 Sinistra</button>${_mLeg?`<button onclick="event.stopPropagation();setLeg('${m.id}','',this)" style="padding:3px 8px;border-radius:20px;border:.5px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">✕</button>`:''}<span class="tc-drag-handle" draggable="false" title="Trascina per riordinare">⠿</span><div class="tc-move-btns"><button class="tc-move-btn" onclick="event.stopPropagation();moveMember('${m.id}','up')" title="Sposta su">↑</button><button class="tc-move-btn" onclick="event.stopPropagation();moveMember('${m.id}','down')" title="Sposta giù">↓</button></div><button onclick="event.stopPropagation();toggleHideMember('${m.id}')" style="padding:3px 10px;border-radius:20px;border:.5px solid var(--border2);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">🙈 Nascondi</button></div>`;
       // Drag & drop
-      el.setAttribute('draggable', _canPosition ? 'true' : 'false');
+      el.setAttribute('draggable','true');
       el.dataset.uid = m.id;
       el.dataset.gridId = gridId;
       el.addEventListener('dragstart', function(e){
-        if(!_canPosition) return;
         e.dataTransfer.setData('text/plain', m.id+'|'+gridId);
         e.dataTransfer.effectAllowed='move';
         setTimeout(()=>el.classList.add('dragging'),0);
       });
       el.addEventListener('dragend', function(){el.classList.remove('dragging');});
       el.addEventListener('dragover', function(e){
-        if(!_canPosition) return;
         e.preventDefault(); e.dataTransfer.dropEffect='move';
         el.classList.add('drag-over');
       });
       el.addEventListener('dragleave', function(){el.classList.remove('drag-over');});
       el.addEventListener('drop', function(e){
-        if(!_canPosition) return;
         e.preventDefault(); el.classList.remove('drag-over');
         var payload = e.dataTransfer.getData('text/plain').split('|');
         var draggedUid = payload[0], fromGridId = payload[1];
@@ -2978,7 +3009,7 @@ window.renderAdminTable=()=>{
       <td><div style="display:flex;align-items:center;gap:8px;">
         <div style="width:26px;height:26px;border-radius:50%;background:var(--accent-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">${ini}</div>
         <div><div class="nm" style="display:flex;align-items:center;">${x(u.name||'—')}${idBadge}</div><div class="note">${x(u.email||'')}</div></div></div></td>
-      <td><span class="admin-badge ${role}">${role==='leader'?'Leader':'Membro'}</span></td>
+      <td><span class="admin-badge ${role}">${role==='leader'?'Leader':'Membro'}</span>${u.leg?`<span style="font-size:10px;margin-left:4px;padding:2px 6px;border-radius:10px;background:${u.leg==='right'?'var(--accent-dim)':'var(--blue-dim)'};color:${u.leg==='right'?'var(--accent)':'var(--blue)'};border:.5px solid ${u.leg==='right'?'var(--accent)':'var(--blue)'};">${u.leg==='right'?'👉 Destra':'👈 Sinistra'}</span>`:''}</td>
       <td><span style="font-size:12px;color:var(--text2);">${up?x(up.name):'<span style="color:var(--text3)">—</span>'}</span></td>
       <td><span style="font-family:\'DM Mono\',monospace;font-size:12px;">${pCount}</span></td>
       <td><span style="font-size:12px;color:var(--text2);">${reg}</span></td>
@@ -2997,18 +3028,12 @@ function renderTree() {
     const idTag=u.userNumber
       ? `<span style="font-family:monospace;font-size:10px;color:var(--accent);background:var(--accent-dim);padding:1px 5px;border-radius:4px;border:.5px solid var(--accent);margin-left:4px;">#${u.userNumber}</span>`
       : `<span style="font-family:monospace;font-size:10px;color:var(--text3);padding:1px 5px;">no ID</span>`;
-    const legTag='';
+    const legTag=u.leg?`<span style="font-size:10px;padding:1px 5px;border-radius:10px;margin-left:3px;background:${u.leg==='right'?'var(--accent-dim)':'var(--blue-dim)'};color:${u.leg==='right'?'var(--accent)':'var(--blue)'};">${u.leg==='right'?'👉':'👈'}</span>`:'';
     let h=`<div class="tree-item"><span>${icon}</span><span class="tree-lbl">${x(u.name||'—')}</span>${idTag}${legTag}<span class="tree-meta">${roleIcon} · ${pc} prospect</span></div>`;
     if(ch.length) h+=`<div class="tree-node">${ch.map(c=>node(c,depth+1)).join('')}</div>`;
     return h;
   }
   id('net-tree').innerHTML=roots.length?roots.map(r=>node(r,0)).join(''):'<div class="empty">Nessun utente registrato</div>';
-}
-
-function isDescendantOf(uid,ancestorUid,users){
-  const byId=new Map((users||[]).map(u=>[u.id,u])); let cur=byId.get(uid),guard=0;
-  while(cur&&cur.uplineUid&&guard++<500){ if(cur.uplineUid===ancestorUid)return true; cur=byId.get(cur.uplineUid); }
-  return false;
 }
 
 window.openEditUser=async uid=>{
@@ -3019,9 +3044,10 @@ window.openEditUser=async uid=>{
   id('eu-role').value=u.role||'member';
   id('eu-err').style.display='none';
   id('eu-uid').textContent = 'Firebase UID: ' + u.id;
+  id('eu-leg').value = u.leg||'';
   const sel=id('eu-upline');
   sel.innerHTML='<option value="">— Nessun upline (top level) —</option>';
-  allUsers.filter(a=>a.id!==uid&&!isDescendantOf(a.id,uid,allUsers))
+  allUsers.filter(a=>a.id!==uid&&!(a.uplinePath||[]).includes(uid))
     .sort((a,b)=>(a.name||'').localeCompare(b.name||''))
     .forEach(a=>{
       const o=document.createElement('option');
@@ -3056,24 +3082,13 @@ window.assignAllIds=async()=>{
 };
 window.saveEditUser=async()=>{
   if(!editingUid) return;
-  const role=id('eu-role').value, uplineUid=id('eu-upline').value||null;
+  const role=id('eu-role').value, uplineUid=id('eu-upline').value||null, leg=id('eu-leg').value||null;
   try{
-    const byId=new Map(allUsers.map(a=>[a.id,a]));
-    const uplinePath=[];
-    const seen=new Set([editingUid]);
-    let cur=uplineUid;
-    while(cur){
-      if(seen.has(cur)) throw new Error('Upline non valido: creerebbe un ciclo nella struttura.');
-      seen.add(cur);
-      const parent=byId.get(cur);
-      if(!parent) throw new Error('Upline non trovato.');
-      uplinePath.unshift(cur);
-      cur=parent.uplineUid||null;
-      if(uplinePath.length>500) throw new Error('Struttura troppo profonda o ciclica.');
-    }
-    await updateDoc(doc(db,'users',editingUid),{role,uplineUid,uplinePath});
+    let uplinePath=[];
+    if(uplineUid){const up=allUsers.find(a=>a.id===uplineUid);uplinePath=[...(up?.uplinePath||[]),uplineUid];}
+    await updateDoc(doc(db,'users',editingUid),{role,uplineUid,uplinePath,leg:leg||null});
     const i=allUsers.findIndex(a=>a.id===editingUid);
-    if(i>=0) allUsers[i]={...allUsers[i],role,uplineUid,uplinePath};
+    if(i>=0) allUsers[i]={...allUsers[i],role,uplineUid,uplinePath,leg:leg||null};
     closeEditUser(); renderAdminTable(); renderTree();
     id('admin-stats').innerHTML=
       sc('Utenti totali',allUsers.length,'ac')+sc('Leader',allUsers.filter(u=>u.role==='leader').length,'g')+
@@ -3405,7 +3420,7 @@ const RY_I18N_EXTRA={
   'Assegnare un ID numerico a':'Asignar un ID numérico a','utenti che ne sono privi?':'usuarios que no lo tienen?',
   'Clicca per riordinare':'Haz clic para reordenar','Trascina per spostare/sostituire · clicca per gestire':'Arrastra para mover/sustituir · haz clic para gestionar',
   'Trascina per riordinare':'Arrastra para reordenar','Sposta su':'Mover arriba','Sposta giù':'Mover abajo','Nascondi':'Ocultar',
-  'membri non hanno':'miembros no tienen','ancora una gamba assegnata. Assegnala dalla tua Dashboard Team se sei il suo upline diretto.':'todavía una pierna asignada. Ve al panel de administración para asignarla.',
+  'membri non hanno':'miembros no tienen','ancora una gamba assegnata. Vai nel pannello Admin per assegnarla.':'todavía una pierna asignada. Ve al panel de administración para asignarla.',
   'Struttura non trovata.':'Estructura no encontrada.','tutta la struttura':'toda la estructura','gamba destra':'pierna derecha','gamba sinistra':'pierna izquierda',
   'Distribuzione prospect':'Distribución de prospectos','per':'para','oggi':'hoy','fa':'hace','giorni':'días',
   'Nessun duplicato trovato.':'No se encontraron duplicados.','Synced leader role from email match':'Rol de líder sincronizado mediante coincidencia de correo electrónico',
