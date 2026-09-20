@@ -1506,121 +1506,512 @@ var hiddenMembers = new Set();
 try { hiddenMembers = new Set(JSON.parse(localStorage.getItem('pm_hidden')||'[]')); } catch(e){}
 
 
-// ── PERSONAL TEAM PLACEMENT (PER VIEWER) ──
-// The real upline relationship remains immutable. Team Dashboard positioning is
-// stored only inside the current viewer's own `personalLayout` field.
-function getViewerLayout(viewerUid, users){
-  const me=(users||[]).find(u=>u.id===viewerUid);
-  return (me && me.personalLayout && typeof me.personalLayout==='object') ? me.personalLayout : {};
-}
-function getDirectChildForViewer(memberId, viewerUid, users){
-  const all=users||[]; const target=all.find(u=>u.id===memberId); if(!target)return null;
-  let cur=target, guard=0;
-  while(cur && guard++<500){
-    if(cur.uplineUid===viewerUid) return cur;
-    cur=all.find(u=>u.id===cur.uplineUid);
-  }
-  return null;
-}
-function getPersonalPlacement(memberId, viewerUid, users){
-  const all=users||[]; const layout=getViewerLayout(viewerUid,all);
-  if(layout[memberId]) return layout[memberId];
-  // Compatibility with the previous per-upline legMap format.
-  const target=all.find(u=>u.id===memberId); if(!target)return null;
-  if(target.legMap && target.legMap[viewerUid]) return {parentUid:viewerUid,leg:target.legMap[viewerUid],order:target.legOrder};
-  const direct=getDirectChildForViewer(memberId,viewerUid,all);
-  if(direct && direct.legMap && direct.legMap[viewerUid]) return {parentUid:viewerUid,leg:direct.legMap[viewerUid],order:direct.legOrder};
-  return null;
-}
-function getLegForPersonal(u, viewerUid, users){
-  const all=users||window._cachedUs||window._treeUs||[];
-  const p=getPersonalPlacement(u.id,viewerUid,all);
-  if(p && p.leg) return p.leg;
-  const direct=getDirectChildForViewer(u.id,viewerUid,all);
-  if(direct){
-    const dp=getPersonalPlacement(direct.id,viewerUid,all);
-    if(dp && dp.leg) return dp.leg;
-    if(direct.legMap && direct.legMap[viewerUid]) return direct.legMap[viewerUid];
-  }
-  return null;
-}
-function getPersonalParent(memberId, viewerUid, users){
-  const all=users||[]; const p=getPersonalPlacement(memberId,viewerUid,all);
-  return p?.parentUid || (all.find(u=>u.id===memberId)?.uplineUid || null);
-}
-async function savePersonalPlacement(memberId, viewerUid, placement, users){
-  if(memberId===viewerUid) throw new Error('Non puoi posizionare te stesso.');
-  const all=users||[]; const viewer=all.find(u=>u.id===viewerUid);
-  if(!viewer) throw new Error('Utente non trovato.');
-  const allowed=new Set(); const q=[viewerUid]; let guard=0;
-  while(q.length && guard++<1000){
-    const pid=q.shift();
-    all.filter(u=>u.uplineUid===pid).forEach(ch=>{if(!allowed.has(ch.id)){allowed.add(ch.id);q.push(ch.id);}});
-  }
-  if(!allowed.has(memberId)) throw new Error('Puoi posizionare solo persone della tua downline.');
-  const layout=viewer.personalLayout && typeof viewer.personalLayout==='object' ? {...viewer.personalLayout} : {};
-  layout[memberId]={parentUid:placement.parentUid,leg:placement.leg||null,order:placement.order??9999};
-  await updateDoc(doc(db,'users',viewerUid),{personalLayout:layout});
-  viewer.personalLayout=layout;
-  const cached=(users||[]).find(u=>u.id===viewerUid); if(cached) cached.personalLayout=layout;
-}
-
 // ── MEMBER ORDERING ──
 window.moveMember = async function(uid, dir) {
-  var allUs=window._cachedUs||[], viewer=cUser.uid;
-  var u=allUs.find(x=>x.id===uid); if(!u)return;
-  var leg=getLegForPersonal(u,viewer,allUs)||'';
-  var siblings=allUs.filter(function(x){return getLegForPersonal(x,viewer,allUs)===leg&&!hiddenMembers.has(x.id);})
-    .sort(function(a,b){var pa=getPersonalPlacement(a.id,viewer,allUs)||{},pb=getPersonalPlacement(b.id,viewer,allUs)||{};return (pa.order??9999)-(pb.order??9999)||(a.name||'').localeCompare(b.name||'');});
-  var idx=siblings.findIndex(x=>x.id===uid); if(idx<0)return;
-  var swapIdx=dir==='up'?idx-1:idx+1; if(swapIdx<0||swapIdx>=siblings.length)return;
-  var other=siblings[swapIdx];
-  try{
-    var a=getPersonalPlacement(uid,viewer,allUs)||{parentUid:getPersonalParent(uid,viewer,allUs),leg};
-    var b=getPersonalPlacement(other.id,viewer,allUs)||{parentUid:getPersonalParent(other.id,viewer,allUs),leg};
-    await savePersonalPlacement(uid,viewer,{parentUid:a.parentUid,leg:a.leg,order:b.order??swapIdx},allUs);
-    await savePersonalPlacement(other.id,viewer,{parentUid:b.parentUid,leg:b.leg,order:a.order??idx},allUs);
+  var allUs = window._cachedUs || [];
+  var u = allUs.find(function(x){return x.id===uid;});
+  if(!u) return;
+  var leg = getLegFor(u, cUser.uid) || '';
+  // Get siblings in same leg, sorted by legOrder
+  var siblings = allUs
+    .filter(function(x){return getLegFor(x, cUser.uid)===leg && !hiddenMembers.has(x.id);})
+    .sort(function(a,b){return (a.legOrder??9999)-(b.legOrder??9999)||(a.name||'').localeCompare(b.name||'');});
+  var idx = siblings.findIndex(function(x){return x.id===uid;});
+  if(idx<0) return;
+  var swapIdx = dir==='up' ? idx-1 : idx+1;
+  if(swapIdx<0 || swapIdx>=siblings.length) return;
+  var other = siblings[swapIdx];
+  // Swap orders
+  var myOrder = u.legOrder ?? idx;
+  var otherOrder = other.legOrder ?? swapIdx;
+  try {
+    await updateDoc(doc(db,'users',uid),{legOrder: otherOrder});
+    await updateDoc(doc(db,'users',other.id),{legOrder: myOrder});
+    // Update cache
+    u.legOrder = otherOrder;
+    other.legOrder = myOrder;
     renderTeamDashboard();
-  }catch(e){console.warn('moveMember error',e);alert(e.message||'Errore');}
+  } catch(e){console.warn('moveMember error',e);}
 };
 
-window.handleDrop = async function(draggedUid,targetUid,fromGrid,toGrid) {
-  var allUs=window._cachedUs||[], viewer=cUser.uid;
-  var dragged=allUs.find(x=>x.id===draggedUid),target=allUs.find(x=>x.id===targetUid);
-  if(!dragged||!target)return;
-  var sameLeg=fromGrid===toGrid;
-  try{
-    if(sameLeg){
-      var leg=getLegForPersonal(dragged,viewer,allUs)||'';
-      var siblings=allUs.filter(function(x){return getLegForPersonal(x,viewer,allUs)===leg&&!hiddenMembers.has(x.id);})
-        .sort(function(a,b){var pa=getPersonalPlacement(a.id,viewer,allUs)||{},pb=getPersonalPlacement(b.id,viewer,allUs)||{};return (pa.order??9999)-(pb.order??9999)||(a.name||'').localeCompare(b.name||'');});
-      var fromIdx=siblings.findIndex(x=>x.id===draggedUid),toIdx=siblings.findIndex(x=>x.id===targetUid);
-      if(fromIdx<0||toIdx<0||fromIdx===toIdx)return;
-      siblings.splice(fromIdx,1); siblings.splice(toIdx,0,dragged);
-      for(var i=0;i<siblings.length;i++){
-        var u=siblings[i], pos=getPersonalPlacement(u.id,viewer,allUs)||{parentUid:getPersonalParent(u.id,viewer,allUs),leg};
-        await savePersonalPlacement(u.id,viewer,{parentUid:pos.parentUid,leg:pos.leg||leg,order:i},allUs);
+window.handleDrop = async function(draggedUid, targetUid, fromGrid, toGrid) {
+  var allUs = window._cachedUs || [];
+  var dragged = allUs.find(function(x){return x.id===draggedUid;});
+  var target  = allUs.find(function(x){return x.id===targetUid;});
+  if(!dragged||!target) return;
+
+  var sameLeg = fromGrid === toGrid;
+
+  if(sameLeg) {
+    // Reorder within same leg — swap legOrder values
+    var leg = getLegFor(dragged, cUser.uid) || '';
+    var siblings = allUs
+      .filter(function(x){return getLegFor(x, cUser.uid)===leg && !hiddenMembers.has(x.id);})
+      .sort(function(a,b){return (a.legOrder??9999)-(b.legOrder??9999)||(a.name||'').localeCompare(b.name||'');});
+    var fromIdx = siblings.findIndex(function(x){return x.id===draggedUid;});
+    var toIdx   = siblings.findIndex(function(x){return x.id===targetUid;});
+    if(fromIdx<0||toIdx<0||fromIdx===toIdx) return;
+    // Reassign sequential orders inserting dragged before target
+    siblings.splice(fromIdx,1);
+    siblings.splice(toIdx,0,dragged);
+    var updates = siblings.map(function(u,i){return {uid:u.id,order:i};});
+    try {
+      for(var i=0;i<updates.length;i++){
+        var uu = allUs.find(function(x){return x.id===updates[i].uid;});
+        if(uu) uu.legOrder = updates[i].order;
+        await updateDoc(doc(db,'users',updates[i].uid),{legOrder:updates[i].order});
       }
-    }else{
-      var newLeg=getLegForPersonal(target,viewer,allUs)||'';
-      var newSiblings=allUs.filter(function(x){return getLegForPersonal(x,viewer,allUs)===newLeg&&!hiddenMembers.has(x.id)&&x.id!==draggedUid;});
-      var maxOrder=newSiblings.reduce(function(m,x){var p=getPersonalPlacement(x.id,viewer,allUs)||{};return Math.max(m,p.order??0);},-1);
-      var old=getPersonalPlacement(draggedUid,viewer,allUs)||{parentUid:getPersonalParent(draggedUid,viewer,allUs),leg:getLegForPersonal(dragged,viewer,allUs)};
-      await savePersonalPlacement(draggedUid,viewer,{parentUid:old.parentUid,leg:newLeg,order:maxOrder+1},allUs);
-    }
-    renderTeamDashboard();
-  }catch(e){console.warn('handleDrop error',e);alert(e.message||'Errore');}
+      renderTeamDashboard();
+    } catch(e){console.warn('handleDrop error',e);}
+  } else {
+    // Move to different leg — change leg + assign order at bottom
+    var newLeg = getLegFor(target, cUser.uid) || '';
+    var newSiblings = allUs.filter(function(x){return getLegFor(x, cUser.uid)===newLeg && !hiddenMembers.has(x.id);});
+    var maxOrder = newSiblings.reduce(function(m,x){return Math.max(m,x.legOrder??0);},0);
+    try {
+      var crossUpdate = {legOrder:maxOrder+1};
+      crossUpdate['legMap.'+cUser.uid] = newLeg||null;
+      await updateDoc(doc(db,'users',draggedUid),crossUpdate);
+      if(!dragged.legMap) dragged.legMap={};
+      dragged.legMap[cUser.uid] = newLeg;
+      dragged.legOrder = maxOrder+1;
+      renderTeamDashboard();
+    } catch(e){console.warn('handleDrop cross-leg error',e);}
+  }
 };
 
+window.openMemberDetail = function(uid) {
+  var allUs = window._cachedUs || [];
+  var allPs = window._cachedPs || [];
+  var wk = window._cachedWk || (Date.now()-7*86400000);
+  var m = allUs.find(function(u){return u.id===uid;});
+  if(!m) return;
+  var mp   = allPs.filter(function(p){return p.uid===uid;});
+  var mpWk = mp.filter(function(p){
+    var t = p.createdAt&&p.createdAt.toMillis ? p.createdAt.toMillis() : (p._insertedAt||0);
+    return t >= wk;
+  });
+  var ini = (m.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
+  var colors = [
+    {bg:'rgba(201,168,76,.18)',c:'var(--accent)'},
+    {bg:'rgba(74,156,240,.18)',c:'var(--blue)'},
+    {bg:'rgba(74,240,154,.18)',c:'var(--green)'},
+    {bg:'rgba(180,74,240,.18)',c:'#b44af0'},
+    {bg:'rgba(240,90,74,.18)',c:'var(--red)'},
+  ];
+  var col = colors[uid.charCodeAt(0)%colors.length];
+  var avEl = id('md-av');
+  avEl.textContent = ini;
+  avEl.style.background = col.bg;
+  avEl.style.color = col.c;
+  id('md-name').textContent = m.name||'—';
+  id('md-meta').textContent =
+    (m.role==='leader'?'👑 Team Leader':'Membro')+
+    (m.userNumber?' · #'+m.userNumber:'')+
+    (m.leg?' · '+(m.leg==='right'?'👉 Destra':'👈 Sinistra'):'');
+  id('md-wk-new').textContent   = mpWk.length;
+  id('md-wk-pres').textContent  = mpWk.filter(function(p){return p.presentation;}).length;
+  id('md-wk-pay').textContent   = mp.filter(function(p){return p.payment;}).length;
+  id('md-tot-pros').textContent = mp.length;
+  id('md-tot-pres').textContent = mp.filter(function(p){return p.presentation;}).length;
+  id('md-tot-fu').textContent   = mp.filter(function(p){return (p.followUps||[]).filter(Boolean).length===4;}).length;
+  var listEl = id('md-list');
+  if(!mpWk.length){
+    listEl.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:.5rem 0;">Nessun prospect aggiunto questa settimana.</div>';
+  } else {
+    listEl.innerHTML = mpWk.slice(0,10).map(function(p){
+      var t = p._insertedAt||(p.createdAt&&p.createdAt.toMillis?p.createdAt.toMillis():0);
+      var days = Math.floor((Date.now()-t)/86400000);
+      var badges = [
+        p.presentation?'<span style="font-size:10px;padding:1px 5px;border-radius:4px;background:rgba(74,156,240,.15);color:var(--blue);">pres.</span>':'',
+        p.payment?'<span style="font-size:10px;padding:1px 5px;border-radius:4px;background:rgba(240,180,74,.15);color:var(--amber);">pag.</span>':'',
+        p.iscritto?'<span style="font-size:10px;padding:1px 5px;border-radius:4px;background:rgba(201,168,76,.15);color:var(--gold);">iscritto</span>':'',
+      ].filter(Boolean).join(' ');
+      return '<div class="md-prospect-row">'+
+        '<span style="font-weight:500;color:var(--text);">'+x(p.name||'—')+'</span>'+
+        '<span style="display:flex;gap:4px;align-items:center;">'+
+          badges+
+          '<span style="font-size:11px;color:var(--text3);">'+(days===0?'oggi':days+'g fa')+'</span>'+
+        '</span>'+
+      '</div>';
+    }).join('')+(mpWk.length>10?'<div style="font-size:11px;color:var(--text3);padding:.5rem 0;text-align:center;">+ altri '+(mpWk.length-10)+'</div>':'');
+  }
+  // Scroll to card and open it
+  var card = id('member-detail');
+  card.classList.add('open');
+  card.scrollIntoView({behavior:'smooth', block:'start'});
+};
+
+window.closeMemberDetail = function() {
+  id('member-detail').classList.remove('open');
+};
+
+window.toggleHideMember = function(uid) {
+  if(hiddenMembers.has(uid)) hiddenMembers.delete(uid);
+  else hiddenMembers.add(uid);
+  try { localStorage.setItem('pm_hidden', JSON.stringify(Array.from(hiddenMembers))); } catch(e){}
+  renderTeamDashboard();
+};
+
+
+// ══ NETWORK TREE ══
+async function loadNetworkTree(){
+  const ct=id('network-tree-root');
+  if(ct)ct.innerHTML='<div class="loader"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div>';
+  const myUid=cUser.uid;
+  // SECURITY: load only the current viewer and their real downline.
+  // Never download unrelated leaders/members from the platform into the Network Tree.
+  const chunk=(arr,n=30)=>{const out=[];for(let i=0;i<arr.length;i+=n)out.push(arr.slice(i,i+n));return out;};
+  const rootSnap=await getDoc(doc(db,'users',myUid));
+  const rootUser=rootSnap.exists()?{id:rootSnap.id,...rootSnap.data()}:null;
+  const collected=[];
+  let frontier=[myUid];
+  const seen=new Set([myUid]);
+  while(frontier.length){
+    const hits=[];
+    for(const ids of chunk(frontier,30)){
+      const byUid=await getDocs(query(collection(db,'users'),where('uplineUid','in',ids)));
+      byUid.docs.forEach(d=>hits.push({id:d.id,...d.data()}));
+      // Compatibility fallback for older records with missing/stale uplineUid.
+      for(const pid of ids){
+        const byPath=await getDocs(query(collection(db,'users'),where('uplinePath','array-contains',pid)));
+        byPath.docs.forEach(d=>hits.push({id:d.id,...d.data()}));
+      }
+    }
+    const next=[];
+    for(const child of hits){
+      if(seen.has(child.id)) continue;
+      const path=Array.isArray(child.uplinePath)?child.uplinePath:[];
+      const valid=frontier.some(pid=>child.uplineUid===pid || path.includes(pid));
+      if(!valid) continue;
+      seen.add(child.id); collected.push(child); next.push(child.id);
+    }
+    frontier=next;
+    if(seen.size>5000) break;
+  }
+  const us=rootUser?[rootUser,...collected]:collected;
+  const allowedUserIds=new Set(us.map(u=>u.id));
+  const ps=[];
+  for(const ids of chunk(collected.map(u=>u.id),30)){
+    if(!ids.length) continue;
+    const snap=await getDocs(query(collection(db,'prospects'),where('uid','in',ids)));
+    snap.docs.forEach(d=>ps.push({id:d.id,...d.data()}));
+  }
+  window._treeUs=us; window._treePs=ps;
+  const userById=new Map(us.map(u=>[u.id,u]));
+  const parentOfGlobal=u => (u.uplineUid && userById.has(u.uplineUid)) ? u.uplineUid : ((u.uplinePath||[]).length ? u.uplinePath[u.uplinePath.length-1] : null);
+  const childrenByParent=new Map();
+  us.forEach(u=>{const p=parentOfGlobal(u);if(!childrenByParent.has(p))childrenByParent.set(p,[]);childrenByParent.get(p).push(u);});
+  function gd(root){const r=new Set(),q=[root];while(q.length){const c=q.shift();for(const ch of(childrenByParent.get(c)||[])){if(!r.has(ch.id)){r.add(ch.id);q.push(ch.id);}}}return r;}
+  const ds=gd(myUid);
+  // SECURITY / VISIBILITY: this viewer can only work with their own downline.
+  // Never expose uplines or unrelated users in the Network Tree or position picker.
+  window._treeDownlineIds = ds;
+  const sel=id('tree-root-select');
+  if(sel){
+    const cv=sel.value;
+    const members=us.filter(u=>ds.has(u.id));
+    const alpha=(a,b)=>(a.name||a.email||'').localeCompare(b.name||b.email||'','it',{sensitivity:'base'});
+    const leaders=members.filter(u=>u.role==='leader').sort(alpha), regular=members.filter(u=>u.role!=='leader').sort(alpha);
+    sel.innerHTML='<option value="">La mia struttura</option>'+
+      (leaders.length?'<optgroup label="Leader">'+leaders.map(u=>`<option value="${u.id}"${u.id===cv?' selected':''}>${x(u.name||u.email)}</option>`).join('')+'</optgroup>':'')+
+      (regular.length?'<optgroup label="Membri">'+regular.map(u=>`<option value="${u.id}"${u.id===cv?' selected':''}>${x(u.name||u.email)}</option>`).join('')+'</optgroup>':'');
+  }
+  initTreeCanvas(); renderNetworkTree();
+}
+
+window.resetNetworkTree=async function(){
+  const btn=document.querySelector('button[onclick="resetNetworkTree()"]');
+  if(btn){btn.disabled=true;btn.textContent='↻ Reset…';}
+  try{
+    // Reset is PER VIEWER. It never changes the global upline and never changes
+    // another leader's personal Network Tree. It simply clears this viewer's
+    // private layout so the tree is rebuilt from the Team Dashboard hierarchy.
+    await updateDoc(doc(db,'users',cUser.uid),{networkLayout:{}});
+    const me=(window._treeUs||[]).find(u=>u.id===cUser.uid); if(me)me.networkLayout={};
+    _tScale=1;_tX=0;_tY=0;renderNetworkTree();setTimeout(()=>treeFit(),50);
+  }catch(e){console.error('Network Tree reset failed:',e);alert('Errore nel reset: '+(e.message||e));}
+  finally{if(btn){btn.disabled=false;btn.textContent='↻ Reset';}}
+};
+window.reloadTree=function(){renderNetworkTree();};
+
+var _tScale=1,_tX=0,_tY=0,_tDrag=false,_tDx=0,_tDy=0;
+function applyT(){const cv=id('tree-canvas');if(cv)cv.style.transform=`translate(${_tX}px,${_tY}px) scale(${_tScale})`;}
+window.treeZoom=function(f){_tScale=Math.min(Math.max(_tScale*f,.2),3);applyT();};
+window.treeFit=function(){_tScale=1;_tX=0;_tY=0;applyT();};
+function initTreeCanvas(){const w=id('tree-canvas-wrap');if(!w||w._i)return;w._i=true;_tScale=1;_tX=0;_tY=0;
+  w.addEventListener('mousedown',e=>{if(e.target.closest('.nt-card'))return;_tDrag=true;_tDx=e.clientX-_tX;_tDy=e.clientY-_tY;w.style.cursor='grabbing';});
+  window.addEventListener('mousemove',e=>{if(!_tDrag)return;_tX=e.clientX-_tDx;_tY=e.clientY-_tDy;applyT();});
+  window.addEventListener('mouseup',()=>{_tDrag=false;if(w)w.style.cursor='grab';});
+  w.addEventListener('wheel',e=>{e.preventDefault();_tScale=Math.min(Math.max(_tScale*(e.deltaY<0?1.12:.89),.2),3);applyT();},{passive:false});
+}
+
+var _dragUid=null,_popT=null;
+function showPop(card,uid){const us=window._treeUs||[],ps=window._treePs||[],u=us.find(v=>v.id===uid);if(!u)return;const mp=ps.filter(p=>p.uid===uid),wk=Date.now()-7*86400000;if(card.querySelector('.nt-popover'))return;
+  const pop=document.createElement('div');pop.className='nt-popover';pop.innerHTML=`<div style="font-size:12px;font-weight:600;margin-bottom:3px;">${x(u.name||u.email)}</div><div style="font-size:10px;color:var(--text3);margin-bottom:.5rem;">${u.role==='leader'?'👑 Leader':'Membro'}${u.userNumber?' · #'+u.userNumber:''}</div><div class="nt-popover-stats"><div class="nt-popover-stat"><div class="nt-popover-val" style="color:var(--gold)">${mp.length}</div><div class="nt-popover-lbl">Prospect</div></div><div class="nt-popover-stat"><div class="nt-popover-val" style="color:var(--green)">${mp.filter(p=>(p.createdAt?.toMillis()||0)>=wk).length}</div><div class="nt-popover-lbl">Sett.</div></div><div class="nt-popover-stat"><div class="nt-popover-val" style="color:var(--blue)">${mp.filter(p=>p.presentation).length}</div><div class="nt-popover-lbl">Pres.</div></div><div class="nt-popover-stat"><div class="nt-popover-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="nt-popover-lbl">Pag.</div></div></div>`;card.style.overflow='visible';card.appendChild(pop);
+}
+function hidePop(card){const p=card.querySelector('.nt-popover');if(p)p.remove();card.style.overflow='hidden';}
+
+// Private visual layout helpers. `uplineUid` remains the real sponsor/upline used
+// by Team Dashboard. `networkLayout[viewerUid]` is ONLY the viewer's visual tree.
+function getNetworkLayoutFor(viewerUid){
+  const me=(window._treeUs||[]).find(u=>u.id===viewerUid); return me?.networkLayout||{};
+}
+function getVisualPosition(user,viewerUid){
+  const layout=getNetworkLayoutFor(viewerUid)[user.id];
+  if(layout && layout.parentUid) return {parentUid:layout.parentUid,leg:layout.leg||null,order:layout.order??9999,custom:true};
+  const p=(user.uplineUid && (window._treeUs||[]).some(v=>v.id===user.uplineUid)) ? user.uplineUid : ((user.uplinePath||[]).length?(user.uplinePath[user.uplinePath.length-1]):null);
+  return {parentUid:p,leg:p?getLegFor(user,p):null,order:user.legOrder??9999,custom:false};
+}
+function visualDescendant(candidateId,ancestorId,viewerUid,byId){
+  let cur=candidateId,seen=new Set();
+  while(cur && !seen.has(cur)){seen.add(cur);if(cur===ancestorId)return true;const u=byId.get(cur);if(!u)break;cur=getVisualPosition(u,viewerUid).parentUid;}
+  return false;
+}
+
+window.renderNetworkTree=function(){
+  const us=window._treeUs||[],ps=window._treePs||[],myUid=cUser.uid;
+  const viewerUid=myUid;
+  const rootUid=id('tree-root-select')?.value||myUid;
+  const ct=id('network-tree-root');if(!ct)return;
+  ct.innerHTML='';
+
+  // IMPORTANT: this is only a visual tree for the selected viewer/root.
+  // The real Team Dashboard hierarchy (uplineUid / legMap) is never changed here.
+  const userById=new Map(us.map(u=>[u.id,u]));
+  const childrenByParent=new Map();
+  us.forEach(u=>{
+    if(u.id===rootUid)return;
+    const pos=getVisualPosition(u,viewerUid);
+    if(!pos.parentUid)return;
+    if(!childrenByParent.has(pos.parentUid))childrenByParent.set(pos.parentUid,[]);
+    childrenByParent.get(pos.parentUid).push(u);
+  });
+  const treeSort=(a,b)=>{
+    const pa=getVisualPosition(a,viewerUid),pb=getVisualPosition(b,viewerUid);
+    if((pa.order??9999)!==(pb.order??9999)) return (pa.order??9999)-(pb.order??9999);
+    return (a.name||a.email||'').localeCompare(b.name||b.email||'','it',{sensitivity:'base'});
+  };
+  const kids=(pid,leg)=>(childrenByParent.get(pid)||[])
+    .filter(u=>getVisualPosition(u,viewerUid).leg===leg).sort(treeSort);
+  const unassignedKids=pid=>(childrenByParent.get(pid)||[])
+    .filter(u=>!getVisualPosition(u,viewerUid).leg).sort(treeSort);
+
+  function mkCard(u,pid){
+    const isL=u.role==='leader';
+    const ini=(u.name||'?').split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
+    const parts=(u.name||u.email||'').split(' '),fn=parts[0],ln=parts.slice(1).join(' ');
+    const cols=[{bg:'rgba(201,168,76,.18)',c:'var(--gold)'},{bg:'rgba(91,156,246,.18)',c:'var(--blue)'},{bg:'rgba(74,222,160,.18)',c:'var(--green)'},{bg:'rgba(180,74,240,.18)',c:'#b44af0'}];
+    const col=cols[u.id.charCodeAt(0)%cols.length];
+    const el=document.createElement('div');
+    el.className='nt-card '+(isL?'leader-node':'member-node');
+    el.innerHTML=`<div class="nt-av" style="background:${col.bg};color:${col.c};">${ini}</div>
+      <div class="nt-name">${x(fn)}</div>
+      ${ln?`<div class="nt-name" style="font-weight:400;color:var(--text2);font-size:10px;">${x(ln)}</div>`:''}
+      <div class="nt-role">${isL?'👑':''} ${u.userNumber?'#'+u.userNumber:u.role==='leader'?'Leader':'Membro'}</div>`;
+    el.addEventListener('mouseenter',()=>{_popT=setTimeout(()=>showPop(el,u.id),300);});
+    el.addEventListener('mouseleave',()=>{clearTimeout(_popT);hidePop(el);});
+    el.style.cursor=pid?'grab':'default';
+    if(pid){
+      el.title='Trascina per spostare/sostituire · clicca per gestire';
+      el.setAttribute('draggable','true');el.dataset.uid=u.id;
+      el.addEventListener('dragstart',e=>{
+        _dragUid=u.id;e.dataTransfer.setData('text/plain',u.id);e.dataTransfer.effectAllowed='move';
+        setTimeout(()=>el.classList.add('dragging'),0);
+      });
+      el.addEventListener('dragend',()=>{
+        _dragUid=null;el.classList.remove('dragging');
+        document.querySelectorAll('.nt-card.drag-over').forEach(n=>n.classList.remove('drag-over'));
+      });
+      el.addEventListener('dragover',e=>{
+        if(!_dragUid||_dragUid===u.id)return;
+        e.preventDefault();e.stopPropagation();e.dataTransfer.dropEffect='move';el.classList.add('drag-over');
+      });
+      el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
+      el.addEventListener('drop',async e=>{
+        e.preventDefault();e.stopPropagation();el.classList.remove('drag-over');
+        const d=e.dataTransfer.getData('text/plain')||_dragUid;
+        if(d&&d!==u.id)await moveNetworkPositionByDrop(d,u.id,pid,getVisualPosition(u,viewerUid).leg,viewerUid);
+      });
+      el.addEventListener('click',e=>{
+        if(e.target.closest('.nt-popover'))return;
+        openNetworkPositionModal(u.id,pid,getVisualPosition(u,viewerUid).leg,viewerUid);
+      });
+    }
+    return el;
+  }
+
+  function mkSlot(pid,leg){
+    const el=document.createElement('div');el.className='nt-card open-slot';
+    el.innerHTML=`<div style="text-align:center;"><div style="font-size:22px;opacity:.2;margin-bottom:4px;">+</div><div style="font-size:10px;color:var(--text3);">Open</div><div style="font-size:9px;color:var(--text3);margin-top:1px;">${leg==='left'?'👈':'👉'}</div></div>`;
+    el.style.cursor='copy';el.title='Trascina qui una persona · oppure clicca per scegliere';
+    el.addEventListener('dragover',e=>{if(!_dragUid)return;e.preventDefault();e.stopPropagation();e.dataTransfer.dropEffect='move';el.classList.add('drag-over');});
+    el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
+    el.addEventListener('drop',async e=>{
+      e.preventDefault();e.stopPropagation();el.classList.remove('drag-over');
+      const d=e.dataTransfer.getData('text/plain')||_dragUid;
+      if(d)await moveNetworkPositionByDrop(d,null,pid,leg,viewerUid);_dragUid=null;
+    });
+    el.addEventListener('click',()=>openNetworkPositionModal(null,pid,leg,viewerUid));
+    return el;
+  }
+
+  function vl(h){const d=document.createElement('div');d.className='nt-vline';d.style.height=(h||24)+'px';return d;}
+
+  // Preserve the original tree geometry: every node owns a left and right branch,
+  // and descendants are rendered inside the corresponding branch. This avoids the
+  // broken "three columns per depth" layout introduced in V5.
+  function build(uid,pid,depth,path){
+    const u=userById.get(uid);if(!u)return null;
+    const branchPath=path instanceof Set?path:new Set();
+    if(branchPath.has(uid))return null;
+    const nextPath=new Set(branchPath);nextPath.add(uid);
+
+    const wrap=document.createElement('div');wrap.className='nt-wrap';
+    wrap.appendChild(mkCard(u,pid||uid));
+    wrap.appendChild(vl(20));
+
+    const lk=kids(uid,'left').filter(ch=>!nextPath.has(ch.id));
+    const rk=kids(uid,'right').filter(ch=>!nextPath.has(ch.id));
+    const row=document.createElement('div');row.className='nt-row';
+    const hb=document.createElement('div');
+    hb.style.cssText='position:absolute;top:0;left:calc(60px + 1px);right:calc(60px + 1px);height:1.5px;background:var(--border2);pointer-events:none;';
+    row.appendChild(hb);
+
+    const lb=document.createElement('div');lb.className='nt-branch';lb.appendChild(vl(20));
+    const ll=document.createElement('div');ll.className='nt-leg-label left';ll.textContent='👈 Sinistra';lb.appendChild(ll);
+    if(lk.length){lk.forEach(ch=>{const sub=build(ch.id,uid,depth+1,nextPath);if(sub)lb.appendChild(sub);});}
+    else lb.appendChild(mkSlot(uid,'left'));
+    row.appendChild(lb);
+
+    const rb=document.createElement('div');rb.className='nt-branch';rb.appendChild(vl(20));
+    const rl=document.createElement('div');rl.className='nt-leg-label right';rl.textContent='👉 Destra';rb.appendChild(rl);
+    if(rk.length){rk.forEach(ch=>{const sub=build(ch.id,uid,depth+1,nextPath);if(sub)rb.appendChild(sub);});}
+    else rb.appendChild(mkSlot(uid,'right'));
+    row.appendChild(rb);
+
+    const uk=unassignedKids(uid).filter(ch=>!nextPath.has(ch.id));
+    if(uk.length){
+      const ub=document.createElement('div');
+      ub.style.cssText='margin-top:10px;padding:8px 10px;border:1px dashed var(--border2);border-radius:10px;background:var(--surface2);display:flex;flex-wrap:wrap;gap:8px;justify-content:center;';
+      const lab=document.createElement('div');lab.style.cssText='width:100%;font-size:9px;color:var(--amber);text-align:center;margin-bottom:2px;';lab.textContent='⚠ Non assegnati';ub.appendChild(lab);
+      uk.forEach(ch=>{const c=mkCard(ch,uid);c.classList.add('unassigned-node');ub.appendChild(c);});
+      wrap.appendChild(ub);
+    }
+    wrap.appendChild(row);
+    return wrap;
+  }
+
+  const tree=build(rootUid,null,0,new Set());
+  if(tree)ct.appendChild(tree);else ct.innerHTML='<div class="empty">Struttura non trovata.</div>';
+  setTimeout(()=>{const w=id('tree-canvas-wrap'),cv=id('tree-canvas');if(!w||!cv)return;_tX=Math.max(40,(w.offsetWidth-cv.offsetWidth)/2);_tY=32;applyT();},150);
+};
+
+async function savePrivateNetworkLayout(viewerUid,updates){
+  const me=(window._treeUs||[]).find(u=>u.id===viewerUid), current={...(me?.networkLayout||{})};
+  Object.entries(updates).forEach(([uid,val])=>{if(val===null)delete current[uid];else current[uid]=val;});
+  await updateDoc(doc(db,'users',viewerUid),{networkLayout:current});
+  if(me)me.networkLayout=current;
+}
+
+window.moveNetworkPositionByDrop=async function(draggedUid,targetUid,parentUid,targetLeg,viewerUid=cUser.uid){
+  const us=window._treeUs||[],byId=new Map(us.map(u=>[u.id,u])),dragged=byId.get(draggedUid),target=targetUid?byId.get(targetUid):null;
+  const allowedIds=window._treeDownlineIds||new Set();
+  if(!dragged||dragged.id===viewerUid)return;
+  if(!allowedIds.has(dragged.id)){alert('Puoi gestire solo la tua downline.');return;}
+  if(parentUid!==viewerUid&&!allowedIds.has(parentUid)){alert('Puoi gestire solo la tua downline.');return;}
+  if(target && target.id!==viewerUid && !allowedIds.has(target.id)){alert('Puoi gestire solo la tua downline.');return;}
+  if(dragged.id===parentUid || visualDescendant(parentUid,dragged.id,viewerUid,byId)){alert('Non puoi inserire una persona sotto un suo discendente.');return;}
+  const old=getVisualPosition(dragged,viewerUid),oldParent=old.parentUid;
+  try{
+    const updates={};
+    if(target&&target.id!==dragged.id){
+      const tp=getVisualPosition(target,viewerUid);
+      updates[dragged.id]={parentUid,leg:targetLeg||null,order:tp.order??9999};
+      updates[target.id]={parentUid:oldParent||viewerUid,leg:old.leg||null,order:old.order??9999};
+    }else{
+      const siblings=us.filter(u=>u.id!==dragged.id&&allowedIds.has(u.id)&&getVisualPosition(u,viewerUid).parentUid===parentUid&&getVisualPosition(u,viewerUid).leg===targetLeg);
+      const order=siblings.reduce((m,u)=>Math.max(m,getVisualPosition(u,viewerUid).order??-1),-1)+1;
+      updates[dragged.id]={parentUid,leg:targetLeg||null,order};
+    }
+    await savePrivateNetworkLayout(viewerUid,updates);
+    window._treeUs=us;renderNetworkTree();
+  }catch(e){console.error('Private Network Tree drag/drop error:',e);alert('Errore nello spostamento: '+(e.message||e));}finally{_dragUid=null;}
+};
+
+window._ntpState=null;
+window.closeNetworkPositionModal=function(){const o=id('ntp-overlay');if(o)o.classList.add('hidden');window._ntpState=null;};
+window.openNetworkPositionModal=function(targetUid,parentUid,targetLeg,viewerUid=cUser.uid){
+  const us=window._treeUs||[],byId=new Map(us.map(u=>[u.id,u])),parent=byId.get(parentUid),target=targetUid?byId.get(targetUid):null;
+  if(!parent)return;
+  const allowedIds=window._treeDownlineIds||new Set();
+  if(parentUid!==viewerUid&&!allowedIds.has(parentUid)){alert('Puoi gestire solo la tua downline.');return;}
+  if(targetUid&&targetUid!==viewerUid&&!allowedIds.has(targetUid)){alert('Puoi gestire solo la tua downline.');return;}
+  const sel=id('ntp-user'),title=id('ntp-title'),sub=id('ntp-sub'),warn=id('ntp-warning'),err=id('ntp-err');if(!sel)return;
+  window._ntpState={targetUid:targetUid||null,parentUid,parentLeg:targetLeg||null,viewerUid};
+  title.textContent=target?`Sostituisci ${target.name||target.email}`:`Posizione ${targetLeg==='left'?'Sinistra':'Destra'}`;
+  sub.textContent=`Sotto: ${parent.name||parent.email||'Upline'} · ${targetLeg==='left'?'👈 Sinistra':'👉 Destra'}`;
+  warn.style.display='none';err.style.display='none';err.textContent='';
+  // Only the current viewer's downline is selectable. The viewer himself, uplines,
+  // peers outside the downline and unrelated users are never candidates.
+  const candidates=us.filter(u=>allowedIds.has(u.id)&&u.id!==parentUid&&!visualDescendant(u.id,parentUid,viewerUid,byId))
+    .sort((a,b)=>(a.name||a.email||'').localeCompare(b.name||b.email||'','it',{sensitivity:'base'}));
+  sel.innerHTML='<option value="">— Seleziona persona —</option>'+candidates.map(u=>{
+    const pos=getVisualPosition(u,viewerUid),p=pos.parentUid,l=pos.leg;
+    const label=`${u.name||u.email}${u.role==='leader'?' 👑':''}${p&&byId.get(p)?` · attuale: ${(byId.get(p).name||'')} ${l?('· '+(l==='left'?'Sinistra':'Destra')):''}`:''}`;
+    return `<option value="${u.id}">${x(label)}</option>`;
+  }).join('');
+  if(targetUid)sel.value=targetUid;
+  sel.onchange=()=>{
+    const chosen=byId.get(sel.value);if(!chosen){warn.style.display='none';return;}
+    const pos=getVisualPosition(chosen,viewerUid);
+    if(pos.parentUid&&pos.parentUid!==parentUid){warn.textContent='⚠ Lo spostamento modifica solo il tuo Network Tree. La struttura reale e il Network Tree degli altri leader rimangono invariati.';warn.style.display='block';}
+    else warn.style.display='none';
+  };
+  id('ntp-overlay').classList.remove('hidden');
+};
+
+window.saveNetworkPosition=async function(){
+  const st=window._ntpState,sel=id('ntp-user'),err=id('ntp-err'),btn=id('ntp-save');
+  if(!st||!sel||!sel.value){err.textContent='Seleziona una persona.';err.style.display='block';return;}
+  const us=window._treeUs||[],byId=new Map(us.map(u=>[u.id,u])),chosen=byId.get(sel.value),target=st.targetUid?byId.get(st.targetUid):null;
+  const allowedIds=window._treeDownlineIds||new Set();
+  if(!chosen||!byId.get(st.parentUid)){err.textContent='Posizione non valida.';err.style.display='block';return;}
+  if(!allowedIds.has(chosen.id)){err.textContent='Puoi posizionare solo persone appartenenti alla tua downline.';err.style.display='block';return;}
+  if(st.parentUid!==st.viewerUid&&!allowedIds.has(st.parentUid)){err.textContent='Puoi gestire solo la tua downline.';err.style.display='block';return;}
+  if(target&&target.id!==st.viewerUid&&!allowedIds.has(target.id)){err.textContent='La persona selezionata non appartiene alla tua downline.';err.style.display='block';return;}
+  if(chosen.id===st.parentUid||visualDescendant(chosen.id,st.parentUid,st.viewerUid,byId)){err.textContent='Non puoi inserire un upline o un suo discendente sotto questa posizione.';err.style.display='block';return;}
+  const parent=st.parentUid,targetLeg=st.parentLeg,viewerUid=st.viewerUid||cUser.uid,old=getVisualPosition(chosen,viewerUid);
+  btn.disabled=true;btn.textContent='Salvataggio…';err.style.display='none';
+  try{
+    const updates={};
+    if(target&&target.id!==chosen.id){
+      const tp=getVisualPosition(target,viewerUid);
+      updates[chosen.id]={parentUid:parent,leg:targetLeg||null,order:tp.order??9999};
+      updates[target.id]={parentUid:old.parentUid||viewerUid,leg:old.leg||null,order:old.order??9999};
+    }else{
+      const siblings=us.filter(u=>u.id!==chosen.id&&allowedIds.has(u.id)&&getVisualPosition(u,viewerUid).parentUid===parent&&getVisualPosition(u,viewerUid).leg===targetLeg);
+      const order=siblings.reduce((m,u)=>Math.max(m,getVisualPosition(u,viewerUid).order??-1),-1)+1;
+      updates[chosen.id]={parentUid:parent,leg:targetLeg||null,order};
+    }
+    await savePrivateNetworkLayout(viewerUid,updates);
+    closeNetworkPositionModal();renderNetworkTree();
+  }catch(e){err.textContent='Errore: '+(e.message||e);err.style.display='block';}
+  finally{btn.disabled=false;btn.textContent='Conferma';}
+};
+
+
+// ══ TEAM STRUCTURE BACKUP / RESTORE ══
+// These helpers protect the REAL Team Dashboard placement. They are completely
+// separate from Network Tree's private `networkLayout`.
 window.backupTeamStructure = async function(){
   const us=window._cachedUs||[];
   if(!us.length){alert('Carica prima la Dashboard Team.');return;}
-  const myUid=cUser.uid;
-  const direct=us.filter(u=>u.uplineUid===myUid || ((u.uplinePath||[]).length && u.uplinePath[u.uplinePath.length-1]===myUid));
+  const direct=us.filter(u=>u.uplineUid===cUser.uid || ((u.uplinePath||[]).length && u.uplinePath[u.uplinePath.length-1]===cUser.uid));
   const children={};
-  direct.forEach(u=>{const p=getPersonalPlacement(u.id,myUid,us)||{};children[u.id]={parentUid:p.parentUid||myUid,leg:p.leg||null,order:p.order??9999};});
+  direct.forEach(u=>{children[u.id]={leg:getLegFor(u,cUser.uid)||null,order:u.legOrder??9999};});
   try{
-    await updateDoc(doc(db,'users',myUid),{teamStructureBackup:{savedAt:Date.now(),children}});
+    await updateDoc(doc(db,'users',cUser.uid),{teamStructureBackup:{savedAt:Date.now(),children}});
     if(cData)cData.teamStructureBackup={savedAt:Date.now(),children};
     alert('Backup della struttura Team salvato.');
   }catch(e){alert('Errore nel backup: '+(e.message||e));}
@@ -1628,27 +2019,78 @@ window.backupTeamStructure = async function(){
 window.restoreTeamStructure = async function(){
   try{
     const snap=await getDoc(doc(db,'users',cUser.uid));
-    const data=snap.exists()?snap.data():null, backup=data?.teamStructureBackup;
+    const backup=snap.exists()?snap.data().teamStructureBackup:null;
     if(!backup||!backup.children||!Object.keys(backup.children).length){alert('Nessun backup della struttura disponibile.');return;}
     if(!confirm('Ripristinare l’ultimo backup della Dashboard Team? Il Network Tree personale non verrà modificato.'))return;
-    const layout={...(data?.personalLayout||{})};
-    Object.entries(backup.children).forEach(([uid,v])=>{layout[uid]={parentUid:v.parentUid||cUser.uid,leg:v.leg||null,order:v.order??9999};});
-    await updateDoc(doc(db,'users',cUser.uid),{personalLayout:layout});
-    if(window._teamCache){window._teamCache=null;} window._cachedUs=null;window._cachedPs=null;
-    await loadTeamDashboard(true); alert('Struttura Team ripristinata dal backup.');
+    const batch=writeBatch(db);
+    Object.entries(backup.children).forEach(([uid,v])=>{
+      const data={legOrder:v.order??9999};
+      data['legMap.'+cUser.uid]=v.leg||null;
+      batch.update(doc(db,'users',uid),data);
+    });
+    await batch.commit();
+    if(window._teamCache){window._teamCache=null;}
+    window._cachedUs=null;window._cachedPs=null;
+    await loadTeamDashboard(true);
+    alert('Struttura Team ripristinata dal backup.');
   }catch(e){console.error('restoreTeamStructure',e);alert('Errore nel ripristino: '+(e.message||e));}
 };
 
 window.setLeg=async(uid,leg,btn)=>{
   try{
-    const myUid=cUser.uid, allUs=window._cachedUs||[]; if(!myUid||!uid)return;
-    const branchRoot=getDirectChildForViewer(uid,myUid,allUs);
-    if(!branchRoot){alert('Questa persona non appartiene alla tua downline.');return;}
-    const current=getPersonalPlacement(branchRoot.id,myUid,allUs)||{};
-    const order=current.order??9999;
-    await savePersonalPlacement(branchRoot.id,myUid,{parentUid:myUid,leg:leg||null,order},allUs);
+    const myUid=cUser.uid;
+    const allUs=window._cachedUs||[];
+    if(!myUid||!uid) return;
+
+    // A leg is defined by the FIRST direct child below the current viewer.
+    // Cards can represent level 2+ members, so changing leg on the clicked
+    // descendant would have no effect. Resolve the branch root first.
+    const byId=Object.fromEntries(allUs.map(u=>[u.id,u]));
+    let cur=byId[uid];
+    let branchRoot=null;
+    let guard=0;
+    while(cur && guard++<500){
+      const parent=cur.uplineUid && byId[cur.uplineUid]
+        ? cur.uplineUid
+        : ((cur.uplinePath||[]).length ? cur.uplinePath[cur.uplinePath.length-1] : null);
+      if(parent===myUid){ branchRoot=cur; break; }
+      cur=parent ? byId[parent] : null;
+    }
+    if(!branchRoot) {
+      alert('Questa persona non appartiene direttamente a una delle tue due gambe.');
+      return;
+    }
+
+    // Save the current direct-child structure BEFORE the change.
+    const direct=allUs.filter(u=>{
+      const parent=u.uplineUid || ((u.uplinePath||[]).length ? u.uplinePath[u.uplinePath.length-1] : null);
+      return parent===myUid;
+    });
+    const children={};
+    direct.forEach(u=>{children[u.id]={leg:getLegFor(u,myUid)||null,order:u.legOrder??9999};});
+
+    const savedAt=Date.now();
+    const backupRef=doc(db,'users',myUid);
+    const targetRef=doc(db,branchRoot.id);
+    const batch=writeBatch(db);
+    batch.update(backupRef,{teamStructureBackup:{savedAt,children}});
+    const updateData={};
+    updateData['legMap.'+myUid]=leg||null;
+    batch.update(targetRef,updateData);
+    await batch.commit();
+
+    const updateCache=arr=>{
+      const u=(arr||[]).find(u=>u.id===branchRoot.id);
+      if(u){ if(!u.legMap)u.legMap={}; u.legMap[myUid]=leg||null; }
+    };
+    updateCache(window._cachedUs);
+    updateCache(window._treeUs);
+    if(cData)cData.teamStructureBackup={savedAt,children};
     renderTeamDashboard();
-  }catch(e){console.error('setLeg error',e);alert('Errore: '+(e.message||e));}
+  }catch(e){
+    console.error('setLeg error',e);
+    alert('Errore: '+(e.message||e));
+  }
 };
 
 window.doResetPassword = async function() {
@@ -2294,7 +2736,7 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
       const parent = cur.uplineUid && userById[cur.uplineUid]
         ? cur.uplineUid
         : ((cur.uplinePath||[]).length ? cur.uplinePath[cur.uplinePath.length-1] : null);
-      if(parent===ref){result=getLegForPersonal(cur,ref);break;}
+      if(parent===ref){result=getLegFor(cur,ref);break;}
       cur=parent ? userById[parent] : null;
     }
     legMemo.set(key,result);

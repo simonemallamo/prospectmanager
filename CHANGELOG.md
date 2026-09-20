@@ -1,21 +1,11 @@
-# V17 — Base corretta: ultima versione bilingue + posizionamento indipendente
+# V18 — Privacy fix + independent Network Tree
 
-Questa versione parte dalla **V15**, cioè dalla versione bilingue italiano/spagnolo con la grafica e il tema Light/Dark già presenti.
+Base: V15, preserving the Spanish translation, White/Light theme and existing UI.
 
-## Preservato dalla V15
-- Selettore lingua **IT / ES**.
-- Traduzione italiana/spagnola esistente.
-- Grafica originale.
-- Tema **Light / Dark**, compresa la barra superiore chiara nella modalità White.
-- Network Tree personale, modal “Gestisci posizione”, reset e funzioni già presenti.
-- Firebase config e resto dell'applicazione.
-
-## Correzione richiesta
-- La Dashboard Team ora salva il posizionamento nel campo `personalLayout` del documento dell'utente che sta effettuando la modifica.
-- Non vengono più scritti da Dashboard Team `legMap`, `legOrder`, `uplineUid` o `uplinePath` per cambiare la posizione personale.
-- Il posizionamento di Simone, di un altro Leader e di un altro membro è indipendente.
-- Il Network Tree continua a usare il proprio layout personale separato (`networkLayout`).
-- Compatibilità: i vecchi `legMap` vengono letti come fallback, senza sovrascriverli.
-- Backup/Ripristino Dashboard salvano/ripristinano il `personalLayout` dell'utente corrente.
-
-JavaScript verificato con `node --check`.
+- Network Tree now loads only the logged-in user's own profile and real downline.
+- Unrelated leaders, members and their prospects are not downloaded into the Network Tree.
+- The position picker is limited to the current viewer's downline.
+- The Network Tree remains a private visual layout stored on the current viewer's `networkLayout`.
+- `uplineUid`, `uplinePath` and the real Team Dashboard structure are not modified by Network Tree actions.
+- Existing Spanish selector and White/Light visual theme are preserved from V15.
+- JavaScript syntax verified with `node --check`.

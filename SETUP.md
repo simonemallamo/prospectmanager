@@ -1,5 +1,5 @@
-# ProTracker V17
+# ProTracker V18
 
-Sostituisci il file `index.html` della versione online con quello incluso in questo pacchetto.
+Use this version as the base deployment.
 
-Questa build mantiene la versione bilingue IT/ES e la grafica della V15 e corregge il salvataggio del posizionamento rendendolo indipendente per ogni utente.
+V18 is based on the latest V15 interface and preserves Spanish/Italian language selection and the White/Light theme. The Network Tree now retrieves only the logged-in user's own downline, preventing unrelated platform users from appearing in the tree or position selector.
