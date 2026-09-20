@@ -1,10 +1,21 @@
-# V16 — Posizionamento indipendente per utente
+# V17 — Base corretta: ultima versione bilingue + posizionamento indipendente
 
-- Il posizionamento visualizzato da Dashboard Team e Network Tree viene salvato nel campo `personalLayout` del documento dell'utente che sta effettuando la modifica.
-- Il Network Tree non modifica più `legMap`, `uplineUid` o `uplinePath`.
-- Dashboard Team: Sinistra/Destra, riordino e drag & drop modificano solo il `personalLayout` dell'utente corrente.
-- Network Tree: drag & drop e Open modificano solo il `personalLayout` dell'utente corrente.
-- La relazione reale di downline (`uplineUid`) resta invariata.
-- Compatibilità con i vecchi `legMap[viewerUid]`: viene letto come fallback per non perdere le posizioni già esistenti.
-- I membri selezionabili restano limitati alla downline reale dell'utente corrente.
-- Sintassi JavaScript verificata con `node --check`.
+Questa versione parte dalla **V15**, cioè dalla versione bilingue italiano/spagnolo con la grafica e il tema Light/Dark già presenti.
+
+## Preservato dalla V15
+- Selettore lingua **IT / ES**.
+- Traduzione italiana/spagnola esistente.
+- Grafica originale.
+- Tema **Light / Dark**, compresa la barra superiore chiara nella modalità White.
+- Network Tree personale, modal “Gestisci posizione”, reset e funzioni già presenti.
+- Firebase config e resto dell'applicazione.
+
+## Correzione richiesta
+- La Dashboard Team ora salva il posizionamento nel campo `personalLayout` del documento dell'utente che sta effettuando la modifica.
+- Non vengono più scritti da Dashboard Team `legMap`, `legOrder`, `uplineUid` o `uplinePath` per cambiare la posizione personale.
+- Il posizionamento di Simone, di un altro Leader e di un altro membro è indipendente.
+- Il Network Tree continua a usare il proprio layout personale separato (`networkLayout`).
+- Compatibilità: i vecchi `legMap` vengono letti come fallback, senza sovrascriverli.
+- Backup/Ripristino Dashboard salvano/ripristinano il `personalLayout` dell'utente corrente.
+
+JavaScript verificato con `node --check`.

@@ -1,5 +1,5 @@
-# ProTracker V16
+# ProTracker V17
 
-Sostituire `index.html` nel deploy esistente.
+Sostituisci il file `index.html` della versione online con quello incluso in questo pacchetto.
 
-La V16 introduce `users/{viewerUid}.personalLayout` per il posizionamento personale. Non richiede migrazione manuale: i vecchi `legMap[viewerUid]` vengono usati come fallback.
+Questa build mantiene la versione bilingue IT/ES e la grafica della V15 e corregge il salvataggio del posizionamento rendendolo indipendente per ogni utente.
