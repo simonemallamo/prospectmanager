@@ -2027,7 +2027,7 @@ window.setLeg=async(uid,leg,btn)=>{
   try{
     const myUid=cUser.uid,allUs=window._cachedUs||[]; if(!myUid||!uid)return;
     const byId=Object.fromEntries(allUs.map(u=>[u.id,u])); let cur=byId[uid],branchRoot=null,guard=0;
-    while(cur&&guard++<500){ const parent=cur.uplineUid&&byId[cur.uplineUid]?cur.uplineUid:((cur.uplinePath||[]).length?cur.uplinePath[cur.uplinePath.length-1]:null); if(parent===myUid){branchRoot=cur;break;} cur=parent?byId[parent]:null; }
+    while(cur&&guard++<500){ const parent=(cur.uplinePath||[]).length?cur.uplinePath[cur.uplinePath.length-1]:(cur.uplineUid&&byId[cur.uplineUid]?cur.uplineUid:null); if(parent===myUid){branchRoot=cur;break;} cur=parent?byId[parent]:null; }
     if(!branchRoot){alert('Questa persona non appartiene alla tua struttura.');return;}
     const snap=await getDoc(doc(db,'users',myUid)); const current={...(snap.exists()?snap.data().teamLayout||{}:{})}; const old=current[branchRoot.id]||{};
     current[branchRoot.id]={...old,leg:leg||null,order:old.order??branchRoot.legOrder??9999};
@@ -2544,7 +2544,6 @@ async function loadTeamDashboard(force=false) {
   if(id('team-grid-right')) id('team-grid-right').innerHTML=loader();
   if(id('binary-view')) id('binary-view').innerHTML=loader();
 
-  // Fast path: reuse data already loaded during this session.
   if(!force && window._teamCache && window._teamCache.uid===cUser.uid){
     const c=window._teamCache;
     window._cachedUs=c.us; window._cachedPs=c.ps; window._cachedShow=c.show; window._cachedWk=c.wk;
@@ -2555,60 +2554,60 @@ async function loadTeamDashboard(force=false) {
   try {
     const rootUid=cUser.uid;
     const chunk=(arr,n=30)=>{const out=[];for(let i=0;i<arr.length;i+=n)out.push(arr.slice(i,i+n));return out;};
-    // Load this leader's downline using BOTH hierarchy fields.
-    // Some older records may have a missing uplineUid. We use uplinePath only as a
-    // strict legacy fallback when its LAST element is the direct parent. We never
-    // treat any ancestor inside the path as a direct relationship.
-    const snapUsers = async parentIds => {
-      if(!parentIds.length) return [];
-      const batches=chunk(parentIds,30);
-      const results=[];
-      for(const ids of batches){
-        const [byUid, byPath] = await Promise.all([
-          getDocs(query(collection(db,'users'),where('uplineUid','in',ids))),
-          // Firestore array-contains accepts one parent id per query.
-          Promise.all(ids.map(pid=>getDocs(query(collection(db,'users'),where('uplinePath','array-contains',pid)))))
-        ]);
-        const seenDocs=new Set();
-        byUid.docs.forEach(d=>{if(!seenDocs.has(d.id)){seenDocs.add(d.id);results.push({id:d.id,...d.data()});}});
-        byPath.flatMap(s=>s.docs).forEach(d=>{if(!seenDocs.has(d.id)){seenDocs.add(d.id);results.push({id:d.id,...d.data()});}});
-      }
-      return results;
-    };
 
-    // Load only this leader's downline, not every user in the database.
-    // A path query may return descendants of the requested parent, so we validate
-    // the direct-parent relation strictly before adding a user.
-    const collected=[];
-    let frontier=[rootUid];
-    const seen=new Set([rootUid]);
-    while(frontier.length){
-      const hits=await snapUsers(frontier);
+    // IMPORTANT: load ONLY this user's own downline.
+    // uplinePath contains every ancestor, so `array-contains rootUid` is the
+    // correct way to retrieve the whole downline even when older records have
+    // inconsistent/missing uplineUid values. It cannot return a person who is
+    // not descended from this root unless their stored path is actually wrong.
+    const byPath = await getDocs(query(
+      collection(db,'users'),
+      where('uplinePath','array-contains',rootUid)
+    ));
+
+    // Also include direct children that have uplineUid set but an old/missing path.
+    let byDirect=[];
+    try {
+      const directSnap=await getDocs(query(collection(db,'users'),where('uplineUid','==',rootUid)));
+      byDirect=directSnap.docs.map(d=>({id:d.id,...d.data()}));
+    } catch(e) {
+      console.warn('[Team Dashboard] direct-child query skipped:',e);
+    }
+
+    const merged=new Map();
+    byPath.docs.forEach(d=>merged.set(d.id,{id:d.id,...d.data()}));
+    byDirect.forEach(u=>merged.set(u.id,u));
+
+    // Legacy records may have no path at all. For those, walk downward using
+    // uplineUid from the direct children we already know. This remains scoped
+    // to the current user's hierarchy and never downloads the whole database.
+    let frontier=byDirect.map(u=>u.id);
+    const seen=new Set([rootUid,...merged.keys()]);
+    while(frontier.length && seen.size<5000){
       const next=[];
-      for(const child of hits){
-        if(seen.has(child.id)) continue;
-        // A user is part of this structure if either the explicit upline is one
-        // of the current parents OR the current parent appears in uplinePath.
-        const path=Array.isArray(child.uplinePath)?child.uplinePath:[];
-        const validParent=frontier.some(pid=>
-          child.uplineUid===pid ||
-          (!child.uplineUid && path.length && path[path.length-1]===pid)
-        );
-        if(!validParent) continue;
-        seen.add(child.id);collected.push(child);next.push(child.id);
+      for(const ids of chunk(frontier,30)){
+        try{
+          const snap=await getDocs(query(collection(db,'users'),where('uplineUid','in',ids)));
+          snap.docs.forEach(d=>{
+            if(seen.has(d.id)) return;
+            const u={id:d.id,...d.data()};
+            // A child returned by one of our known descendants is part of the
+            // same downline. This is not a global users query.
+            seen.add(d.id); merged.set(d.id,u); next.push(d.id);
+          });
+        }catch(e){ console.warn('[Team Dashboard] descendant batch skipped:',e); }
       }
       frontier=next;
-      if(seen.size>5000) break;
     }
-    const us=collected;
+
+    const us=[...merged.values()].filter(u=>u.id!==rootUid);
     ensureInitialTeamBackup(us);
     const wk=Date.now()-7*86400000;
     const uids=us.map(u=>u.id);
 
-    // Fetch prospects only for members actually inside this structure.
-    // `in` batches keep this to a handful of Firestore reads instead of one read per member.
     const ps=[];
     for(const ids of chunk(uids,30)){
+      if(!ids.length) continue;
       const snap=await getDocs(query(collection(db,'prospects'),where('uid','in',ids)));
       snap.docs.forEach(d=>ps.push({id:d.id,...d.data()}));
     }
@@ -2616,14 +2615,12 @@ async function loadTeamDashboard(force=false) {
     const show=us;
     window._teamCache={uid:rootUid,us,ps,show,wk,at:Date.now()};
     window._cachedUs=us; window._cachedPs=ps; window._cachedShow=show; window._cachedWk=wk;
-
-    // Small performance diagnostics, visible only in DevTools.
     console.debug('[Team Dashboard] loaded', {members:us.length, prospects:ps.length, ms:Date.now()-(window._teamLoadStarted||Date.now())});
     renderTeamDashboard(us,ps,show,wk);
   } catch(e) {
     console.error('Team Dashboard load failed:', e);
-    const msg = e?.message || 'Errore sconosciuto durante il caricamento.';
-    const html = `<div style=\"padding:1rem;color:var(--red);font-size:12px;background:var(--red-dim);border:.5px solid var(--red);border-radius:8px;\">⚠️ Impossibile caricare la Dashboard Team.<br><span style=\"color:var(--text2);\">${x(msg)}</span></div>`;
+    const msg=e?.message||'Errore sconosciuto durante il caricamento.';
+    const html=`<div style="padding:1rem;color:var(--red);font-size:12px;background:var(--red-dim);border:.5px solid var(--red);border-radius:8px;">⚠️ Impossibile caricare la Dashboard Team.<br><span style="color:var(--text2);">${x(msg)}</span></div>`;
     if(id('team-grid-left')) id('team-grid-left').innerHTML=html;
     if(id('team-grid-right')) id('team-grid-right').innerHTML='';
     if(id('binary-view')) id('binary-view').innerHTML='';
