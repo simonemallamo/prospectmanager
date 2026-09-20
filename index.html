@@ -1154,6 +1154,28 @@ function getLegForUser(user, refUid, allUsers) {
   return null;
 }
 
+// Private Team Dashboard layout: each viewer stores their own leg assignments on their own document.
+function getPrivateTeamLayout(viewerUid){
+  const me=(window._cachedUs||[]).find(u=>u.id===viewerUid) || (cUser?.uid===viewerUid?cData:null);
+  return me?.teamLayout || {};
+}
+function getTeamVisualPosition(user, viewerUid, users){
+  if(!user || !viewerUid || user.id===viewerUid) return {branchUid:null,leg:null,order:9999};
+  const all=users||window._cachedUs||[];
+  const byId=Object.fromEntries(all.map(u=>[u.id,u]));
+  let cur=user, branch=null, guard=0;
+  while(cur && guard++<500){
+    const parent=cur.uplineUid && byId[cur.uplineUid] ? cur.uplineUid : ((cur.uplinePath||[]).length ? cur.uplinePath[cur.uplinePath.length-1] : null);
+    if(parent===viewerUid){ branch=cur; break; }
+    cur=parent ? byId[parent] : null;
+  }
+  if(!branch) return {branchUid:null,leg:null,order:9999};
+  const saved=getPrivateTeamLayout(viewerUid)[branch.id];
+  if(saved) return {branchUid:branch.id,leg:(saved.leg==='left'||saved.leg==='right')?saved.leg:null,order:saved.order??9999};
+  return {branchUid:branch.id,leg:getLegFor(branch,viewerUid),order:branch.legOrder??9999};
+}
+function getTeamVisualLeg(user, viewerUid, users){ return getTeamVisualPosition(user,viewerUid,users).leg; }
+
 // ── THEME ──
 window.toggleTheme = () => {
   const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
@@ -1508,76 +1530,32 @@ try { hiddenMembers = new Set(JSON.parse(localStorage.getItem('pm_hidden')||'[]'
 
 // ── MEMBER ORDERING ──
 window.moveMember = async function(uid, dir) {
-  var allUs = window._cachedUs || [];
-  var u = allUs.find(function(x){return x.id===uid;});
-  if(!u) return;
-  var leg = getLegFor(u, cUser.uid) || '';
-  // Get siblings in same leg, sorted by legOrder
-  var siblings = allUs
-    .filter(function(x){return getLegFor(x, cUser.uid)===leg && !hiddenMembers.has(x.id);})
-    .sort(function(a,b){return (a.legOrder??9999)-(b.legOrder??9999)||(a.name||'').localeCompare(b.name||'');});
-  var idx = siblings.findIndex(function(x){return x.id===uid;});
-  if(idx<0) return;
-  var swapIdx = dir==='up' ? idx-1 : idx+1;
-  if(swapIdx<0 || swapIdx>=siblings.length) return;
-  var other = siblings[swapIdx];
-  // Swap orders
-  var myOrder = u.legOrder ?? idx;
-  var otherOrder = other.legOrder ?? swapIdx;
-  try {
-    await updateDoc(doc(db,'users',uid),{legOrder: otherOrder});
-    await updateDoc(doc(db,'users',other.id),{legOrder: myOrder});
-    // Update cache
-    u.legOrder = otherOrder;
-    other.legOrder = myOrder;
-    renderTeamDashboard();
-  } catch(e){console.warn('moveMember error',e);}
+  const allUs=window._cachedUs||[], myUid=cUser.uid, u=allUs.find(x=>x.id===uid); if(!u)return;
+  const pos=getTeamVisualPosition(u,myUid,allUs), leg=pos.leg||'';
+  const siblings=allUs.filter(x=>getTeamVisualLeg(x,myUid,allUs)===leg&&!hiddenMembers.has(x.id)).sort((a,b)=>getTeamVisualPosition(a,myUid,allUs).order-getTeamVisualPosition(b,myUid,allUs).order||(a.name||'').localeCompare(b.name||''));
+  const idx=siblings.findIndex(x=>x.id===uid), swap=dir==='up'?idx-1:idx+1; if(idx<0||swap<0||swap>=siblings.length)return;
+  const other=siblings[swap], myOrder=pos.order, otherOrder=getTeamVisualPosition(other,myUid,allUs).order;
+  try{
+    const snap=await getDoc(doc(db,'users',myUid)); const current={...(snap.exists()?snap.data().teamLayout||{}:{})};
+    if(pos.branchUid)current[pos.branchUid]={...(current[pos.branchUid]||{}),leg,order:otherOrder};
+    const op=getTeamVisualPosition(other,myUid,allUs); if(op.branchUid)current[op.branchUid]={...(current[op.branchUid]||{}),leg,order:myOrder};
+    await updateDoc(doc(db,'users',myUid),{teamLayout:current});
+    const me=allUs.find(x=>x.id===myUid); if(me)me.teamLayout=current; renderTeamDashboard();
+  }catch(e){console.error('moveMember error',e);alert('Errore: '+(e.message||e));}
 };
 
-window.handleDrop = async function(draggedUid, targetUid, fromGrid, toGrid) {
-  var allUs = window._cachedUs || [];
-  var dragged = allUs.find(function(x){return x.id===draggedUid;});
-  var target  = allUs.find(function(x){return x.id===targetUid;});
-  if(!dragged||!target) return;
-
-  var sameLeg = fromGrid === toGrid;
-
-  if(sameLeg) {
-    // Reorder within same leg — swap legOrder values
-    var leg = getLegFor(dragged, cUser.uid) || '';
-    var siblings = allUs
-      .filter(function(x){return getLegFor(x, cUser.uid)===leg && !hiddenMembers.has(x.id);})
-      .sort(function(a,b){return (a.legOrder??9999)-(b.legOrder??9999)||(a.name||'').localeCompare(b.name||'');});
-    var fromIdx = siblings.findIndex(function(x){return x.id===draggedUid;});
-    var toIdx   = siblings.findIndex(function(x){return x.id===targetUid;});
-    if(fromIdx<0||toIdx<0||fromIdx===toIdx) return;
-    // Reassign sequential orders inserting dragged before target
-    siblings.splice(fromIdx,1);
-    siblings.splice(toIdx,0,dragged);
-    var updates = siblings.map(function(u,i){return {uid:u.id,order:i};});
-    try {
-      for(var i=0;i<updates.length;i++){
-        var uu = allUs.find(function(x){return x.id===updates[i].uid;});
-        if(uu) uu.legOrder = updates[i].order;
-        await updateDoc(doc(db,'users',updates[i].uid),{legOrder:updates[i].order});
-      }
-      renderTeamDashboard();
-    } catch(e){console.warn('handleDrop error',e);}
-  } else {
-    // Move to different leg — change leg + assign order at bottom
-    var newLeg = getLegFor(target, cUser.uid) || '';
-    var newSiblings = allUs.filter(function(x){return getLegFor(x, cUser.uid)===newLeg && !hiddenMembers.has(x.id);});
-    var maxOrder = newSiblings.reduce(function(m,x){return Math.max(m,x.legOrder??0);},0);
-    try {
-      var crossUpdate = {legOrder:maxOrder+1};
-      crossUpdate['legMap.'+cUser.uid] = newLeg||null;
-      await updateDoc(doc(db,'users',draggedUid),crossUpdate);
-      if(!dragged.legMap) dragged.legMap={};
-      dragged.legMap[cUser.uid] = newLeg;
-      dragged.legOrder = maxOrder+1;
-      renderTeamDashboard();
-    } catch(e){console.warn('handleDrop cross-leg error',e);}
-  }
+window.handleDrop = async function(draggedUid,targetUid,fromGrid,toGrid){
+  const allUs=window._cachedUs||[],myUid=cUser.uid,dragged=allUs.find(x=>x.id===draggedUid),target=allUs.find(x=>x.id===targetUid); if(!dragged||!target)return;
+  try{
+    const snap=await getDoc(doc(db,'users',myUid)); const current={...(snap.exists()?snap.data().teamLayout||{}:{})};
+    if(fromGrid===toGrid){
+      const leg=getTeamVisualLeg(dragged,myUid,allUs)||''; let siblings=allUs.filter(x=>getTeamVisualLeg(x,myUid,allUs)===leg&&!hiddenMembers.has(x.id)).sort((a,b)=>getTeamVisualPosition(a,myUid,allUs).order-getTeamVisualPosition(b,myUid,allUs).order||(a.name||'').localeCompare(b.name||''));
+      const fi=siblings.findIndex(x=>x.id===draggedUid),ti=siblings.findIndex(x=>x.id===targetUid); if(fi<0||ti<0||fi===ti)return; siblings.splice(fi,1); siblings.splice(ti,0,dragged); siblings.forEach((u,i)=>{const b=getTeamVisualPosition(u,myUid,allUs).branchUid;if(b)current[b]={...(current[b]||{}),leg,order:i};});
+    }else{
+      const newLeg=getTeamVisualLeg(target,myUid,allUs)||'', branch=getTeamVisualPosition(dragged,myUid,allUs).branchUid; if(!branch)return; const sib=allUs.filter(x=>x.id!==draggedUid&&getTeamVisualLeg(x,myUid,allUs)===newLeg&&!hiddenMembers.has(x.id)); const max=sib.reduce((m,x)=>Math.max(m,getTeamVisualPosition(x,myUid,allUs).order),-1); current[branch]={...(current[branch]||{}),leg:newLeg||null,order:max+1};
+    }
+    await updateDoc(doc(db,'users',myUid),{teamLayout:current}); const me=allUs.find(x=>x.id===myUid);if(me)me.teamLayout=current; renderTeamDashboard();
+  }catch(e){console.error('handleDrop error',e);alert('Errore: '+(e.message||e));}
 };
 
 window.openMemberDetail = function(uid) {
@@ -2047,59 +2025,14 @@ window.restoreTeamStructure = async function(){
 
 window.setLeg=async(uid,leg,btn)=>{
   try{
-    const myUid=cUser.uid;
-    const allUs=window._cachedUs||[];
-    if(!myUid||!uid) return;
-
-    // A leg is defined by the FIRST direct child below the current viewer.
-    // Cards can represent level 2+ members, so changing leg on the clicked
-    // descendant would have no effect. Resolve the branch root first.
-    const byId=Object.fromEntries(allUs.map(u=>[u.id,u]));
-    let cur=byId[uid];
-    let branchRoot=null;
-    let guard=0;
-    while(cur && guard++<500){
-      const parent=cur.uplineUid && byId[cur.uplineUid]
-        ? cur.uplineUid
-        : ((cur.uplinePath||[]).length ? cur.uplinePath[cur.uplinePath.length-1] : null);
-      if(parent===myUid){ branchRoot=cur; break; }
-      cur=parent ? byId[parent] : null;
-    }
-    if(!branchRoot) {
-      alert('Questa persona non appartiene direttamente a una delle tue due gambe.');
-      return;
-    }
-
-    // Save the current direct-child structure BEFORE the change.
-    const direct=allUs.filter(u=>{
-      const parent=u.uplineUid || ((u.uplinePath||[]).length ? u.uplinePath[u.uplinePath.length-1] : null);
-      return parent===myUid;
-    });
-    const children={};
-    direct.forEach(u=>{children[u.id]={leg:getLegFor(u,myUid)||null,order:u.legOrder??9999};});
-
-    const savedAt=Date.now();
-    const backupRef=doc(db,'users',myUid);
-    const targetRef=doc(db,branchRoot.id);
-    const batch=writeBatch(db);
-    batch.update(backupRef,{teamStructureBackup:{savedAt,children}});
-    const updateData={};
-    updateData['legMap.'+myUid]=leg||null;
-    batch.update(targetRef,updateData);
-    await batch.commit();
-
-    const updateCache=arr=>{
-      const u=(arr||[]).find(u=>u.id===branchRoot.id);
-      if(u){ if(!u.legMap)u.legMap={}; u.legMap[myUid]=leg||null; }
-    };
-    updateCache(window._cachedUs);
-    updateCache(window._treeUs);
-    if(cData)cData.teamStructureBackup={savedAt,children};
-    renderTeamDashboard();
-  }catch(e){
-    console.error('setLeg error',e);
-    alert('Errore: '+(e.message||e));
-  }
+    const myUid=cUser.uid,allUs=window._cachedUs||[]; if(!myUid||!uid)return;
+    const byId=Object.fromEntries(allUs.map(u=>[u.id,u])); let cur=byId[uid],branchRoot=null,guard=0;
+    while(cur&&guard++<500){ const parent=cur.uplineUid&&byId[cur.uplineUid]?cur.uplineUid:((cur.uplinePath||[]).length?cur.uplinePath[cur.uplinePath.length-1]:null); if(parent===myUid){branchRoot=cur;break;} cur=parent?byId[parent]:null; }
+    if(!branchRoot){alert('Questa persona non appartiene alla tua struttura.');return;}
+    const snap=await getDoc(doc(db,'users',myUid)); const current={...(snap.exists()?snap.data().teamLayout||{}:{})}; const old=current[branchRoot.id]||{};
+    current[branchRoot.id]={...old,leg:leg||null,order:old.order??branchRoot.legOrder??9999};
+    await updateDoc(doc(db,'users',myUid),{teamLayout:current}); const me=allUs.find(u=>u.id===myUid);if(me)me.teamLayout=current; renderTeamDashboard();
+  }catch(e){console.error('setLeg error',e);alert('Errore: '+(e.message||e));}
 };
 
 window.doResetPassword = async function() {
@@ -2739,21 +2672,7 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
   const prospectsByUid = Object.create(null);
   for(const p of ps){(prospectsByUid[p.uid] ||= []).push(p);}
   const legMemo = new Map();
-  const effectiveLeg = (u,ref=refUid) => {
-    const key=ref+'|'+u.id;
-    if(legMemo.has(key)) return legMemo.get(key);
-    if(u.id===ref){legMemo.set(key,null);return null;}
-    let cur=u, guard=0, result=null;
-    while(cur && guard++<500){
-      const parent = cur.uplineUid && userById[cur.uplineUid]
-        ? cur.uplineUid
-        : ((cur.uplinePath||[]).length ? cur.uplinePath[cur.uplinePath.length-1] : null);
-      if(parent===ref){result=getLegFor(cur,ref);break;}
-      cur=parent ? userById[parent] : null;
-    }
-    legMemo.set(key,result);
-    return result;
-  };
+  const effectiveLeg = (u,ref=refUid) => getTeamVisualLeg(u,ref,us);
 
   const rightMembers = show.filter(u=>effectiveLeg(u)==='right');
   const leftMembers  = show.filter(u=>effectiveLeg(u)==='left');
