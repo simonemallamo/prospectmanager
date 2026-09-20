@@ -1682,7 +1682,16 @@ async function loadNetworkTree(){
     for(const child of hits){
       if(seen.has(child.id)) continue;
       const path=Array.isArray(child.uplinePath)?child.uplinePath:[];
-      const valid=frontier.some(pid=>child.uplineUid===pid || path.includes(pid));
+      // STRICT hierarchy: a person belongs to this viewer's downline only when
+      // their explicit uplineUid points to the current frontier parent.
+      // Legacy fallback is allowed ONLY when uplineUid is missing AND the LAST
+      // item in uplinePath is the current parent. Never use path.includes(),
+      // because that would pull people belonging to another leader who merely
+      // share an ancestor with the current viewer.
+      const valid=frontier.some(pid=>
+        child.uplineUid===pid ||
+        (!child.uplineUid && path.length && path[path.length-1]===pid)
+      );
       if(!valid) continue;
       seen.add(child.id); collected.push(child); next.push(child.id);
     }
@@ -2614,9 +2623,9 @@ async function loadTeamDashboard(force=false) {
     const rootUid=cUser.uid;
     const chunk=(arr,n=30)=>{const out=[];for(let i=0;i<arr.length;i+=n)out.push(arr.slice(i,i+n));return out;};
     // Load this leader's downline using BOTH hierarchy fields.
-    // Some older records may have a valid uplinePath but a missing/stale uplineUid.
-    // If we query only uplineUid, those people disappear from Team Dashboard and
-    // from the Network Tree picker. We therefore merge direct-upline and path hits.
+    // Some older records may have a missing uplineUid. We use uplinePath only as a
+    // strict legacy fallback when its LAST element is the direct parent. We never
+    // treat any ancestor inside the path as a direct relationship.
     const snapUsers = async parentIds => {
       if(!parentIds.length) return [];
       const batches=chunk(parentIds,30);
@@ -2635,8 +2644,8 @@ async function loadTeamDashboard(force=false) {
     };
 
     // Load only this leader's downline, not every user in the database.
-    // A path hit may contain deeper descendants, so we still validate the final
-    // parent relation below and add every reachable descendant exactly once.
+    // A path query may return descendants of the requested parent, so we validate
+    // the direct-parent relation strictly before adding a user.
     const collected=[];
     let frontier=[rootUid];
     const seen=new Set([rootUid]);
@@ -2648,7 +2657,10 @@ async function loadTeamDashboard(force=false) {
         // A user is part of this structure if either the explicit upline is one
         // of the current parents OR the current parent appears in uplinePath.
         const path=Array.isArray(child.uplinePath)?child.uplinePath:[];
-        const validParent=frontier.some(pid=>child.uplineUid===pid || path.includes(pid));
+        const validParent=frontier.some(pid=>
+          child.uplineUid===pid ||
+          (!child.uplineUid && path.length && path[path.length-1]===pid)
+        );
         if(!validParent) continue;
         seen.add(child.id);collected.push(child);next.push(child.id);
       }
