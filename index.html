@@ -1211,7 +1211,7 @@ onAuthStateChanged(auth, async user => {
 });
 
 // ── LOGIN / SIGNUP ──
-document.getElementById('login-submit-btn')?.addEventListener('click', () => window.doLogin());
+var _loginBtn = document.getElementById('login-submit-btn'); if(_loginBtn) _loginBtn.addEventListener('click', function(){ window.doLogin(); });
 
 window.doLogin = async () => {
   const email = id('l-email').value.trim();
@@ -2803,7 +2803,7 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
 
   const rankSorted=[...mdata].sort((a,b)=>b.mpWk.length-a.mpWk.length);
   const max=Math.max(...rankSorted.map(s=>s.mpWk.length),1);
-  id('rank-table').innerHTML=rankSorted.length?rankSorted.map(({m,mpWk},i)=>`<div class="rank-row"><div class="rank-pos ${i===0?'top':''}">${i===0?'★':i+1}</div><div class="rank-name">${x(m.name)}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${(mpWk.length/max)*100}%"></div></div><div class="rank-val">${mpWk.length}</div></div>`).join(''):'';
+  id('rank-table').innerHTML = rankSorted.length ? rankSorted.map(function(row, i){ var m=row.m, mpWk=row.mpWk; var top=i===0?' top':''; return '<div class="rank-row"><div class="rank-pos'+top+'">'+(i===0?'★':(i+1))+'</div><div class="rank-name">'+x(m.name)+'</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:'+(mpWk.length/max*100)+'%"></div></div><div class="rank-val">'+mpWk.length+'</div></div>'; }).join('') : '';
   // Hidden members panel
   var hiddenList = show.filter(function(u){return hiddenMembers.has(u.id);});
   var hSection = id('hidden-members-section');
