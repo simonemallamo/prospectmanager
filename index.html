@@ -1165,7 +1165,11 @@ function getTeamVisualPosition(user, viewerUid, users){
   const byId=Object.fromEntries(all.map(u=>[u.id,u]));
   let cur=user, branch=null, guard=0;
   while(cur && guard++<500){
-    const parent=cur.uplineUid && byId[cur.uplineUid] ? cur.uplineUid : ((cur.uplinePath||[]).length ? cur.uplinePath[cur.uplinePath.length-1] : null);
+    // The viewer/root is intentionally NOT included in the downline cache.
+    // Therefore never require the parent to exist in byId: a direct child
+    // can legitimately have uplineUid === viewerUid even when viewerUid is
+    // absent from this array.
+    const parent = cur.uplineUid || ((cur.uplinePath||[]).length ? cur.uplinePath[cur.uplinePath.length-1] : null);
     if(parent===viewerUid){ branch=cur; break; }
     cur=parent ? byId[parent] : null;
   }
@@ -2027,7 +2031,13 @@ window.setLeg=async(uid,leg,btn)=>{
   try{
     const myUid=cUser.uid,allUs=window._cachedUs||[]; if(!myUid||!uid)return;
     const byId=Object.fromEntries(allUs.map(u=>[u.id,u])); let cur=byId[uid],branchRoot=null,guard=0;
-    while(cur&&guard++<500){ const parent=(cur.uplinePath||[]).length?cur.uplinePath[cur.uplinePath.length-1]:(cur.uplineUid&&byId[cur.uplineUid]?cur.uplineUid:null); if(parent===myUid){branchRoot=cur;break;} cur=parent?byId[parent]:null; }
+    while(cur&&guard++<500){
+      // Direct children may have uplineUid === myUid while myUid is not part
+      // of the downline cache. That is valid and must still resolve correctly.
+      const parent = cur.uplineUid || ((cur.uplinePath||[]).length ? cur.uplinePath[cur.uplinePath.length-1] : null);
+      if(parent===myUid){branchRoot=cur;break;}
+      cur=parent?byId[parent]:null;
+    }
     if(!branchRoot){alert('Questa persona non appartiene alla tua struttura.');return;}
     const snap=await getDoc(doc(db,'users',myUid)); const current={...(snap.exists()?snap.data().teamLayout||{}:{})}; const old=current[branchRoot.id]||{};
     current[branchRoot.id]={...old,leg:leg||null,order:old.order??branchRoot.legOrder??9999};
