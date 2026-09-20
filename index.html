@@ -1120,63 +1120,65 @@ let editingUid = null;
 let aFilter = 'tutti';
 let unsub = null;
 
-// ── BINARY LEG HELPERS ──
-// Leg assignments are stored per-upline in legMap.<uplineUid>.
-// Older records may still have a legacy `leg` field, so use it only
-// when the user is a direct child of the requested upline.
-function getLegFor(user, refUid) {
-  if(!user || !refUid || user.id === refUid) return null;
-  const map = user.legMap;
-  if(map && Object.prototype.hasOwnProperty.call(map, refUid)) {
-    const leg = map[refUid];
-    return leg === 'left' || leg === 'right' ? leg : null;
+// ── BINARY LEG / PRIVATE TEAM LAYOUT ──
+// IMPORTANT: Team Dashboard placement is PRIVATE to the logged-in viewer.
+// It is stored only in users/{viewerUid}.teamLayout and never written to the
+// member's document. Network Tree uses its separate networkLayout field.
+function getLegacyLeg(user, refUid, users){
+  if(!user || !refUid || user.id===refUid) return null;
+  if(user.legMap && Object.prototype.hasOwnProperty.call(user.legMap, refUid)){
+    const v=user.legMap[refUid];
+    if(v==='left'||v==='right') return v;
   }
-  if(user.uplineUid === refUid && (user.leg === 'left' || user.leg === 'right')) {
-    return user.leg;
-  }
-  return null;
-}
-
-function getLegForUser(user, refUid, allUsers) {
-  if(!user || !refUid || user.id === refUid) return null;
-  const users = allUsers || window._cachedUs || window._treeUs || [];
-  if(user.uplineUid === refUid) return getLegFor(user, refUid);
-
-  // Walk upward using uplineUid, which is the source of truth for the tree.
-  // The first child below refUid determines the whole descendant's leg.
-  let current = user;
-  let guard = 0;
-  while(current && current.uplineUid && guard++ < 500) {
-    const parentUid = current.uplineUid;
-    if(parentUid === refUid) return getLegFor(current, refUid);
-    current = users.find(u => u.id === parentUid);
+  if(user.uplineUid===refUid && (user.leg==='left'||user.leg==='right')) return user.leg;
+  const all=users||window._cachedUs||[];
+  let cur=user, guard=0;
+  while(cur && guard++<500){
+    const parent=cur.uplineUid||null;
+    if(parent===refUid){
+      if(cur.legMap && Object.prototype.hasOwnProperty.call(cur.legMap, refUid)){
+        const v=cur.legMap[refUid];
+        if(v==='left'||v==='right') return v;
+      }
+      if(cur.leg==='left'||cur.leg==='right') return cur.leg;
+      return null;
+    }
+    cur=parent?all.find(u=>u.id===parent):null;
   }
   return null;
 }
 
-// Private Team Dashboard layout: each viewer stores their own leg assignments on their own document.
 function getPrivateTeamLayout(viewerUid){
-  const me=(window._cachedUs||[]).find(u=>u.id===viewerUid) || (cUser?.uid===viewerUid?cData:null);
-  return me?.teamLayout || {};
+  if(cUser?.uid===viewerUid && cData?.teamLayout) return cData.teamLayout;
+  const me=(window._cachedUs||[]).find(u=>u.id===viewerUid);
+  return me?.teamLayout||{};
 }
+
 function getTeamVisualPosition(user, viewerUid, users){
   if(!user || !viewerUid || user.id===viewerUid) return {branchUid:null,leg:null,order:9999};
+  const layout=getPrivateTeamLayout(viewerUid);
+  // New format: every visible member may have an explicit personal placement.
+  const explicit=layout?.[user.id];
+  if(explicit && (explicit.leg==='left'||explicit.leg==='right')){
+    return {branchUid:user.id,leg:explicit.leg,order:explicit.order??9999,custom:true};
+  }
+  // Legacy/private compatibility: old layouts keyed by the first-level branch.
   const all=users||window._cachedUs||[];
   const byId=Object.fromEntries(all.map(u=>[u.id,u]));
   let cur=user, branch=null, guard=0;
   while(cur && guard++<500){
-    // The viewer/root is intentionally NOT included in the downline cache.
-    // Therefore never require the parent to exist in byId: a direct child
-    // can legitimately have uplineUid === viewerUid even when viewerUid is
-    // absent from this array.
-    const parent = cur.uplineUid || ((cur.uplinePath||[]).length ? cur.uplinePath[cur.uplinePath.length-1] : null);
-    if(parent===viewerUid){ branch=cur; break; }
-    cur=parent ? byId[parent] : null;
+    const parent=cur.uplineUid||((cur.uplinePath||[]).length?cur.uplinePath[cur.uplinePath.length-1]:null);
+    if(parent===viewerUid){branch=cur;break;}
+    cur=parent?byId[parent]:null;
   }
-  if(!branch) return {branchUid:null,leg:null,order:9999};
-  const saved=getPrivateTeamLayout(viewerUid)[branch.id];
-  if(saved) return {branchUid:branch.id,leg:(saved.leg==='left'||saved.leg==='right')?saved.leg:null,order:saved.order??9999};
-  return {branchUid:branch.id,leg:getLegFor(branch,viewerUid),order:branch.legOrder??9999};
+  if(branch){
+    const legacy=layout?.[branch.id];
+    if(legacy && (legacy.leg==='left'||legacy.leg==='right')){
+      return {branchUid:branch.id,leg:legacy.leg,order:legacy.order??9999,custom:true};
+    }
+    return {branchUid:branch.id,leg:getLegacyLeg(branch,viewerUid,all),order:branch.legOrder??9999,custom:false};
+  }
+  return {branchUid:null,leg:null,order:9999,custom:false};
 }
 function getTeamVisualLeg(user, viewerUid, users){ return getTeamVisualPosition(user,viewerUid,users).leg; }
 
@@ -2029,20 +2031,36 @@ window.restoreTeamStructure = async function(){
 
 window.setLeg=async(uid,leg,btn)=>{
   try{
-    const myUid=cUser.uid,allUs=window._cachedUs||[]; if(!myUid||!uid)return;
-    const byId=Object.fromEntries(allUs.map(u=>[u.id,u])); let cur=byId[uid],branchRoot=null,guard=0;
-    while(cur&&guard++<500){
-      // Direct children may have uplineUid === myUid while myUid is not part
-      // of the downline cache. That is valid and must still resolve correctly.
-      const parent = cur.uplineUid || ((cur.uplinePath||[]).length ? cur.uplinePath[cur.uplinePath.length-1] : null);
-      if(parent===myUid){branchRoot=cur;break;}
-      cur=parent?byId[parent]:null;
+    const myUid=cUser?.uid;
+    const allUs=window._cachedUs||[];
+    const target=allUs.find(u=>u.id===uid);
+    const show=window._cachedShow||[];
+    if(!myUid||!target||!show.some(u=>u.id===uid)){
+      alert('Questa persona non appartiene alla tua struttura.');
+      return;
     }
-    if(!branchRoot){alert('Questa persona non appartiene alla tua struttura.');return;}
-    const snap=await getDoc(doc(db,'users',myUid)); const current={...(snap.exists()?snap.data().teamLayout||{}:{})}; const old=current[branchRoot.id]||{};
-    current[branchRoot.id]={...old,leg:leg||null,order:old.order??branchRoot.legOrder??9999};
-    await updateDoc(doc(db,'users',myUid),{teamLayout:current}); const me=allUs.find(u=>u.id===myUid);if(me)me.teamLayout=current; renderTeamDashboard();
-  }catch(e){console.error('setLeg error',e);alert('Errore: '+(e.message||e));}
+    if(leg!=='left' && leg!=='right' && leg!=='') return;
+
+    // One source of truth: the viewer's own teamLayout.
+    // Never update the member document and never touch uplineUid/uplinePath.
+    const snap=await getDoc(doc(db,'users',myUid));
+    if(!snap.exists()) throw new Error('Profilo utente non trovato.');
+    const current={...(snap.data().teamLayout||{})};
+    const old={...(current[uid]||{})};
+    if(leg==='') delete current[uid];
+    else current[uid]={...old,leg,order:old.order??target.legOrder??9999};
+    await updateDoc(doc(db,'users',myUid),{teamLayout:current});
+
+    cData={...cData,teamLayout:current};
+    if(window._cachedUs){
+      // Keep the root out of _cachedUs; just invalidate cached render data.
+      window._teamCache=null;
+    }
+    await loadTeamDashboard(true);
+  }catch(e){
+    console.error('setLeg error',e);
+    alert('Errore nel salvataggio: '+(e.message||e));
+  }
 };
 
 window.doResetPassword = async function() {
@@ -2561,74 +2579,55 @@ async function loadTeamDashboard(force=false) {
     return;
   }
 
-  try {
+  try{
     const rootUid=cUser.uid;
     const chunk=(arr,n=30)=>{const out=[];for(let i=0;i<arr.length;i+=n)out.push(arr.slice(i,i+n));return out;};
 
-    // IMPORTANT: load ONLY this user's own downline.
-    // uplinePath contains every ancestor, so `array-contains rootUid` is the
-    // correct way to retrieve the whole downline even when older records have
-    // inconsistent/missing uplineUid values. It cannot return a person who is
-    // not descended from this root unless their stored path is actually wrong.
-    const byPath = await getDocs(query(
-      collection(db,'users'),
-      where('uplinePath','array-contains',rootUid)
-    ));
+    // CLEAN HIERARCHY RULE:
+    // A user belongs to this Dashboard ONLY if a chain of explicit uplineUid
+    // links reaches the logged-in user. We do NOT use `array-contains` on
+    // uplinePath to decide membership, because stale paths can expose people
+    // from another branch.
+    const usersById=new Map();
+    const queue=[rootUid];
+    const seen=new Set([rootUid]);
 
-    // Also include direct children that have uplineUid set but an old/missing path.
-    let byDirect=[];
-    try {
-      const directSnap=await getDocs(query(collection(db,'users'),where('uplineUid','==',rootUid)));
-      byDirect=directSnap.docs.map(d=>({id:d.id,...d.data()}));
-    } catch(e) {
-      console.warn('[Team Dashboard] direct-child query skipped:',e);
-    }
-
-    const merged=new Map();
-    byPath.docs.forEach(d=>merged.set(d.id,{id:d.id,...d.data()}));
-    byDirect.forEach(u=>merged.set(u.id,u));
-
-    // Legacy records may have no path at all. For those, walk downward using
-    // uplineUid from the direct children we already know. This remains scoped
-    // to the current user's hierarchy and never downloads the whole database.
-    let frontier=byDirect.map(u=>u.id);
-    const seen=new Set([rootUid,...merged.keys()]);
-    while(frontier.length && seen.size<5000){
-      const next=[];
+    while(queue.length){
+      const frontier=queue.splice(0,queue.length);
       for(const ids of chunk(frontier,30)){
-        try{
-          const snap=await getDocs(query(collection(db,'users'),where('uplineUid','in',ids)));
-          snap.docs.forEach(d=>{
-            if(seen.has(d.id)) return;
-            const u={id:d.id,...d.data()};
-            // A child returned by one of our known descendants is part of the
-            // same downline. This is not a global users query.
-            seen.add(d.id); merged.set(d.id,u); next.push(d.id);
-          });
-        }catch(e){ console.warn('[Team Dashboard] descendant batch skipped:',e); }
+        if(!ids.length) continue;
+        const snap=await getDocs(query(collection(db,'users'),where('uplineUid','in',ids)));
+        snap.docs.forEach(d=>{
+          if(seen.has(d.id)) return;
+          const u={id:d.id,...d.data()};
+          // Hard validation: the returned document itself must point to one of
+          // the parents in this frontier. This prevents unrelated users from
+          // entering the tree even if their uplinePath is stale.
+          if(!ids.includes(u.uplineUid)) return;
+          seen.add(d.id); usersById.set(d.id,u); queue.push(d.id);
+        });
       }
-      frontier=next;
+      if(seen.size>5000) throw new Error('Struttura troppo grande o ciclo nella gerarchia.');
     }
 
-    const us=[...merged.values()].filter(u=>u.id!==rootUid);
-    ensureInitialTeamBackup(us);
+    const us=[...usersById.values()];
     const wk=Date.now()-7*86400000;
-    const uids=us.map(u=>u.id);
-
     const ps=[];
+    const uids=us.map(u=>u.id);
     for(const ids of chunk(uids,30)){
       if(!ids.length) continue;
       const snap=await getDocs(query(collection(db,'prospects'),where('uid','in',ids)));
       snap.docs.forEach(d=>ps.push({id:d.id,...d.data()}));
     }
 
+    // No global users query. `show` is exactly the validated downline.
     const show=us;
     window._teamCache={uid:rootUid,us,ps,show,wk,at:Date.now()};
     window._cachedUs=us; window._cachedPs=ps; window._cachedShow=show; window._cachedWk=wk;
-    console.debug('[Team Dashboard] loaded', {members:us.length, prospects:ps.length, ms:Date.now()-(window._teamLoadStarted||Date.now())});
+    console.debug('[Team Dashboard] scoped downline', {members:us.length,prospects:ps.length});
     renderTeamDashboard(us,ps,show,wk);
-  } catch(e) {
-    console.error('Team Dashboard load failed:', e);
+  }catch(e){
+    console.error('Team Dashboard load failed:',e);
     const msg=e?.message||'Errore sconosciuto durante il caricamento.';
     const html=`<div style="padding:1rem;color:var(--red);font-size:12px;background:var(--red-dim);border:.5px solid var(--red);border-radius:8px;">⚠️ Impossibile caricare la Dashboard Team.<br><span style="color:var(--text2);">${x(msg)}</span></div>`;
     if(id('team-grid-left')) id('team-grid-left').innerHTML=html;

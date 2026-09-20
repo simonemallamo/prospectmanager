@@ -1,8 +1,10 @@
-# ProTracker V22
+# ProTracker V24
 
-Fix posizionamento Destra/Sinistra nella Dashboard Team.
-
-- Risolto il bug per cui il root/utente loggato non è presente nella cache della downline e quindi i membri diretti non venivano riconosciuti come appartenenti alla sua struttura.
-- La risoluzione della gamba usa `uplineUid` anche quando il genitore non è presente nella cache locale.
-- Il posizionamento resta personale: viene salvato nel `teamLayout` dell'utente loggato.
-- Valido per qualsiasi membro/leader, non solo Nicola.
+## Clean Team Dashboard architecture
+- Team Dashboard loads users ONLY by explicit `uplineUid` traversal from the logged-in user.
+- `uplinePath` is no longer used to decide Dashboard membership.
+- Unrelated platform users cannot enter the Team Dashboard dataset through a stale path.
+- Team placement is private: `users/{viewerUid}.teamLayout[memberUid] = {leg, order}`.
+- Destra/Sinistra never writes to the member's document and never changes `uplineUid`/`uplinePath`.
+- Any member in the authenticated user's downline can be assigned left/right.
+- Network Tree remains separate and uses `networkLayout`.
