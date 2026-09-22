@@ -266,226 +266,7 @@ td{padding:9px 13px;vertical-align:middle;}
 .nt-popover-stat{background:var(--surface2);border-radius:6px;padding:6px 4px;text-align:center;border:.5px solid var(--border);}
 .nt-popover-val{font-size:16px;font-weight:600;font-family:monospace;line-height:1;}
 .nt-popover-lbl{font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;margin-top:2px;}
-
-/* =========================================================
-   PROTRACKER — MODERN UI REFRESH
-   Visual-only layer: preserves existing Firebase/app logic.
-   ========================================================= */
-:root{
-  --modern-radius:16px;
-  --modern-radius-sm:11px;
-  --modern-glass:rgba(255,255,255,.055);
-  --modern-glass-strong:rgba(255,255,255,.085);
-  --modern-line:rgba(255,255,255,.09);
-  --modern-shadow:0 20px 55px rgba(0,0,0,.24);
-  --modern-shadow-sm:0 8px 26px rgba(0,0,0,.16);
-}
-[data-theme="dark"]{
-  --bg:#08090d;
-  --surface:#101218;
-  --surface2:#171a22;
-  --border:rgba(255,255,255,.075);
-  --border2:rgba(255,255,255,.12);
-  --text:#f4f5f7;
-  --text2:#b7bcc7;
-  --text3:#747b89;
-}
-[data-theme="light"]{
-  --bg:#f5f6f8;
-  --surface:#ffffff;
-  --surface2:#f0f2f5;
-  --border:rgba(18,24,40,.08);
-  --border2:rgba(18,24,40,.13);
-  --text:#171a21;
-  --text2:#606876;
-  --text3:#8b929e;
-}
-body{
-  background:
-    radial-gradient(circle at 15% -10%, rgba(201,168,76,.10), transparent 30%),
-    radial-gradient(circle at 95% 10%, rgba(74,156,240,.08), transparent 28%),
-    var(--bg);
-}
-body::before{
-  content:"";
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-  z-index:-1;
-  opacity:.22;
-  background-image:radial-gradient(rgba(255,255,255,.14) .5px,transparent .5px);
-  background-size:18px 18px;
-}
-.topbar{
-  height:64px;
-  padding:0 22px;
-  background:rgba(10,11,15,.72);
-  border-bottom:1px solid var(--modern-line);
-  box-shadow:0 8px 30px rgba(0,0,0,.12);
-}
-[data-theme="light"] .topbar{
-  background:rgba(255,255,255,.78);
-}
-.topbar-logo{gap:10px;margin-right:14px}
-.topbar-mark{
-  width:34px;height:34px;border-radius:10px;
-  box-shadow:0 5px 20px rgba(201,168,76,.22);
-}
-.topbar-name{font-size:15px;letter-spacing:-.45px}
-.t-tab{
-  padding:8px 13px;
-  border-radius:9px;
-  font-size:12px;
-}
-.t-tab:hover{background:var(--modern-glass)}
-.t-tab.on{
-  background:var(--modern-glass-strong);
-  box-shadow:inset 0 0 0 1px var(--modern-line);
-}
-.user-av{
-  width:34px;height:34px;
-  box-shadow:0 0 0 4px rgba(201,168,76,.06);
-}
-.btn-sm,.f-btn{
-  border-radius:9px;
-  transition:transform .15s,background .15s,border-color .15s;
-}
-.btn-sm:hover,.f-btn:hover{transform:translateY(-1px);background:var(--modern-glass)}
-.search{
-  height:36px;
-  border-radius:10px;
-  background:var(--surface);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
-}
-.btn-add,.btn-primary{
-  border-radius:10px;
-  min-height:38px;
-  box-shadow:0 8px 24px rgba(201,168,76,.16);
-}
-.tbl-wrap,.tc,.tree-wrap,.leg-card,.sc,.modal,.auth-card{
-  border-color:var(--modern-line)!important;
-  box-shadow:var(--modern-shadow-sm);
-}
-.tbl-wrap,.tree-wrap{
-  border-radius:16px;
-  overflow:hidden;
-}
-table{min-width:780px}
-thead th{
-  padding:12px 14px;
-  background:linear-gradient(180deg,var(--surface2),rgba(0,0,0,0));
-}
-tbody tr{transition:background .15s,transform .15s}
-tbody tr:hover{background:rgba(255,255,255,.035)}
-td{padding:11px 14px}
-.tc{
-  border-radius:16px;
-  padding:15px;
-  background:linear-gradient(145deg,var(--surface),rgba(255,255,255,.025));
-  transition:transform .18s,box-shadow .18s,border-color .18s;
-}
-.tc:hover{
-  transform:translateY(-3px);
-  box-shadow:0 16px 40px rgba(0,0,0,.22);
-}
-.tc-av{width:40px;height:40px;border-radius:12px}
-.tc-num{
-  border-radius:11px;
-  padding:10px 5px;
-  border-color:var(--modern-line);
-}
-.tc-num-val{font-size:19px}
-.leg-card{
-  border-radius:18px;
-  padding:18px;
-  background:
-    linear-gradient(145deg,rgba(255,255,255,.045),transparent 55%),
-    var(--surface);
-}
-.leg-card:hover{transform:translateY(-2px);transition:transform .18s,box-shadow .18s}
-.leg-visual{display:grid;grid-template-columns:150px 1fr;gap:18px;align-items:center;margin:16px 0 14px;}
-.leg-donut{width:142px;height:142px;border-radius:50%;position:relative;display:grid;place-items:center;flex-shrink:0;box-shadow:inset 0 0 0 1px var(--border);}
-.leg-donut::after{content:'';position:absolute;width:88px;height:88px;border-radius:50%;background:var(--surface);box-shadow:0 3px 14px rgba(0,0,0,.08);}
-.leg-donut-center{position:relative;z-index:2;text-align:center;line-height:1.1;}
-.leg-donut-total{font-size:27px;font-weight:800;letter-spacing:-1px;}
-.leg-donut-label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-top:4px;}
-.leg-legend{display:flex;flex-direction:column;gap:9px;}
-.leg-legend-row{display:grid;grid-template-columns:10px 1fr auto;align-items:center;gap:8px;font-size:11px;}
-.leg-legend-dot{width:9px;height:9px;border-radius:50%;}
-.leg-legend-name{color:var(--text2);}
-.leg-legend-value{font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
-.leg-legend-pct{font-size:10px;color:var(--text3);margin-left:4px;}
-.leg-mini-metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px;}
-.leg-mini-metric{padding:9px 10px;border:1px solid var(--modern-line);border-radius:11px;background:rgba(255,255,255,.025);}
-.leg-mini-value{font-size:17px;font-weight:750;line-height:1.1;}
-.leg-mini-label{font-size:10px;color:var(--text3);margin-top:3px;}
-@media(max-width:700px){.leg-visual{grid-template-columns:1fr;justify-items:center}.leg-legend{width:100%}}
-.leg-stats{gap:10px}
-.leg-stat{
-  border:1px solid var(--modern-line);
-  border-radius:12px;
-  padding:10px 7px;
-  background:rgba(255,255,255,.025);
-}
-.rank-row{
-  border-radius:10px;
-  padding:7px 8px;
-}
-.rank-row:hover{background:var(--modern-glass)}
-.rank-bar-wrap{height:5px;border-radius:10px}
-.rank-bar{border-radius:10px}
-.nt-card{
-  border-radius:14px;
-  box-shadow:0 10px 30px rgba(0,0,0,.12);
-}
-.nt-card:hover{transform:translateY(-4px) scale(1.01)}
-.fg input,.fg select,.fg textarea{
-  min-height:38px;
-  border-radius:10px;
-  border-color:var(--modern-line);
-}
-.fg input:focus,.fg select:focus,.fg textarea:focus{
-  box-shadow:0 0 0 3px rgba(201,168,76,.10);
-}
-.modal{
-  border-radius:20px!important;
-  background:rgba(16,18,24,.94)!important;
-  backdrop-filter:blur(20px);
-}
-[data-theme="light"] .modal{
-  background:rgba(255,255,255,.94)!important;
-}
-.auth-card{
-  border-radius:24px;
-  padding:2.5rem;
-  backdrop-filter:blur(20px);
-  background:linear-gradient(145deg,rgba(255,255,255,.06),rgba(255,255,255,.02)),var(--surface);
-}
-.auth-top{margin-bottom:2rem}
-.auth-logo .logo-mark{width:44px;height:44px;border-radius:12px}
-.pill{border-radius:999px!important}
-.loader{padding:2rem}
-.ld{border-radius:50%}
-@media(max-width:900px){
-  .topbar{padding:0 12px;gap:4px;overflow-x:auto}
-  .topbar-right{min-width:max-content}
-  .topbar-name{display:none}
-  .t-tab{padding:7px 9px}
-}
-@media(max-width:640px){
-  .auth-card{padding:1.5rem;border-radius:18px}
-  .tbl-wrap{border-radius:12px}
-  .tc{padding:12px}
-}
-
-/* IN-APP GUIDES */
-.guide-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;padding:22px;margin-bottom:16px;border:1px solid var(--border2);border-radius:16px;background:linear-gradient(135deg,var(--surface),var(--surface2));box-shadow:var(--shadow)}.guide-kicker{font-size:10px;letter-spacing:.12em;color:var(--accent);font-weight:700}.guide-title{font-size:25px;font-weight:800;letter-spacing:-.7px}.guide-sub{font-size:12px;color:var(--text2);margin-top:4px}.guide-role{padding:8px 12px;border-radius:999px;background:var(--accent-dim);border:1px solid var(--accent-line);color:var(--accent-hi);font-size:11px;font-weight:700;white-space:nowrap}.guide-section-title{font-size:17px;font-weight:800;margin:15px 0 12px}.guide-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.guide-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:var(--shadow)}.guide-num{font:500 10px 'JetBrains Mono',monospace;color:var(--accent);margin-bottom:6px}.guide-card-title{font-size:14px;font-weight:750;margin-bottom:6px}.guide-card p{font-size:11.5px;line-height:1.65;color:var(--text2);min-height:55px}.mock-ui,.guide-tree{margin-top:11px;padding:11px;border:1px solid var(--border2);border-radius:10px;background:var(--bg);font-size:9px;color:var(--text2)}.mock-row{display:flex;justify-content:space-between;margin-top:8px}.mock-row span{color:var(--accent);background:var(--accent-dim);padding:4px 6px;border-radius:6px}.mock-pills{margin-top:8px;color:var(--text3);word-spacing:6px}.mock-list{margin-top:7px;padding:7px;border:1px solid var(--border);border-radius:7px;line-height:2}.mock-confirm{margin-top:7px;text-align:center;padding:6px;background:var(--accent);color:#111;border-radius:7px;font-weight:800}.guide-tree{text-align:center;line-height:2}.guide-tree b{color:var(--accent-hi)}.drag-demo{display:flex;justify-content:center;align-items:center;gap:15px;margin-top:22px;font-size:11px}.drag-demo strong{color:var(--accent);font-size:18px}.drag-demo span,.mock-buttons span{padding:7px 10px;border:1px dashed var(--border2);border-radius:7px;color:var(--text3)}.mock-buttons{display:flex;gap:7px;margin-top:20px}.mock-buttons span{flex:1;text-align:center;font-size:9px}.mock-legs{margin-top:10px;padding:8px;border:1px solid var(--border);border-radius:7px}.guide-common{margin-top:22px}.rules-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.rules-grid>div{padding:12px;border:1px solid var(--border);border-radius:11px;background:var(--surface)}.rules-grid b{display:block;font-size:10px;margin-bottom:4px}.rules-grid span{display:block;font-size:9px;line-height:1.5;color:var(--text2)}.guide-tip{margin-top:10px;padding:12px;border-radius:11px;background:var(--accent-dim);border:1px solid var(--accent-line);font-size:10px;color:var(--text2)}
-@media(max-width:800px){.guide-grid{grid-template-columns:1fr}.rules-grid{grid-template-columns:1fr 1fr}}@media(max-width:520px){.guide-head{display:block}.rules-grid{grid-template-columns:1fr}.guide-role{display:inline-block;margin-top:10px}}
 </style>
-<style>
-.lang-switch{display:flex;align-items:center;gap:3px;background:var(--surface2);border:.5px solid var(--border2);border-radius:8px;padding:2px}.lang-switch button{border:0;background:transparent;color:var(--text3);font-size:10px;font-weight:700;padding:4px 6px;border-radius:6px;cursor:pointer}.lang-switch button.on{background:var(--surface3);color:var(--text)}
-</style>
-
 </head>
 <body>
 
@@ -508,11 +289,8 @@ td{padding:11px 14px}
           <div class="logo-sub">developed by Simone Mallamo</div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="lang-switch" id="lang-switch-auth"><button type="button" data-lang="it" onclick="setLanguage('it')">IT</button><button type="button" data-lang="es" onclick="setLanguage('es')">ES</button></div>
-        <div class="toggle-wrap">
-          <span>☀️</span><div class="t-toggle" onclick="toggleTheme()"></div><span>🌙</span>
-        </div>
+      <div class="toggle-wrap">
+        <span>☀️</span><div class="t-toggle" onclick="toggleTheme()"></div><span>🌙</span>
       </div>
     </div>
     <div class="auth-title">Bentornato</div>
@@ -568,10 +346,8 @@ td{padding:11px 14px}
     <button class="t-tab on" id="tab-lista" onclick="switchTab('lista')">Lista Prospect</button>
     <button class="t-tab leader hidden" id="tab-team" onclick="switchTab('team')">Dashboard Team</button>
     <button class="t-tab leader hidden" id="tab-tree" onclick="switchTab('tree')">🌳 Albero</button>
-    <button class="t-tab" id="tab-guide" onclick="switchTab('guide')">📘 Guide</button>
     <button class="t-tab admin-tab hidden" id="tab-admin" onclick="switchTab('admin')">⚙ Admin</button>
     <div class="topbar-right">
-      <div class="lang-switch" id="lang-switch-app"><button type="button" data-lang="it" onclick="setLanguage('it')">IT</button><button type="button" data-lang="es" onclick="setLanguage('es')">ES</button></div>
       <div class="toggle-wrap"><span>☀️</span><div class="t-toggle" onclick="toggleTheme()"></div><span>🌙</span></div>
       <div class="user-av" id="u-av">?</div>
       <div class="user-nm" id="u-nm">—</div>
@@ -640,14 +416,10 @@ td{padding:11px 14px}
       <!-- Binary leg comparison -->
       <div class="dash-title" style="margin-top:.25rem;">Confronto gambe</div>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:1rem;flex-wrap:wrap;">
-        <select id="leg-leader-filter" class="search" style="width:260px;" onchange="renderTeamDashboard()">
+        <select id="leg-leader-filter" class="search" style="width:200px;" onchange="renderTeamDashboard()">
           <option value="">Tutta la struttura</option>
         </select>
-        <span id="leg-filter-hint" style="font-size:12px;color:var(--text3);">Filtra per leader o membro per vedere le sue gambe</span>
-        <div style="display:flex;gap:5px;margin-left:auto;">
-          <button class="f-btn" style="padding:5px 9px;font-size:10px;" onclick="backupTeamStructure()" title="Salva una copia del posizionamento reale della Dashboard Team">💾 Backup struttura</button>
-          <button class="f-btn" style="padding:5px 9px;font-size:10px;" onclick="restoreTeamStructure()" title="Ripristina l'ultimo backup della Dashboard Team">↩ Ripristina</button>
-        </div>
+        <span style="font-size:12px;color:var(--text3);">Filtra per leader per vedere le sue gambe</span>
       </div>
       <div id="binary-view" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem;"></div>
 
@@ -732,7 +504,7 @@ td{padding:11px 14px}
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;flex-wrap:wrap;">
         <div>
           <div style="font-size:18px;font-weight:700;letter-spacing:-.3px;">Albero Network</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:1px;">Posizionamento personale: non modifica la Dashboard Team · trascina su Open o su un'altra persona per spostare/sostituire · puoi anche cliccare</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:1px;">Hover su una scheda per i numeri · Trascina per riposizionare</div>
         </div>
         <select id="tree-root-select" class="search" style="width:190px;margin-left:auto;" onchange="reloadTree()">
           <option value="">La mia struttura</option>
@@ -740,8 +512,7 @@ td{padding:11px 14px}
         <div style="display:flex;gap:4px;">
           <button onclick="treeZoom(1.15)" class="f-btn" style="width:30px;padding:0;font-size:18px;line-height:1;">+</button>
           <button onclick="treeZoom(.87)" class="f-btn" style="width:30px;padding:0;font-size:18px;line-height:1;">−</button>
-          <button onclick="treeFit()" class="f-btn" style="padding:0 10px;" title="Centra albero">⊡</button>
-          <button onclick="resetNetworkTree()" class="f-btn" style="padding:0 10px;" title="Ripristina l'albero usando il posizionamento salvato della Dashboard Team">↻ Reset</button>
+          <button onclick="treeFit()" class="f-btn" style="padding:0 10px;" title="Reimposta">⊡</button>
         </div>
         <div style="display:flex;align-items:center;gap:10px;font-size:11px;color:var(--text3);">
           <span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;border-radius:50%;background:var(--gold);display:inline-block;"></span>Leader</span>
@@ -754,28 +525,7 @@ td{padding:11px 14px}
           <div id="network-tree-root" style="padding:40px;display:inline-flex;min-width:max-content;"></div>
         </div>
       </div>
-      <div id="tree-drag-hint" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface);border:.5px solid var(--border2);border-radius:8px;padding:8px 16px;font-size:12px;color:var(--text2);z-index:500;box-shadow:var(--shadow);">💡 Trascina una persona su Open o su un'altra persona per spostarla / sostituirla</div>
-    </div>
-    <!-- GUIDE -->
-    <div id="view-guide" class="hidden">
-      <div class="guide-head"><div><div class="guide-kicker">RY MANAGER · GUIDA OPERATIVA</div><div class="guide-title">Impara a usare la piattaforma</div><div class="guide-sub">Guida pratica integrata direttamente nell'app. I contenuti si adattano automaticamente al tuo ruolo.</div></div><div class="guide-role" id="guide-role-badge">—</div></div>
-      <div id="guide-member" class="guide-role-view">
-        <div class="guide-section-title">👤 Guida Membro</div><div class="guide-grid">
-          <div class="guide-card"><div class="guide-num">01</div><div class="guide-card-title">Lista Prospect</div><p>Inserisci e gestisci i tuoi prospect, aggiorna gli stati e completa i follow-up.</p><div class="mock-ui"><b>Lista Prospect</b><div class="mock-row">🔎 Cerca prospect... <span>＋ Nuovo prospect</span></div><div class="mock-pills">Tutti · Nuovo · Attivo · FU completo</div></div></div>
-          <div class="guide-card"><div class="guide-num">02</div><div class="guide-card-title">🌳 Albero Network</div><p>Visualizza la tua struttura e gestisci esclusivamente la tua <b>downline</b>.</p><div class="guide-tree"><b>TU</b><div>↙ Sinistra &nbsp;&nbsp;&nbsp;&nbsp; Destra ↘</div><div>Persona A &nbsp;&nbsp;&nbsp;&nbsp; Persona B</div></div></div>
-          <div class="guide-card"><div class="guide-num">03</div><div class="guide-card-title">Posizione Open</div><p>Clicca su <b>Open</b> per scegliere una persona. La lista mostra solo la tua downline ed è alfabetica.</p><div class="mock-ui"><b>📍 Gestisci posizione</b><div class="mock-list">Alessandro Rossi<br>Daniel Ritota<br>Marco Bianchi</div><div class="mock-confirm">Conferma</div></div></div>
-          <div class="guide-card"><div class="guide-num">04</div><div class="guide-card-title">Drag & Drop</div><p>Trascina una persona su Open oppure su un'altra persona per spostare o scambiare la posizione.</p><div class="drag-demo">👤 Daniel <strong>→</strong> <span>OPEN</span></div></div>
-        </div>
-      </div>
-      <div id="guide-leader" class="guide-role-view hidden">
-        <div class="guide-section-title">👑 Guida Team Leader</div><div class="guide-grid">
-          <div class="guide-card"><div class="guide-num">01</div><div class="guide-card-title">Dashboard Team</div><p>È il riferimento per il <b>posizionamento reale</b> della tua struttura. Seleziona Leader o Membri della tua downline.</p><div class="mock-ui"><b>Dashboard Team</b><div class="mock-legs">👈 Gamba Sinistra &nbsp;&nbsp; | &nbsp;&nbsp; Gamba Destra 👉</div></div></div>
-          <div class="guide-card"><div class="guide-num">02</div><div class="guide-card-title">💾 Backup e Ripristino</div><p>Fai un backup prima di modifiche importanti. Ripristina recupera l'ultimo backup disponibile.</p><div class="mock-buttons"><span>💾 Backup struttura</span><span>↩ Ripristina</span></div></div>
-          <div class="guide-card"><div class="guide-num">03</div><div class="guide-card-title">🌳 Albero personale</div><p>Il Network Tree è indipendente dalla Dashboard Team. Ogni Leader ha la propria visualizzazione personale.</p><div class="guide-tree"><b>TU · LEADER</b><div>↙ Sinistra &nbsp;&nbsp;&nbsp;&nbsp; Destra ↘</div><div>Downline &nbsp;&nbsp;&nbsp;&nbsp; Downline</div></div></div>
-          <div class="guide-card"><div class="guide-num">04</div><div class="guide-card-title">Open, scambi e Reset</div><p><b>Open</b> per scegliere una persona, <b>Drag & Drop</b> per spostare/scambiare, <b>↻ Reset</b> per riallineare la vista alla Dashboard Team.</p><div class="mock-buttons"><span>↻ Reset</span><span>＋ Open</span></div></div>
-        </div>
-      </div>
-      <div class="guide-common"><div class="guide-section-title">🛡️ Regole fondamentali</div><div class="rules-grid"><div><b>Dashboard Team</b><span>Gestisce la struttura reale.</span></div><div><b>Network Tree</b><span>Gestisce la visualizzazione personale.</span></div><div><b>Downline</b><span>Puoi gestire solo la struttura verso il basso.</span></div><div><b>Open</b><span>Lista limitata alla tua downline e ordinata alfabeticamente.</span></div></div><div class="guide-tip">💡 Usa la Dashboard Team per il posizionamento ufficiale e l'Albero per la tua visualizzazione personale.</div></div>
+      <div id="tree-drag-hint" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface);border:.5px solid var(--border2);border-radius:8px;padding:8px 16px;font-size:12px;color:var(--text2);z-index:500;box-shadow:var(--shadow);">✋ Trascina su Open Position per assegnare</div>
     </div>
     <!-- ADMIN -->
     <div id="view-admin" class="hidden">
@@ -832,24 +582,6 @@ td{padding:11px 14px}
   </div>
 </div>
 
-
-<!-- Network Position Modal -->
-<div id="ntp-overlay" class="overlay hidden">
-  <div class="modal" style="max-width:430px;">
-    <div class="modal-title">📍 Gestisci posizione</div>
-    <div class="modal-info">
-      <div class="mi-name" id="ntp-title">Posizione</div>
-      <div class="mi-sub" id="ntp-sub">—</div>
-    </div>
-    <div class="fg"><label>Persona da inserire</label><select id="ntp-user"></select></div>
-    <div id="ntp-warning" style="display:none;margin-top:8px;padding:9px 10px;border:1px solid var(--amber-dim);background:var(--amber-dim);border-radius:8px;font-size:11px;color:var(--amber);line-height:1.5;"></div>
-    <div class="modal-err" id="ntp-err"></div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeNetworkPositionModal()">Annulla</button>
-      <button class="btn-save" id="ntp-save" onclick="saveNetworkPosition()">Conferma</button>
-    </div>
-  </div>
-</div>
 
 <!-- Settings Modal -->
 <div id="s-overlay" class="overlay hidden">
@@ -1039,7 +771,7 @@ td{padding:11px 14px}
 import { initializeApp }        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged }
                                  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc, writeBatch,
+import { getFirestore, collection, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc,
          onSnapshot, query, where, serverTimestamp, getDocs }
                                  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -1063,8 +795,37 @@ const COUNTRIES = {
   'Argentina': ['Buenos Aires','Catamarca','Chaco','Chubut','Córdoba','Corrientes','Entre Ríos','Formosa','Jujuy','La Pampa','La Rioja','Mendoza','Misiones','Neuquén','Río Negro','Salta','San Juan','San Luis','Santa Cruz','Santa Fe','Santiago del Estero','Tierra del Fuego','Tucumán'],
   'Austria': ['Burgenland','Kärnten','Niederösterreich','Oberösterreich','Salzburg','Steiermark','Tirol','Vorarlberg','Wien'],
   'Belgio': ['Anversa','Brabante Vallone','Brabante Fiammingo','Brussel','Est','Fiandre Occidentali','Fiandre Orientali','Hainaut','Liegi','Limburgo','Lussemburgo','Namur'],
+  'Antigua e Barbuda': ['Saint John','Saint Mary','Saint Paul','Saint Peter','Saint Philip','Saint George'],
+  'Bahamas': ['New Providence','Grand Bahama','Abaco','Eleuthera','Exuma','Long Island','Andros','Bimini','Cat Island','San Salvador','Inagua'],
+  'Barbados': ['Christ Church','Saint Andrew','Saint George','Saint James','Saint John','Saint Joseph','Saint Lucy','Saint Michael','Saint Peter','Saint Philip','Saint Thomas'],
+  'Belize': ['Belize','Cayo','Corozal','Orange Walk','Stann Creek','Toledo'],
+  'Bolivia': ['Beni','Chuquisaca','Cochabamba','La Paz','Oruro','Pando','Potosí','Santa Cruz','Tarija'],
   'Bosnia': ['Federazione BiH','Repubblica Srpska','Distretto di Brčko'],
   'Brasile': ['Acre','Alagoas','Amapá','Amazonas','Bahia','Ceará','Distrito Federal','Espírito Santo','Goiás','Maranhão','Mato Grosso','Mato Grosso do Sul','Minas Gerais','Pará','Paraíba','Paraná','Pernambuco','Piauí','Rio de Janeiro','Rio Grande do Norte','Rio Grande do Sul','Rondônia','Roraima','Santa Catarina','São Paulo','Sergipe','Tocantins'],
+  'Cile': ['Arica y Parinacota','Tarapacá','Antofagasta','Atacama','Coquimbo','Valparaíso','Metropolitana de Santiago','O’Higgins','Maule','Ñuble','Biobío','La Araucanía','Los Ríos','Los Lagos','Aysén','Magallanes'],
+  'Colombia': ['Amazonas','Antioquia','Arauca','Atlántico','Bolívar','Boyacá','Caldas','Caquetá','Casanare','Cauca','Cesar','Chocó','Córdoba','Cundinamarca','Guainía','Guaviare','Huila','La Guajira','Magdalena','Meta','Nariño','Norte de Santander','Putumayo','Quindío','Risaralda','San Andrés y Providencia','Santander','Sucre','Tolima','Valle del Cauca','Vaupés','Vichada'],
+  'Costa Rica': ['Alajuela','Cartago','Guanacaste','Heredia','Limón','Puntarenas','San José'],
+  'Cuba': ['Artemisa','Camagüey','Ciego de Ávila','Cienfuegos','Ciudad de La Habana','Granma','Guantánamo','Holguín','Isla de la Juventud','La Habana','Las Tunas','Matanzas','Mayabeque','Pinar del Río','Sancti Spíritus','Santiago de Cuba','Villa Clara'],
+  'Dominica': ['Saint Andrew','Saint David','Saint George','Saint John','Saint Joseph','Saint Luke','Saint Mark','Saint Patrick','Saint Paul','Saint Peter'],
+  'Ecuador': ['Azuay','Bolívar','Cañar','Carchi','Chimborazo','Cotopaxi','El Oro','Esmeraldas','Galápagos','Guayas','Imbabura','Loja','Los Ríos','Manabí','Morona-Santiago','Napo','Orellana','Pastaza','Pichincha','Santa Elena','Santo Domingo de los Tsáchilas','Sucumbíos','Tungurahua','Zamora-Chinchipe'],
+  'El Salvador': ['Ahuachapán','Cabañas','Chalatenango','Cuscatlán','La Libertad','La Paz','La Unión','Morazán','San Miguel','San Salvador','San Vicente','Santa Ana','Sonsonate','Usulután'],
+  'Grenada': ['Saint Andrew','Saint David','Saint George','Saint John','Saint Mark','Saint Patrick','Carriacou and Petite Martinique'],
+  'Guatemala': ['Alta Verapaz','Baja Verapaz','Chimaltenango','Chiquimula','El Progreso','Escuintla','Guatemala','Huehuetenango','Izabal','Jalapa','Jutiapa','Petén','Quetzaltenango','Quiché','Retalhuleu','Sacatepéquez','San Marcos','Santa Rosa','Sololá','Suchitepéquez','Totonicapán','Zacapa'],
+  'Guyana': ['Barima-Waini','Cuyuni-Mazaruni','Demerara-Mahaica','East Berbice-Corentyne','Essequibo Islands-West Demerara','Mahaica-Berbice','Pomeroon-Supenaam','Potaro-Siparuni','Upper Demerara-Berbice','Upper Takutu-Upper Essequibo'],
+  'Haiti': ['Artibonite','Centre','Grand’Anse','Nippes','Nord','Nord-Est','Nord-Ouest','Ouest','Sud','Sud-Est'],
+  'Honduras': ['Atlántida','Choluteca','Colón','Comayagua','Copán','Cortés','El Paraíso','Francisco Morazán','Gracias a Dios','Intibucá','Islas de la Bahía','La Paz','Lempira','Ocotepeque','Olancho','Santa Bárbara','Valle','Yoro'],
+  'Jamaica': ['Clarendon','Hanover','Kingston','Manchester','Portland','Saint Andrew','Saint Ann','Saint Catherine','Saint Elizabeth','Saint James','Saint Mary','Saint Thomas','Trelawny','Westmoreland'],
+  'Messico': ['Aguascalientes','Baja California','Baja California Sur','Campeche','Chiapas','Chihuahua','Ciudad de México','Coahuila','Colima','Durango','Guanajuato','Guerrero','Hidalgo','Jalisco','México','Michoacán','Morelos','Nayarit','Nuevo León','Oaxaca','Puebla','Querétaro','Quintana Roo','San Luis Potosí','Sinaloa','Sonora','Tabasco','Tamaulipas','Tlaxcala','Veracruz','Yucatán','Zacatecas'],
+  'Nicaragua': ['Boaco','Carazo','Chinandega','Chontales','Estelí','Granada','Jinotega','León','Madriz','Managua','Masaya','Matagalpa','Nueva Segovia','Río San Juan','Rivas','Costa Caribe Norte','Costa Caribe Sur'],
+  'Panama': ['Bocas del Toro','Chiriquí','Coclé','Colón','Darién','Herrera','Los Santos','Panamá','Panamá Oeste','Veraguas','Guna Yala','Emberá-Wounaan','Ngäbe-Buglé'],
+  'Paraguay': ['Alto Paraguay','Alto Paraná','Amambay','Asunción','Boquerón','Caaguazú','Caazapá','Canindeyú','Central','Concepción','Cordillera','Guairá','Itapúa','Misiones','Ñeembucú','Paraguarí','Presidente Hayes','San Pedro'],
+  'Perù': ['Amazonas','Áncash','Apurímac','Arequipa','Ayacucho','Cajamarca','Callao','Cusco','Huancavelica','Huánuco','Ica','Junín','La Libertad','Lambayeque','Lima','Loreto','Madre de Dios','Moquegua','Pasco','Piura','Puno','San Martín','Tacna','Tumbes','Ucayali'],
+  'Saint Kitts e Nevis': ['Christ Church Nichola Town','Saint Anne Sandy Point','Saint George Basseterre','Saint George Gingerland','Saint James Windward','Saint John Capisterre','Saint John Figtree','Saint Mary Cayon','Saint Paul Capisterre','Saint Paul Charlestown','Saint Peter Basseterre','Saint Thomas Middle Island','Trinity Palmetto Point'],
+  'Saint Lucia': ['Anse la Raye','Canaries','Castries','Choiseul','Dennery','Gros Islet','Laborie','Micoud','Soufrière','Vieux Fort'],
+  'Saint Vincent e Grenadine': ['Charlotte','Grenadines','Saint Andrew','Saint David','Saint George','Saint Patrick'],
+  'Suriname': ['Brokopondo','Commewijne','Coronie','Marowijne','Nickerie','Para','Paramaribo','Saramacca','Sipaliwini','Wanica'],
+  'Trinidad e Tobago': ['Arima','Chaguanas','Couva-Tabaquite-Talparo','Diego Martin','Eastern Tobago','Penal-Debe','Point Fortin','Port of Spain','Princes Town','Rio Claro-Mayaro','San Fernando','San Juan-Laventille','Sangre Grande','Siparia','Tunapuna-Piarco','Western Tobago'],
+  'Uruguay': ['Artigas','Canelones','Cerro Largo','Colonia','Durazno','Flores','Florida','Lavalleja','Maldonado','Montevideo','Paysandú','Río Negro','Rivera','Rocha','Salto','San José','Soriano','Tacuarembó','Treinta y Tres'],
   'Bulgaria': ['Blagoevgrad','Burgas','Dobrich','Gabrovo','Haskovo','Kardzhali','Kyustendil','Lovech','Montana','Pazardzhik','Pernik','Pleven','Plovdiv','Razgrad','Ruse','Shumen','Silistra','Sliven','Smolyan','Sofia','Stara Zagora','Targovishte','Varna','Veliko Tarnovo','Vidin','Vratsa','Yambol'],
   'Canada': ['Alberta','British Columbia','Manitoba','New Brunswick','Newfoundland','Nova Scotia','Ontario','PEI','Quebec','Saskatchewan','Yukon','NWT','Nunavut'],
   'Capo Verde': ['Boa Vista','Brava','Fogo','Maio','Sal','Santiago','Santo Antão','São Nicolau','São Vicente'],
@@ -1099,7 +860,7 @@ const COUNTRIES = {
 };
 const COUNTRY_LIST = Object.keys(COUNTRIES).sort();
 
-const LEADER_CODE = "retiredyoung";
+const LEADER_CODE = "RYOUNG";
 const ADMIN_CODE  = "Giftedbird609";
 // ════════════════════════════════════
 
@@ -1119,68 +880,6 @@ let allUsers = [], allProspects = [];
 let editingUid = null;
 let aFilter = 'tutti';
 let unsub = null;
-
-// ── BINARY LEG / PRIVATE TEAM LAYOUT ──
-// IMPORTANT: Team Dashboard placement is PRIVATE to the logged-in viewer.
-// It is stored only in users/{viewerUid}.teamLayout and never written to the
-// member's document. Network Tree uses its separate networkLayout field.
-function getLegacyLeg(user, refUid, users){
-  if(!user || !refUid || user.id===refUid) return null;
-  if(user.legMap && Object.prototype.hasOwnProperty.call(user.legMap, refUid)){
-    const v=user.legMap[refUid];
-    if(v==='left'||v==='right') return v;
-  }
-  if(user.uplineUid===refUid && (user.leg==='left'||user.leg==='right')) return user.leg;
-  const all=users||window._cachedUs||[];
-  let cur=user, guard=0;
-  while(cur && guard++<500){
-    const parent=cur.uplineUid||null;
-    if(parent===refUid){
-      if(cur.legMap && Object.prototype.hasOwnProperty.call(cur.legMap, refUid)){
-        const v=cur.legMap[refUid];
-        if(v==='left'||v==='right') return v;
-      }
-      if(cur.leg==='left'||cur.leg==='right') return cur.leg;
-      return null;
-    }
-    cur=parent?all.find(u=>u.id===parent):null;
-  }
-  return null;
-}
-
-function getPrivateTeamLayout(viewerUid){
-  if(cUser?.uid===viewerUid && cData?.teamLayout) return cData.teamLayout;
-  const me=(window._cachedUs||[]).find(u=>u.id===viewerUid);
-  return me?.teamLayout||{};
-}
-
-function getTeamVisualPosition(user, viewerUid, users){
-  if(!user || !viewerUid || user.id===viewerUid) return {branchUid:null,leg:null,order:9999};
-  const layout=getPrivateTeamLayout(viewerUid);
-  // New format: every visible member may have an explicit personal placement.
-  const explicit=layout?.[user.id];
-  if(explicit && (explicit.leg==='left'||explicit.leg==='right')){
-    return {branchUid:user.id,leg:explicit.leg,order:explicit.order??9999,custom:true};
-  }
-  // Legacy/private compatibility: old layouts keyed by the first-level branch.
-  const all=users||window._cachedUs||[];
-  const byId=Object.fromEntries(all.map(u=>[u.id,u]));
-  let cur=user, branch=null, guard=0;
-  while(cur && guard++<500){
-    const parent=cur.uplineUid||((cur.uplinePath||[]).length?cur.uplinePath[cur.uplinePath.length-1]:null);
-    if(parent===viewerUid){branch=cur;break;}
-    cur=parent?byId[parent]:null;
-  }
-  if(branch){
-    const legacy=layout?.[branch.id];
-    if(legacy && (legacy.leg==='left'||legacy.leg==='right')){
-      return {branchUid:branch.id,leg:legacy.leg,order:legacy.order??9999,custom:true};
-    }
-    return {branchUid:branch.id,leg:getLegacyLeg(branch,viewerUid,all),order:branch.legOrder??9999,custom:false};
-  }
-  return {branchUid:null,leg:null,order:9999,custom:false};
-}
-function getTeamVisualLeg(user, viewerUid, users){ return getTeamVisualPosition(user,viewerUid,users).leg; }
 
 // ── THEME ──
 window.toggleTheme = () => {
@@ -1536,32 +1235,76 @@ try { hiddenMembers = new Set(JSON.parse(localStorage.getItem('pm_hidden')||'[]'
 
 // ── MEMBER ORDERING ──
 window.moveMember = async function(uid, dir) {
-  const allUs=window._cachedUs||[], myUid=cUser.uid, u=allUs.find(x=>x.id===uid); if(!u)return;
-  const pos=getTeamVisualPosition(u,myUid,allUs), leg=pos.leg||'';
-  const siblings=allUs.filter(x=>getTeamVisualLeg(x,myUid,allUs)===leg&&!hiddenMembers.has(x.id)).sort((a,b)=>getTeamVisualPosition(a,myUid,allUs).order-getTeamVisualPosition(b,myUid,allUs).order||(a.name||'').localeCompare(b.name||''));
-  const idx=siblings.findIndex(x=>x.id===uid), swap=dir==='up'?idx-1:idx+1; if(idx<0||swap<0||swap>=siblings.length)return;
-  const other=siblings[swap], myOrder=pos.order, otherOrder=getTeamVisualPosition(other,myUid,allUs).order;
-  try{
-    const snap=await getDoc(doc(db,'users',myUid)); const current={...(snap.exists()?snap.data().teamLayout||{}:{})};
-    if(pos.branchUid)current[pos.branchUid]={...(current[pos.branchUid]||{}),leg,order:otherOrder};
-    const op=getTeamVisualPosition(other,myUid,allUs); if(op.branchUid)current[op.branchUid]={...(current[op.branchUid]||{}),leg,order:myOrder};
-    await updateDoc(doc(db,'users',myUid),{teamLayout:current});
-    const me=allUs.find(x=>x.id===myUid); if(me)me.teamLayout=current; renderTeamDashboard();
-  }catch(e){console.error('moveMember error',e);alert('Errore: '+(e.message||e));}
+  var allUs = window._cachedUs || [];
+  var u = allUs.find(function(x){return x.id===uid;});
+  if(!u) return;
+  var leg = u.leg || '';
+  // Get siblings in same leg, sorted by legOrder
+  var siblings = allUs
+    .filter(function(x){return x.leg===leg && !hiddenMembers.has(x.id);})
+    .sort(function(a,b){return (a.legOrder??9999)-(b.legOrder??9999)||(a.name||'').localeCompare(b.name||'');});
+  var idx = siblings.findIndex(function(x){return x.id===uid;});
+  if(idx<0) return;
+  var swapIdx = dir==='up' ? idx-1 : idx+1;
+  if(swapIdx<0 || swapIdx>=siblings.length) return;
+  var other = siblings[swapIdx];
+  // Swap orders
+  var myOrder = u.legOrder ?? idx;
+  var otherOrder = other.legOrder ?? swapIdx;
+  try {
+    await updateDoc(doc(db,'users',uid),{legOrder: otherOrder});
+    await updateDoc(doc(db,'users',other.id),{legOrder: myOrder});
+    // Update cache
+    u.legOrder = otherOrder;
+    other.legOrder = myOrder;
+    renderTeamDashboard();
+  } catch(e){console.warn('moveMember error',e);}
 };
 
-window.handleDrop = async function(draggedUid,targetUid,fromGrid,toGrid){
-  const allUs=window._cachedUs||[],myUid=cUser.uid,dragged=allUs.find(x=>x.id===draggedUid),target=allUs.find(x=>x.id===targetUid); if(!dragged||!target)return;
-  try{
-    const snap=await getDoc(doc(db,'users',myUid)); const current={...(snap.exists()?snap.data().teamLayout||{}:{})};
-    if(fromGrid===toGrid){
-      const leg=getTeamVisualLeg(dragged,myUid,allUs)||''; let siblings=allUs.filter(x=>getTeamVisualLeg(x,myUid,allUs)===leg&&!hiddenMembers.has(x.id)).sort((a,b)=>getTeamVisualPosition(a,myUid,allUs).order-getTeamVisualPosition(b,myUid,allUs).order||(a.name||'').localeCompare(b.name||''));
-      const fi=siblings.findIndex(x=>x.id===draggedUid),ti=siblings.findIndex(x=>x.id===targetUid); if(fi<0||ti<0||fi===ti)return; siblings.splice(fi,1); siblings.splice(ti,0,dragged); siblings.forEach((u,i)=>{const b=getTeamVisualPosition(u,myUid,allUs).branchUid;if(b)current[b]={...(current[b]||{}),leg,order:i};});
-    }else{
-      const newLeg=getTeamVisualLeg(target,myUid,allUs)||'', branch=getTeamVisualPosition(dragged,myUid,allUs).branchUid; if(!branch)return; const sib=allUs.filter(x=>x.id!==draggedUid&&getTeamVisualLeg(x,myUid,allUs)===newLeg&&!hiddenMembers.has(x.id)); const max=sib.reduce((m,x)=>Math.max(m,getTeamVisualPosition(x,myUid,allUs).order),-1); current[branch]={...(current[branch]||{}),leg:newLeg||null,order:max+1};
-    }
-    await updateDoc(doc(db,'users',myUid),{teamLayout:current}); const me=allUs.find(x=>x.id===myUid);if(me)me.teamLayout=current; renderTeamDashboard();
-  }catch(e){console.error('handleDrop error',e);alert('Errore: '+(e.message||e));}
+window.handleDrop = async function(draggedUid, targetUid, fromGrid, toGrid) {
+  var allUs = window._cachedUs || [];
+  var dragged = allUs.find(function(x){return x.id===draggedUid;});
+  var target  = allUs.find(function(x){return x.id===targetUid;});
+  if(!dragged||!target) return;
+
+  var sameLeg = fromGrid === toGrid;
+
+  if(sameLeg) {
+    // Reorder within same leg — swap legOrder values
+    var leg = dragged.leg || '';
+    var siblings = allUs
+      .filter(function(x){return x.leg===leg && !hiddenMembers.has(x.id);})
+      .sort(function(a,b){return (a.legOrder??9999)-(b.legOrder??9999)||(a.name||'').localeCompare(b.name||'');});
+    var fromIdx = siblings.findIndex(function(x){return x.id===draggedUid;});
+    var toIdx   = siblings.findIndex(function(x){return x.id===targetUid;});
+    if(fromIdx<0||toIdx<0||fromIdx===toIdx) return;
+    // Reassign sequential orders inserting dragged before target
+    siblings.splice(fromIdx,1);
+    siblings.splice(toIdx,0,dragged);
+    var updates = siblings.map(function(u,i){return {uid:u.id,order:i};});
+    try {
+      for(var i=0;i<updates.length;i++){
+        var uu = allUs.find(function(x){return x.id===updates[i].uid;});
+        if(uu) uu.legOrder = updates[i].order;
+        await updateDoc(doc(db,'users',updates[i].uid),{legOrder:updates[i].order});
+      }
+      renderTeamDashboard();
+    } catch(e){console.warn('handleDrop error',e);}
+  } else {
+    // Move to different leg — change leg + assign order at bottom
+    var newLeg = target.leg || '';
+    var newSiblings = allUs.filter(function(x){return x.leg===newLeg && !hiddenMembers.has(x.id);});
+    var maxOrder = newSiblings.reduce(function(m,x){return Math.max(m,x.legOrder??0);},0);
+    try {
+      var crossUpdate = {legOrder:maxOrder+1};
+      crossUpdate['legMap.'+cUser.uid] = newLeg||null;
+      await updateDoc(doc(db,'users',draggedUid),crossUpdate);
+      if(!dragged.legMap) dragged.legMap={};
+      dragged.legMap[cUser.uid] = newLeg;
+      dragged.legOrder = maxOrder+1;
+      renderTeamDashboard();
+    } catch(e){console.warn('handleDrop cross-leg error',e);}
+  }
 };
 
 window.openMemberDetail = function(uid) {
@@ -1642,97 +1385,27 @@ window.toggleHideMember = function(uid) {
 async function loadNetworkTree(){
   const ct=id('network-tree-root');
   if(ct)ct.innerHTML='<div class="loader"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div>';
-  const myUid=cUser.uid;
-  // SECURITY: load only the current viewer and their real downline.
-  // Never download unrelated leaders/members from the platform into the Network Tree.
-  const chunk=(arr,n=30)=>{const out=[];for(let i=0;i<arr.length;i+=n)out.push(arr.slice(i,i+n));return out;};
-  const rootSnap=await getDoc(doc(db,'users',myUid));
-  const rootUser=rootSnap.exists()?{id:rootSnap.id,...rootSnap.data()}:null;
-  const collected=[];
-  let frontier=[myUid];
-  const seen=new Set([myUid]);
-  while(frontier.length){
-    const hits=[];
-    for(const ids of chunk(frontier,30)){
-      const byUid=await getDocs(query(collection(db,'users'),where('uplineUid','in',ids)));
-      byUid.docs.forEach(d=>hits.push({id:d.id,...d.data()}));
-      // Compatibility fallback for older records with missing/stale uplineUid.
-      for(const pid of ids){
-        const byPath=await getDocs(query(collection(db,'users'),where('uplinePath','array-contains',pid)));
-        byPath.docs.forEach(d=>hits.push({id:d.id,...d.data()}));
-      }
-    }
-    const next=[];
-    for(const child of hits){
-      if(seen.has(child.id)) continue;
-      const path=Array.isArray(child.uplinePath)?child.uplinePath:[];
-      // STRICT hierarchy: a person belongs to this viewer's downline only when
-      // their explicit uplineUid points to the current frontier parent.
-      // Legacy fallback is allowed ONLY when uplineUid is missing AND the LAST
-      // item in uplinePath is the current parent. Never use path.includes(),
-      // because that would pull people belonging to another leader who merely
-      // share an ancestor with the current viewer.
-      const valid=frontier.some(pid=>
-        child.uplineUid===pid ||
-        (!child.uplineUid && path.length && path[path.length-1]===pid)
-      );
-      if(!valid) continue;
-      seen.add(child.id); collected.push(child); next.push(child.id);
-    }
-    frontier=next;
-    if(seen.size>5000) break;
-  }
-  const us=rootUser?[rootUser,...collected]:collected;
-  const allowedUserIds=new Set(us.map(u=>u.id));
-  const ps=[];
-  for(const ids of chunk(collected.map(u=>u.id),30)){
-    if(!ids.length) continue;
-    const snap=await getDocs(query(collection(db,'prospects'),where('uid','in',ids)));
-    snap.docs.forEach(d=>ps.push({id:d.id,...d.data()}));
-  }
+  const[us,ps]=await Promise.all([
+    getDocs(collection(db,'users')).then(s=>s.docs.map(d=>({id:d.id,...d.data()}))),
+    getDocs(collection(db,'prospects')).then(s=>s.docs.map(d=>({id:d.id,...d.data()})))
+  ]);
   window._treeUs=us; window._treePs=ps;
-  const userById=new Map(us.map(u=>[u.id,u]));
-  const parentOfGlobal=u => (u.uplineUid && userById.has(u.uplineUid)) ? u.uplineUid : ((u.uplinePath||[]).length ? u.uplinePath[u.uplinePath.length-1] : null);
-  const childrenByParent=new Map();
-  us.forEach(u=>{const p=parentOfGlobal(u);if(!childrenByParent.has(p))childrenByParent.set(p,[]);childrenByParent.get(p).push(u);});
-  function gd(root){const r=new Set(),q=[root];while(q.length){const c=q.shift();for(const ch of(childrenByParent.get(c)||[])){if(!r.has(ch.id)){r.add(ch.id);q.push(ch.id);}}}return r;}
-  const ds=gd(myUid);
-  // SECURITY / VISIBILITY: this viewer can only work with their own downline.
-  // Never expose uplines or unrelated users in the Network Tree or position picker.
-  window._treeDownlineIds = ds;
+  const myUid=cUser.uid;
+  function gd(root,all){const r=new Set();const q=[root];let s=0;while(q.length&&s<500){const c=q.shift();all.filter(u=>u.uplineUid===c).forEach(ch=>{if(!r.has(ch.id)){r.add(ch.id);q.push(ch.id);}});s++;}return r;}
+  const ds=gd(myUid,us);
   const sel=id('tree-root-select');
-  if(sel){
-    const cv=sel.value;
-    const members=us.filter(u=>ds.has(u.id));
-    const alpha=(a,b)=>(a.name||a.email||'').localeCompare(b.name||b.email||'','it',{sensitivity:'base'});
-    const leaders=members.filter(u=>u.role==='leader').sort(alpha), regular=members.filter(u=>u.role!=='leader').sort(alpha);
-    sel.innerHTML='<option value="">La mia struttura</option>'+
-      (leaders.length?'<optgroup label="Leader">'+leaders.map(u=>`<option value="${u.id}"${u.id===cv?' selected':''}>${x(u.name||u.email)}</option>`).join('')+'</optgroup>':'')+
-      (regular.length?'<optgroup label="Membri">'+regular.map(u=>`<option value="${u.id}"${u.id===cv?' selected':''}>${x(u.name||u.email)}</option>`).join('')+'</optgroup>':'');
-  }
-  initTreeCanvas(); renderNetworkTree();
+  if(sel){const cv=sel.value;sel.innerHTML='<option value="">La mia struttura</option>'+us.filter(u=>ds.has(u.id)&&u.role==='leader').map(l=>`<option value="${l.id}"${l.id===cv?' selected':''}>${x(l.name||l.email)}</option>`).join('');}
+  initTreeCanvas();
+  renderNetworkTree();
 }
-
-window.resetNetworkTree=async function(){
-  const btn=document.querySelector('button[onclick="resetNetworkTree()"]');
-  if(btn){btn.disabled=true;btn.textContent='↻ Reset…';}
-  try{
-    // Reset is PER VIEWER. It never changes the global upline and never changes
-    // another leader's personal Network Tree. It simply clears this viewer's
-    // private layout so the tree is rebuilt from the Team Dashboard hierarchy.
-    await updateDoc(doc(db,'users',cUser.uid),{networkLayout:{}});
-    const me=(window._treeUs||[]).find(u=>u.id===cUser.uid); if(me)me.networkLayout={};
-    _tScale=1;_tX=0;_tY=0;renderNetworkTree();setTimeout(()=>treeFit(),50);
-  }catch(e){console.error('Network Tree reset failed:',e);alert('Errore nel reset: '+(e.message||e));}
-  finally{if(btn){btn.disabled=false;btn.textContent='↻ Reset';}}
-};
 window.reloadTree=function(){renderNetworkTree();};
 
 var _tScale=1,_tX=0,_tY=0,_tDrag=false,_tDx=0,_tDy=0;
 function applyT(){const cv=id('tree-canvas');if(cv)cv.style.transform=`translate(${_tX}px,${_tY}px) scale(${_tScale})`;}
 window.treeZoom=function(f){_tScale=Math.min(Math.max(_tScale*f,.2),3);applyT();};
 window.treeFit=function(){_tScale=1;_tX=0;_tY=0;applyT();};
-function initTreeCanvas(){const w=id('tree-canvas-wrap');if(!w||w._i)return;w._i=true;_tScale=1;_tX=0;_tY=0;
+function initTreeCanvas(){
+  const w=id('tree-canvas-wrap');if(!w||w._i)return;w._i=true;_tScale=1;_tX=0;_tY=0;
   w.addEventListener('mousedown',e=>{if(e.target.closest('.nt-card'))return;_tDrag=true;_tDx=e.clientX-_tX;_tDy=e.clientY-_tY;w.style.cursor='grabbing';});
   window.addEventListener('mousemove',e=>{if(!_tDrag)return;_tX=e.clientX-_tDx;_tY=e.clientY-_tDy;applyT();});
   window.addEventListener('mouseup',()=>{_tDrag=false;if(w)w.style.cursor='grab';});
@@ -1740,60 +1413,39 @@ function initTreeCanvas(){const w=id('tree-canvas-wrap');if(!w||w._i)return;w._i
 }
 
 var _dragUid=null,_popT=null;
-function showPop(card,uid){const us=window._treeUs||[],ps=window._treePs||[],u=us.find(v=>v.id===uid);if(!u)return;const mp=ps.filter(p=>p.uid===uid),wk=Date.now()-7*86400000;if(card.querySelector('.nt-popover'))return;
-  const pop=document.createElement('div');pop.className='nt-popover';pop.innerHTML=`<div style="font-size:12px;font-weight:600;margin-bottom:3px;">${x(u.name||u.email)}</div><div style="font-size:10px;color:var(--text3);margin-bottom:.5rem;">${u.role==='leader'?'👑 Leader':'Membro'}${u.userNumber?' · #'+u.userNumber:''}</div><div class="nt-popover-stats"><div class="nt-popover-stat"><div class="nt-popover-val" style="color:var(--gold)">${mp.length}</div><div class="nt-popover-lbl">Prospect</div></div><div class="nt-popover-stat"><div class="nt-popover-val" style="color:var(--green)">${mp.filter(p=>(p.createdAt?.toMillis()||0)>=wk).length}</div><div class="nt-popover-lbl">Sett.</div></div><div class="nt-popover-stat"><div class="nt-popover-val" style="color:var(--blue)">${mp.filter(p=>p.presentation).length}</div><div class="nt-popover-lbl">Pres.</div></div><div class="nt-popover-stat"><div class="nt-popover-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="nt-popover-lbl">Pag.</div></div></div>`;card.style.overflow='visible';card.appendChild(pop);
+function showPop(card,uid){
+  const us=window._treeUs||[],ps=window._treePs||[];
+  const u=us.find(u2=>u2.id===uid);if(!u)return;
+  const mp=ps.filter(p=>p.uid===uid);
+  const wk=Date.now()-7*86400000;
+  if(card.querySelector('.nt-popover'))return;
+  const pop=document.createElement('div');pop.className='nt-popover';
+  pop.innerHTML=`<div style="font-size:12px;font-weight:600;margin-bottom:3px;">${x(u.name||u.email)}</div>
+    <div style="font-size:10px;color:var(--text3);margin-bottom:.5rem;">${u.role==='leader'?'👑 Leader':'Membro'}${u.userNumber?' · #'+u.userNumber:''}</div>
+    <div class="nt-popover-stats">
+      <div class="nt-popover-stat"><div class="nt-popover-val" style="color:var(--gold)">${mp.length}</div><div class="nt-popover-lbl">Prospect</div></div>
+      <div class="nt-popover-stat"><div class="nt-popover-val" style="color:var(--green)">${mp.filter(p=>(p.createdAt?.toMillis()||0)>=wk).length}</div><div class="nt-popover-lbl">Sett.</div></div>
+      <div class="nt-popover-stat"><div class="nt-popover-val" style="color:var(--blue)">${mp.filter(p=>p.presentation).length}</div><div class="nt-popover-lbl">Pres.</div></div>
+      <div class="nt-popover-stat"><div class="nt-popover-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="nt-popover-lbl">Pag.</div></div>
+    </div>`;
+  card.style.overflow='visible';card.appendChild(pop);
 }
 function hidePop(card){const p=card.querySelector('.nt-popover');if(p)p.remove();card.style.overflow='hidden';}
 
-// Private visual layout helpers. `uplineUid` remains the real sponsor/upline used
-// by Team Dashboard. `networkLayout[viewerUid]` is ONLY the viewer's visual tree.
-function getNetworkLayoutFor(viewerUid){
-  const me=(window._treeUs||[]).find(u=>u.id===viewerUid); return me?.networkLayout||{};
-}
-function getVisualPosition(user,viewerUid){
-  const layout=getNetworkLayoutFor(viewerUid)[user.id];
-  if(layout && layout.parentUid) return {parentUid:layout.parentUid,leg:layout.leg||null,order:layout.order??9999,custom:true};
-  const p=(user.uplineUid && (window._treeUs||[]).some(v=>v.id===user.uplineUid)) ? user.uplineUid : ((user.uplinePath||[]).length?(user.uplinePath[user.uplinePath.length-1]):null);
-  return {parentUid:p,leg:p?getLegFor(user,p):null,order:user.legOrder??9999,custom:false};
-}
-function visualDescendant(candidateId,ancestorId,viewerUid,byId){
-  let cur=candidateId,seen=new Set();
-  while(cur && !seen.has(cur)){seen.add(cur);if(cur===ancestorId)return true;const u=byId.get(cur);if(!u)break;cur=getVisualPosition(u,viewerUid).parentUid;}
-  return false;
-}
-
 window.renderNetworkTree=function(){
   const us=window._treeUs||[],ps=window._treePs||[],myUid=cUser.uid;
-  const viewerUid=myUid;
   const rootUid=id('tree-root-select')?.value||myUid;
   const ct=id('network-tree-root');if(!ct)return;
   ct.innerHTML='';
+  const hint=id('tree-drag-hint');
 
-  // IMPORTANT: this is only a visual tree for the selected viewer/root.
-  // The real Team Dashboard hierarchy (uplineUid / legMap) is never changed here.
-  const userById=new Map(us.map(u=>[u.id,u]));
-  const childrenByParent=new Map();
-  us.forEach(u=>{
-    if(u.id===rootUid)return;
-    const pos=getVisualPosition(u,viewerUid);
-    if(!pos.parentUid)return;
-    if(!childrenByParent.has(pos.parentUid))childrenByParent.set(pos.parentUid,[]);
-    childrenByParent.get(pos.parentUid).push(u);
-  });
-  const treeSort=(a,b)=>{
-    const pa=getVisualPosition(a,viewerUid),pb=getVisualPosition(b,viewerUid);
-    if((pa.order??9999)!==(pb.order??9999)) return (pa.order??9999)-(pb.order??9999);
-    return (a.name||a.email||'').localeCompare(b.name||b.email||'','it',{sensitivity:'base'});
-  };
-  const kids=(pid,leg)=>(childrenByParent.get(pid)||[])
-    .filter(u=>getVisualPosition(u,viewerUid).leg===leg).sort(treeSort);
-  const unassignedKids=pid=>(childrenByParent.get(pid)||[])
-    .filter(u=>!getVisualPosition(u,viewerUid).leg).sort(treeSort);
+  function kids(pid,leg){return us.filter(u=>u.uplineUid===pid&&getLegFor(u,pid)===leg);}
 
   function mkCard(u,pid){
     const isL=u.role==='leader';
     const ini=(u.name||'?').split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
-    const parts=(u.name||u.email||'').split(' '),fn=parts[0],ln=parts.slice(1).join(' ');
+    const parts=(u.name||u.email||'').split(' ');
+    const fn=parts[0];const ln=parts.slice(1).join(' ');
     const cols=[{bg:'rgba(201,168,76,.18)',c:'var(--gold)'},{bg:'rgba(91,156,246,.18)',c:'var(--blue)'},{bg:'rgba(74,222,160,.18)',c:'var(--green)'},{bg:'rgba(180,74,240,.18)',c:'#b44af0'}];
     const col=cols[u.id.charCodeAt(0)%cols.length];
     const el=document.createElement('div');
@@ -1804,264 +1456,115 @@ window.renderNetworkTree=function(){
       <div class="nt-role">${isL?'👑':''} ${u.userNumber?'#'+u.userNumber:u.role==='leader'?'Leader':'Membro'}</div>`;
     el.addEventListener('mouseenter',()=>{_popT=setTimeout(()=>showPop(el,u.id),300);});
     el.addEventListener('mouseleave',()=>{clearTimeout(_popT);hidePop(el);});
-    el.style.cursor=pid?'grab':'default';
-    if(pid){
-      el.title='Trascina per spostare/sostituire · clicca per gestire';
-      el.setAttribute('draggable','true');el.dataset.uid=u.id;
-      el.addEventListener('dragstart',e=>{
-        _dragUid=u.id;e.dataTransfer.setData('text/plain',u.id);e.dataTransfer.effectAllowed='move';
-        setTimeout(()=>el.classList.add('dragging'),0);
-      });
-      el.addEventListener('dragend',()=>{
-        _dragUid=null;el.classList.remove('dragging');
-        document.querySelectorAll('.nt-card.drag-over').forEach(n=>n.classList.remove('drag-over'));
-      });
-      el.addEventListener('dragover',e=>{
-        if(!_dragUid||_dragUid===u.id)return;
-        e.preventDefault();e.stopPropagation();e.dataTransfer.dropEffect='move';el.classList.add('drag-over');
-      });
-      el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
-      el.addEventListener('drop',async e=>{
-        e.preventDefault();e.stopPropagation();el.classList.remove('drag-over');
-        const d=e.dataTransfer.getData('text/plain')||_dragUid;
-        if(d&&d!==u.id)await moveNetworkPositionByDrop(d,u.id,pid,getVisualPosition(u,viewerUid).leg,viewerUid);
-      });
-      el.addEventListener('click',e=>{
-        if(e.target.closest('.nt-popover'))return;
-        openNetworkPositionModal(u.id,pid,getVisualPosition(u,viewerUid).leg,viewerUid);
-      });
-    }
+    el.setAttribute('draggable','true');
+    el.addEventListener('dragstart',e=>{_dragUid=u.id;e.dataTransfer.effectAllowed='move';setTimeout(()=>el.classList.add('dragging'),0);if(hint)hint.style.display='block';});
+    el.addEventListener('dragend',()=>{el.classList.remove('dragging');_dragUid=null;if(hint)hint.style.display='none';document.querySelectorAll('.drag-over,.drop-ready').forEach(n=>n.classList.remove('drag-over','drop-ready'));});
+    el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('drag-over');});
+    el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
+    el.addEventListener('drop',async e=>{
+      e.preventDefault();el.classList.remove('drag-over');
+      if(!_dragUid||_dragUid===u.id)return;
+      const dr=us.find(u2=>u2.id===_dragUid);if(!dr||dr.uplineUid!==u.uplineUid)return;
+      const p=u.uplineUid,la=getLegFor(dr,p),lb=getLegFor(u,p);
+      const ua={},ub={};ua['legMap.'+p]=lb||null;ub['legMap.'+p]=la||null;
+      await updateDoc(doc(db,'users',dr.id),ua);await updateDoc(doc(db,'users',u.id),ub);
+      if(!dr.legMap)dr.legMap={};if(!u.legMap)u.legMap={};
+      dr.legMap[p]=lb||null;u.legMap[p]=la||null;
+      renderNetworkTree();
+    });
     return el;
   }
 
   function mkSlot(pid,leg){
     const el=document.createElement('div');el.className='nt-card open-slot';
     el.innerHTML=`<div style="text-align:center;"><div style="font-size:22px;opacity:.2;margin-bottom:4px;">+</div><div style="font-size:10px;color:var(--text3);">Open</div><div style="font-size:9px;color:var(--text3);margin-top:1px;">${leg==='left'?'👈':'👉'}</div></div>`;
-    el.style.cursor='copy';el.title='Trascina qui una persona · oppure clicca per scegliere';
-    el.addEventListener('dragover',e=>{if(!_dragUid)return;e.preventDefault();e.stopPropagation();e.dataTransfer.dropEffect='move';el.classList.add('drag-over');});
-    el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
+    el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('drop-ready');});
+    el.addEventListener('dragleave',()=>el.classList.remove('drop-ready'));
     el.addEventListener('drop',async e=>{
-      e.preventDefault();e.stopPropagation();el.classList.remove('drag-over');
-      const d=e.dataTransfer.getData('text/plain')||_dragUid;
-      if(d)await moveNetworkPositionByDrop(d,null,pid,leg,viewerUid);_dragUid=null;
+      e.preventDefault();el.classList.remove('drop-ready');
+      if(!_dragUid)return;
+      const dr=us.find(u=>u.id===_dragUid);if(!dr)return;
+      const upd={};upd['legMap.'+pid]=leg;
+      if(dr.uplineUid!==pid){upd.uplineUid=pid;dr.uplineUid=pid;}
+      await updateDoc(doc(db,'users',dr.id),upd);
+      if(!dr.legMap)dr.legMap={};dr.legMap[pid]=leg;
+      renderNetworkTree();
     });
-    el.addEventListener('click',()=>openNetworkPositionModal(null,pid,leg,viewerUid));
     return el;
   }
 
   function vl(h){const d=document.createElement('div');d.className='nt-vline';d.style.height=(h||24)+'px';return d;}
 
-  // Preserve the original tree geometry: every node owns a left and right branch,
-  // and descendants are rendered inside the corresponding branch. This avoids the
-  // broken "three columns per depth" layout introduced in V5.
-  function build(uid,pid,depth,path){
-    const u=userById.get(uid);if(!u)return null;
-    const branchPath=path instanceof Set?path:new Set();
-    if(branchPath.has(uid))return null;
-    const nextPath=new Set(branchPath);nextPath.add(uid);
-
+  function build(uid,pid,depth){
+    const u=us.find(u2=>u2.id===uid);if(!u)return null;
     const wrap=document.createElement('div');wrap.className='nt-wrap';
     wrap.appendChild(mkCard(u,pid||uid));
+    if(depth>=5){const m=document.createElement('div');m.style.cssText='font-size:9px;color:var(--text3);padding:4px;text-align:center;';m.textContent='···';wrap.appendChild(m);return wrap;}
+
+    // Connector down
     wrap.appendChild(vl(20));
 
-    const lk=kids(uid,'left').filter(ch=>!nextPath.has(ch.id));
-    const rk=kids(uid,'right').filter(ch=>!nextPath.has(ch.id));
+    const lk=kids(uid,'left'),rk=kids(uid,'right');
     const row=document.createElement('div');row.className='nt-row';
+
+    // Horizontal bar
     const hb=document.createElement('div');
     hb.style.cssText='position:absolute;top:0;left:calc(60px + 1px);right:calc(60px + 1px);height:1.5px;background:var(--border2);pointer-events:none;';
     row.appendChild(hb);
 
-    const lb=document.createElement('div');lb.className='nt-branch';lb.appendChild(vl(20));
+    // LEFT
+    const lb=document.createElement('div');lb.className='nt-branch';
+    lb.appendChild(vl(20));
     const ll=document.createElement('div');ll.className='nt-leg-label left';ll.textContent='👈 Sinistra';lb.appendChild(ll);
-    if(lk.length){lk.forEach(ch=>{const sub=build(ch.id,uid,depth+1,nextPath);if(sub)lb.appendChild(sub);});}
+    if(lk.length){const s=build(lk[0].id,uid,depth+1);if(s)lb.appendChild(s);}
     else lb.appendChild(mkSlot(uid,'left'));
     row.appendChild(lb);
 
-    const rb=document.createElement('div');rb.className='nt-branch';rb.appendChild(vl(20));
+    // RIGHT
+    const rb=document.createElement('div');rb.className='nt-branch';
+    rb.appendChild(vl(20));
     const rl=document.createElement('div');rl.className='nt-leg-label right';rl.textContent='👉 Destra';rb.appendChild(rl);
-    if(rk.length){rk.forEach(ch=>{const sub=build(ch.id,uid,depth+1,nextPath);if(sub)rb.appendChild(sub);});}
+    if(rk.length){const s=build(rk[0].id,uid,depth+1);if(s)rb.appendChild(s);}
     else rb.appendChild(mkSlot(uid,'right'));
     row.appendChild(rb);
 
-    const uk=unassignedKids(uid).filter(ch=>!nextPath.has(ch.id));
-    if(uk.length){
-      const ub=document.createElement('div');
-      ub.style.cssText='margin-top:10px;padding:8px 10px;border:1px dashed var(--border2);border-radius:10px;background:var(--surface2);display:flex;flex-wrap:wrap;gap:8px;justify-content:center;';
-      const lab=document.createElement('div');lab.style.cssText='width:100%;font-size:9px;color:var(--amber);text-align:center;margin-bottom:2px;';lab.textContent='⚠ Non assegnati';ub.appendChild(lab);
-      uk.forEach(ch=>{const c=mkCard(ch,uid);c.classList.add('unassigned-node');ub.appendChild(c);});
-      wrap.appendChild(ub);
-    }
     wrap.appendChild(row);
     return wrap;
   }
 
-  const tree=build(rootUid,null,0,new Set());
-  if(tree)ct.appendChild(tree);else ct.innerHTML='<div class="empty">Struttura non trovata.</div>';
-  setTimeout(()=>{const w=id('tree-canvas-wrap'),cv=id('tree-canvas');if(!w||!cv)return;_tX=Math.max(40,(w.offsetWidth-cv.offsetWidth)/2);_tY=32;applyT();},150);
-};
+  const tree=build(rootUid,null,0);
+  if(tree)ct.appendChild(tree);
+  else ct.innerHTML='<div class="empty">Struttura non trovata.</div>';
 
-async function savePrivateNetworkLayout(viewerUid,updates){
-  const me=(window._treeUs||[]).find(u=>u.id===viewerUid), current={...(me?.networkLayout||{})};
-  Object.entries(updates).forEach(([uid,val])=>{if(val===null)delete current[uid];else current[uid]=val;});
-  await updateDoc(doc(db,'users',viewerUid),{networkLayout:current});
-  if(me)me.networkLayout=current;
-}
-
-window.moveNetworkPositionByDrop=async function(draggedUid,targetUid,parentUid,targetLeg,viewerUid=cUser.uid){
-  const us=window._treeUs||[],byId=new Map(us.map(u=>[u.id,u])),dragged=byId.get(draggedUid),target=targetUid?byId.get(targetUid):null;
-  const allowedIds=window._treeDownlineIds||new Set();
-  if(!dragged||dragged.id===viewerUid)return;
-  if(!allowedIds.has(dragged.id)){alert('Puoi gestire solo la tua downline.');return;}
-  if(parentUid!==viewerUid&&!allowedIds.has(parentUid)){alert('Puoi gestire solo la tua downline.');return;}
-  if(target && target.id!==viewerUid && !allowedIds.has(target.id)){alert('Puoi gestire solo la tua downline.');return;}
-  if(dragged.id===parentUid || visualDescendant(parentUid,dragged.id,viewerUid,byId)){alert('Non puoi inserire una persona sotto un suo discendente.');return;}
-  const old=getVisualPosition(dragged,viewerUid),oldParent=old.parentUid;
-  try{
-    const updates={};
-    if(target&&target.id!==dragged.id){
-      const tp=getVisualPosition(target,viewerUid);
-      updates[dragged.id]={parentUid,leg:targetLeg||null,order:tp.order??9999};
-      updates[target.id]={parentUid:oldParent||viewerUid,leg:old.leg||null,order:old.order??9999};
-    }else{
-      const siblings=us.filter(u=>u.id!==dragged.id&&allowedIds.has(u.id)&&getVisualPosition(u,viewerUid).parentUid===parentUid&&getVisualPosition(u,viewerUid).leg===targetLeg);
-      const order=siblings.reduce((m,u)=>Math.max(m,getVisualPosition(u,viewerUid).order??-1),-1)+1;
-      updates[dragged.id]={parentUid,leg:targetLeg||null,order};
-    }
-    await savePrivateNetworkLayout(viewerUid,updates);
-    window._treeUs=us;renderNetworkTree();
-  }catch(e){console.error('Private Network Tree drag/drop error:',e);alert('Errore nello spostamento: '+(e.message||e));}finally{_dragUid=null;}
-};
-
-window._ntpState=null;
-window.closeNetworkPositionModal=function(){const o=id('ntp-overlay');if(o)o.classList.add('hidden');window._ntpState=null;};
-window.openNetworkPositionModal=function(targetUid,parentUid,targetLeg,viewerUid=cUser.uid){
-  const us=window._treeUs||[],byId=new Map(us.map(u=>[u.id,u])),parent=byId.get(parentUid),target=targetUid?byId.get(targetUid):null;
-  if(!parent)return;
-  const allowedIds=window._treeDownlineIds||new Set();
-  if(parentUid!==viewerUid&&!allowedIds.has(parentUid)){alert('Puoi gestire solo la tua downline.');return;}
-  if(targetUid&&targetUid!==viewerUid&&!allowedIds.has(targetUid)){alert('Puoi gestire solo la tua downline.');return;}
-  const sel=id('ntp-user'),title=id('ntp-title'),sub=id('ntp-sub'),warn=id('ntp-warning'),err=id('ntp-err');if(!sel)return;
-  window._ntpState={targetUid:targetUid||null,parentUid,parentLeg:targetLeg||null,viewerUid};
-  title.textContent=target?`Sostituisci ${target.name||target.email}`:`Posizione ${targetLeg==='left'?'Sinistra':'Destra'}`;
-  sub.textContent=`Sotto: ${parent.name||parent.email||'Upline'} · ${targetLeg==='left'?'👈 Sinistra':'👉 Destra'}`;
-  warn.style.display='none';err.style.display='none';err.textContent='';
-  // Only the current viewer's downline is selectable. The viewer himself, uplines,
-  // peers outside the downline and unrelated users are never candidates.
-  const candidates=us.filter(u=>allowedIds.has(u.id)&&u.id!==parentUid&&!visualDescendant(u.id,parentUid,viewerUid,byId))
-    .sort((a,b)=>(a.name||a.email||'').localeCompare(b.name||b.email||'','it',{sensitivity:'base'}));
-  sel.innerHTML='<option value="">— Seleziona persona —</option>'+candidates.map(u=>{
-    const pos=getVisualPosition(u,viewerUid),p=pos.parentUid,l=pos.leg;
-    const label=`${u.name||u.email}${u.role==='leader'?' 👑':''}${p&&byId.get(p)?` · attuale: ${(byId.get(p).name||'')} ${l?('· '+(l==='left'?'Sinistra':'Destra')):''}`:''}`;
-    return `<option value="${u.id}">${x(label)}</option>`;
-  }).join('');
-  if(targetUid)sel.value=targetUid;
-  sel.onchange=()=>{
-    const chosen=byId.get(sel.value);if(!chosen){warn.style.display='none';return;}
-    const pos=getVisualPosition(chosen,viewerUid);
-    if(pos.parentUid&&pos.parentUid!==parentUid){warn.textContent='⚠ Lo spostamento modifica solo il tuo Network Tree. La struttura reale e il Network Tree degli altri leader rimangono invariati.';warn.style.display='block';}
-    else warn.style.display='none';
-  };
-  id('ntp-overlay').classList.remove('hidden');
-};
-
-window.saveNetworkPosition=async function(){
-  const st=window._ntpState,sel=id('ntp-user'),err=id('ntp-err'),btn=id('ntp-save');
-  if(!st||!sel||!sel.value){err.textContent='Seleziona una persona.';err.style.display='block';return;}
-  const us=window._treeUs||[],byId=new Map(us.map(u=>[u.id,u])),chosen=byId.get(sel.value),target=st.targetUid?byId.get(st.targetUid):null;
-  const allowedIds=window._treeDownlineIds||new Set();
-  if(!chosen||!byId.get(st.parentUid)){err.textContent='Posizione non valida.';err.style.display='block';return;}
-  if(!allowedIds.has(chosen.id)){err.textContent='Puoi posizionare solo persone appartenenti alla tua downline.';err.style.display='block';return;}
-  if(st.parentUid!==st.viewerUid&&!allowedIds.has(st.parentUid)){err.textContent='Puoi gestire solo la tua downline.';err.style.display='block';return;}
-  if(target&&target.id!==st.viewerUid&&!allowedIds.has(target.id)){err.textContent='La persona selezionata non appartiene alla tua downline.';err.style.display='block';return;}
-  if(chosen.id===st.parentUid||visualDescendant(chosen.id,st.parentUid,st.viewerUid,byId)){err.textContent='Non puoi inserire un upline o un suo discendente sotto questa posizione.';err.style.display='block';return;}
-  const parent=st.parentUid,targetLeg=st.parentLeg,viewerUid=st.viewerUid||cUser.uid,old=getVisualPosition(chosen,viewerUid);
-  btn.disabled=true;btn.textContent='Salvataggio…';err.style.display='none';
-  try{
-    const updates={};
-    if(target&&target.id!==chosen.id){
-      const tp=getVisualPosition(target,viewerUid);
-      updates[chosen.id]={parentUid:parent,leg:targetLeg||null,order:tp.order??9999};
-      updates[target.id]={parentUid:old.parentUid||viewerUid,leg:old.leg||null,order:old.order??9999};
-    }else{
-      const siblings=us.filter(u=>u.id!==chosen.id&&allowedIds.has(u.id)&&getVisualPosition(u,viewerUid).parentUid===parent&&getVisualPosition(u,viewerUid).leg===targetLeg);
-      const order=siblings.reduce((m,u)=>Math.max(m,getVisualPosition(u,viewerUid).order??-1),-1)+1;
-      updates[chosen.id]={parentUid:parent,leg:targetLeg||null,order};
-    }
-    await savePrivateNetworkLayout(viewerUid,updates);
-    closeNetworkPositionModal();renderNetworkTree();
-  }catch(e){err.textContent='Errore: '+(e.message||e);err.style.display='block';}
-  finally{btn.disabled=false;btn.textContent='Conferma';}
+  setTimeout(()=>{
+    const w=id('tree-canvas-wrap'),cv=id('tree-canvas');if(!w||!cv)return;
+    _tX=Math.max(40,(w.offsetWidth-cv.offsetWidth)/2);_tY=32;applyT();
+  },150);
 };
 
 
-// ══ TEAM STRUCTURE BACKUP / RESTORE ══
-// These helpers protect the REAL Team Dashboard placement. They are completely
-// separate from Network Tree's private `networkLayout`.
-window.backupTeamStructure = async function(){
-  const us=window._cachedUs||[];
-  if(!us.length){alert('Carica prima la Dashboard Team.');return;}
-  const direct=us.filter(u=>u.uplineUid===cUser.uid || ((u.uplinePath||[]).length && u.uplinePath[u.uplinePath.length-1]===cUser.uid));
-  const children={};
-  direct.forEach(u=>{children[u.id]={leg:getLegFor(u,cUser.uid)||null,order:u.legOrder??9999};});
-  try{
-    await updateDoc(doc(db,'users',cUser.uid),{teamStructureBackup:{savedAt:Date.now(),children}});
-    if(cData)cData.teamStructureBackup={savedAt:Date.now(),children};
-    alert('Backup della struttura Team salvato.');
-  }catch(e){alert('Errore nel backup: '+(e.message||e));}
-};
-window.restoreTeamStructure = async function(){
-  try{
-    const snap=await getDoc(doc(db,'users',cUser.uid));
-    const backup=snap.exists()?snap.data().teamStructureBackup:null;
-    if(!backup||!backup.children||!Object.keys(backup.children).length){alert('Nessun backup della struttura disponibile.');return;}
-    if(!confirm('Ripristinare l’ultimo backup della Dashboard Team? Il Network Tree personale non verrà modificato.'))return;
-    const batch=writeBatch(db);
-    Object.entries(backup.children).forEach(([uid,v])=>{
-      const data={legOrder:v.order??9999};
-      data['legMap.'+cUser.uid]=v.leg||null;
-      batch.update(doc(db,'users',uid),data);
-    });
-    await batch.commit();
-    if(window._teamCache){window._teamCache=null;}
-    window._cachedUs=null;window._cachedPs=null;
-    await loadTeamDashboard(true);
-    alert('Struttura Team ripristinata dal backup.');
-  }catch(e){console.error('restoreTeamStructure',e);alert('Errore nel ripristino: '+(e.message||e));}
-};
-
-window.setLeg=async(uid,leg,btn)=>{
-  try{
-    const myUid=cUser?.uid;
-    const allUs=window._cachedUs||[];
-    const target=allUs.find(u=>u.id===uid);
-    const show=window._cachedShow||[];
-    if(!myUid||!target||!show.some(u=>u.id===uid)){
-      alert('Questa persona non appartiene alla tua struttura.');
-      return;
-    }
-    if(leg!=='left' && leg!=='right' && leg!=='') return;
-
-    // One source of truth: the viewer's own teamLayout.
-    // Never update the member document and never touch uplineUid/uplinePath.
-    const snap=await getDoc(doc(db,'users',myUid));
-    if(!snap.exists()) throw new Error('Profilo utente non trovato.');
-    const current={...(snap.data().teamLayout||{})};
-    const old={...(current[uid]||{})};
-    if(leg==='') delete current[uid];
-    else current[uid]={...old,leg,order:old.order??target.legOrder??9999};
-    await updateDoc(doc(db,'users',myUid),{teamLayout:current});
-
-    cData={...cData,teamLayout:current};
-    if(window._cachedUs){
-      // Keep the root out of _cachedUs; just invalidate cached render data.
-      window._teamCache=null;
-    }
-    await loadTeamDashboard(true);
-  }catch(e){
-    console.error('setLeg error',e);
-    alert('Errore nel salvataggio: '+(e.message||e));
+window.setLeg = async (uid, leg, btn) => {
+  try {
+    // Write to legMap[myUid] — personal, does not affect other leaders' views
+    const myUid = cUser.uid;
+    const fieldPath = 'legMap.' + myUid;
+    const updateData = {};
+    updateData[fieldPath] = leg || null;
+    await updateDoc(doc(db,'users',uid), updateData);
+    // Update local caches
+    const updateCache = (arr) => {
+      const u = (arr||[]).find(u=>u.id===uid);
+      if(u) { if(!u.legMap) u.legMap={}; u.legMap[myUid] = leg||null; }
+    };
+    updateCache(window._cachedUs);
+    updateCache(window._treeUs);
+    renderTeamDashboard();
+  } catch(e) {
+    alert('Errore: '+e.message);
   }
 };
+
+
 
 window.doResetPassword = async function() {
   var email = id('l-email').value.trim();
@@ -2551,90 +2054,62 @@ window.setFilter = (btn,f) => {
 };
 
 // ── TEAM DASHBOARD ──
-async function ensureInitialTeamBackup(us){
-  if(!us || !us.length || !cUser) return;
-  try{
-    const meSnap=await getDoc(doc(db,'users',cUser.uid));
-    const existing=meSnap.exists()?meSnap.data().teamStructureBackup:null;
-    if(existing && existing.children && Object.keys(existing.children).length) return;
-    const direct=us.filter(u=>u.uplineUid===cUser.uid || ((u.uplinePath||[]).length && u.uplinePath[u.uplinePath.length-1]===cUser.uid));
-    const children={};
-    direct.forEach(u=>{children[u.id]={leg:getLegFor(u,cUser.uid)||null,order:u.legOrder??9999};});
-    if(Object.keys(children).length){
-      await updateDoc(doc(db,'users',cUser.uid),{teamStructureBackup:{savedAt:Date.now(),children}});
-      if(cData)cData.teamStructureBackup={savedAt:Date.now(),children};
-    }
-  }catch(e){console.warn('Initial Team backup skipped:',e);}
-}
-
-async function loadTeamDashboard(force=false) {
+async function loadTeamDashboard() {
   if(id('team-grid-left')) id('team-grid-left').innerHTML=loader();
   if(id('team-grid-right')) id('team-grid-right').innerHTML=loader();
   if(id('binary-view')) id('binary-view').innerHTML=loader();
+  const [ps,us] = await Promise.all([
+    getDocs(collection(db,'prospects')).then(s=>s.docs.map(d=>({id:d.id,...d.data()}))),
+    getDocs(collection(db,'users')).then(s=>s.docs.map(d=>({id:d.id,...d.data()})))
+  ]);
+  const wk=Date.now()-7*86400000, myUid=cUser.uid;
 
-  if(!force && window._teamCache && window._teamCache.uid===cUser.uid){
-    const c=window._teamCache;
-    window._cachedUs=c.us; window._cachedPs=c.ps; window._cachedShow=c.show; window._cachedWk=c.wk;
-    renderTeamDashboard(c.us,c.ps,c.show,c.wk);
-    return;
+  // Build downline by walking DOWN the tree using uplineUid links only
+  // This is the only reliable method — does NOT depend on uplinePath
+  function buildDownlineSet(rootUid, allUsers) {
+    const result = new Set();
+    const queue = [rootUid];
+    let safety = 0;
+    while(queue.length > 0 && safety < 500) {
+      const current = queue.shift();
+      const children = allUsers.filter(u => u.uplineUid === current);
+      children.forEach(child => {
+        if(!result.has(child.id)) {
+          result.add(child.id);
+          queue.push(child.id);
+        }
+      });
+      safety++;
+    }
+    return result;
   }
 
-  try{
-    const rootUid=cUser.uid;
-    const chunk=(arr,n=30)=>{const out=[];for(let i=0;i<arr.length;i+=n)out.push(arr.slice(i,i+n));return out;};
+  const downlineIds = buildDownlineSet(myUid, us);
+  const allDownline = us.filter(u => downlineIds.has(u.id));
+  const show = allDownline;
+  const uids = new Set(show.map(m=>m.id));
+  const tPs = ps.filter(p=>uids.has(p.uid));
 
-    // CLEAN HIERARCHY RULE:
-    // A user belongs to this Dashboard ONLY if a chain of explicit uplineUid
-    // links reaches the logged-in user. We do NOT use `array-contains` on
-    // uplinePath to decide membership, because stale paths can expose people
-    // from another branch.
-    const usersById=new Map();
-    const queue=[rootUid];
-    const seen=new Set([rootUid]);
-
-    while(queue.length){
-      const frontier=queue.splice(0,queue.length);
-      for(const ids of chunk(frontier,30)){
-        if(!ids.length) continue;
-        const snap=await getDocs(query(collection(db,'users'),where('uplineUid','in',ids)));
-        snap.docs.forEach(d=>{
-          if(seen.has(d.id)) return;
-          const u={id:d.id,...d.data()};
-          // Hard validation: the returned document itself must point to one of
-          // the parents in this frontier. This prevents unrelated users from
-          // entering the tree even if their uplinePath is stale.
-          if(!ids.includes(u.uplineUid)) return;
-          seen.add(d.id); usersById.set(d.id,u); queue.push(d.id);
-        });
-      }
-      if(seen.size>5000) throw new Error('Struttura troppo grande o ciclo nella gerarchia.');
-    }
-
-    const us=[...usersById.values()];
-    const wk=Date.now()-7*86400000;
-    const ps=[];
-    const uids=us.map(u=>u.id);
-    for(const ids of chunk(uids,30)){
-      if(!ids.length) continue;
-      const snap=await getDocs(query(collection(db,'prospects'),where('uid','in',ids)));
-      snap.docs.forEach(d=>ps.push({id:d.id,...d.data()}));
-    }
-
-    // No global users query. `show` is exactly the validated downline.
-    const show=us;
-    window._teamCache={uid:rootUid,us,ps,show,wk,at:Date.now()};
-    window._cachedUs=us; window._cachedPs=ps; window._cachedShow=show; window._cachedWk=wk;
-    console.debug('[Team Dashboard] scoped downline', {members:us.length,prospects:ps.length});
-    renderTeamDashboard(us,ps,show,wk);
-  }catch(e){
-    console.error('Team Dashboard load failed:',e);
-    const msg=e?.message||'Errore sconosciuto durante il caricamento.';
-    const html=`<div style="padding:1rem;color:var(--red);font-size:12px;background:var(--red-dim);border:.5px solid var(--red);border-radius:8px;">⚠️ Impossibile caricare la Dashboard Team.<br><span style="color:var(--text2);">${x(msg)}</span></div>`;
-    if(id('team-grid-left')) id('team-grid-left').innerHTML=html;
-    if(id('team-grid-right')) id('team-grid-right').innerHTML='';
-    if(id('binary-view')) id('binary-view').innerHTML='';
-    if(id('rank-table')) id('rank-table').innerHTML='';
+  // Populate leader filter
+  const leaders = show.filter(u=>u.role==='leader');
+  const legSel = id('leg-leader-filter');
+  if(legSel){
+    const curVal = legSel.value;
+    legSel.innerHTML='<option value="">Tutta la struttura</option>'+
+      leaders.map(l=>`<option value="${l.id}"${l.id===curVal?' selected':''}>${x(l.name||l.email)}</option>`).join('');
   }
+
+  // Global stats
+  const hiddenCount = show.filter(function(u){return hiddenMembers.has(u.id);}).length;
+  id('team-stats').innerHTML =
+    sc('Diretti',show.filter(u=>(u.uplinePath||[]).slice(-1)[0]===myUid&&!hiddenMembers.has(u.id)).length,'ac')+
+    sc('Struttura attiva',show.length-hiddenCount,'b')+
+    sc('Nuovi (7gg)',tPs.filter(p=>(p.createdAt?.toMillis()||0)>=wk).length,'g')+
+    sc('Presentazioni sett.',tPs.filter(p=>p.presentation&&(p.createdAt?.toMillis()||0)>=wk).length,'b')+
+    sc('Attesa pag.',tPs.filter(p=>p.payment).length,'a')+
+    sc('Prospect totali',tPs.length,'ac');
+
+  renderTeamDashboard(us, ps, show, wk);
 }
 
 // ── Separate render function so filter can re-run it ──
@@ -2650,43 +2125,34 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
 
   const myUid = cUser.uid;
   const filterLeaderId = id('leg-leader-filter')?.value || '';
+
+  // Determine reference node for binary split
   const refUid = filterLeaderId || myUid;
-  const refUser = filterLeaderId ? us.find(u=>u.id===filterLeaderId) : {id:myUid,name:'La mia struttura'};
+  const refUser = filterLeaderId ? us.find(u=>u.id===filterLeaderId) : {id:myUid, name:'La mia struttura'};
 
-  // Populate the structure filter with both leaders and members.
-  const leaders = show.filter(u=>u.role==='leader').sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-  const members = show.filter(u=>u.role!=='leader').sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-  const legSel = id('leg-leader-filter');
-  if(legSel){
-    const curVal = legSel.value;
-    const leaderOptions = leaders.map(l=>`<option value="${l.id}"${l.id===curVal?' selected':''}>👑 ${x(l.name||l.email)}${l.userNumber?` #${l.userNumber}`:''}</option>`).join('');
-    const memberOptions = members.map(m=>`<option value="${m.id}"${m.id===curVal?' selected':''}>${x(m.name||m.email)}${m.userNumber?` #${m.userNumber}`:''}</option>`).join('');
-    legSel.innerHTML='<option value="">Tutta la struttura</option>'+
-      (leaders.length?`<optgroup label="Leader">${leaderOptions}</optgroup>`:'')+
-      (members.length?`<optgroup label="Membri">${memberOptions}</optgroup>`:'');
-    if(curVal && !us.some(u=>u.id===curVal)) legSel.value='';
-  }
-  const filterHint=id('leg-filter-hint');
-  if(filterHint){
-    filterHint.textContent=filterLeaderId && refUser
-      ? `Diagrammi delle gambe di ${refUser.name||refUser.email}`
-      : 'Filtra per leader o membro per vedere le sue gambe';
+  // Get users in each leg relative to refUid
+  // A user is in "right" leg of refUid if their leg===right and refUid is their direct upline,
+  // OR if any ancestor between them and refUid has leg===right from refUid
+  function getLegForUser(u) {
+    const path = u.uplinePath||[];
+    const refIdx = path.indexOf(refUid);
+    if(refIdx === -1 && u.uplineUid !== refUid) return null;
+    // Get the direct child of refUid in this user's ancestry chain
+    if(u.uplineUid === refUid) return getLegFor(u, refUid);
+    const directChildIdx = refIdx + 1;
+    if(directChildIdx >= path.length) return getLegFor(u, refUid);
+    const directChildId = path[directChildIdx];
+    const directChild = (window._cachedUs||[]).find(a=>a.id===directChildId);
+    return directChild ? getLegFor(directChild, refUid) : null;
   }
 
-  // Build O(1) lookup maps once. This avoids repeated .find/.filter scans while rendering.
-  const userById = Object.fromEntries(us.map(u=>[u.id,u]));
-  const prospectsByUid = Object.create(null);
-  for(const p of ps){(prospectsByUid[p.uid] ||= []).push(p);}
-  const legMemo = new Map();
-  const effectiveLeg = (u,ref=refUid) => getTeamVisualLeg(u,ref,us);
-
-  const rightMembers = show.filter(u=>effectiveLeg(u)==='right');
-  const leftMembers  = show.filter(u=>effectiveLeg(u)==='left');
-  const noLeg        = show.filter(u=>!effectiveLeg(u));
+  const rightMembers = show.filter(u=>getLegForUser(u)==='right');
+  const leftMembers  = show.filter(u=>getLegForUser(u)==='left');
+  const noLeg        = show.filter(u=>!getLegForUser(u));
 
   function legStats(members) {
-    const mPs = [];
-    for(const m of members) (prospectsByUid[m.id]||[]).forEach(p=>mPs.push(p));
+    const mUids = new Set(members.map(m=>m.id));
+    const mPs = ps.filter(p=>mUids.has(p.uid));
     return {
       members: members.length,
       prospects: mPs.length,
@@ -2709,20 +2175,16 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
     const pct = Math.round((stats.prospects/total)*100);
     const leaders = members.filter(m=>m.role==='leader');
     const topMembers = members.slice(0,8);
-    const refLabel = filterLeaderId && refUser ? (refUser.name||refUser.email) : 'tutta la struttura';
-    return `<div class="leg-card ${side}" data-ref="${x(refLabel)}">
+    return `<div class="leg-card ${side}">
       <div class="leg-title" style="color:${color}">${label}</div>
       <div class="leg-sub">${stats.members} persone · ${pct}% dei prospect totali</div>
-      ${(()=>{
-        const all=members.flatMap(m=>prospectsByUid[m.id]||[]);
-        const stage=p=>{const n=(p.followUps||[]).filter(Boolean).length;if(p.payment)return'payment';if(n===4)return'done';if(p.presentation||n>0)return'active';return'new';};
-        const vals={new:0,active:0,done:0,payment:0}; all.forEach(p=>vals[stage(p)]++);
-        const totalStage=Math.max(all.length,1);
-        const colors={new:'var(--green)',active:'var(--blue)',done:'var(--accent)',payment:'var(--amber)'};
-        const labels={new:'Nuovi',active:'Attivi',done:'FU completi',payment:'Attesa pagamento'};
-        let cursor=0; const stops=Object.keys(vals).map(k=>{const a=cursor/totalStage*100;cursor+=vals[k];const b=cursor/totalStage*100;return `${colors[k]} ${a}% ${b}%`;}).join(',');
-        return `<div class=\"leg-visual\" data-chart-ref=\"${x(refLabel)}\"><div class=\"leg-donut\" role=\"img\" aria-label=\"Distribuzione prospect ${side==='right'?'gamba destra':'gamba sinistra'} per ${x(refLabel)}\" style=\"background:conic-gradient(${stops})\"><div class=\"leg-donut-center\"><div class=\"leg-donut-total\">${stats.prospects}</div><div class=\"leg-donut-label\">Prospect</div></div></div><div class=\"leg-legend\">${Object.keys(vals).map(k=>`<div class=\"leg-legend-row\"><span class=\"leg-legend-dot\" style=\"background:${colors[k]}\"></span><span class=\"leg-legend-name\">${labels[k]}</span><span class=\"leg-legend-value\">${vals[k]} <span class=\"leg-legend-pct\">${Math.round(vals[k]/totalStage*100)}%</span></span></div>`).join('')}</div></div><div class=\"leg-mini-metrics\"><div class=\"leg-mini-metric\"><div class=\"leg-mini-value\" style=\"color:var(--green)\">${stats.newWk}</div><div class=\"leg-mini-label\">Nuovi ultimi 7 giorni</div></div><div class=\"leg-mini-metric\"><div class=\"leg-mini-value\" style=\"color:var(--blue)\">${stats.presentations}</div><div class=\"leg-mini-label\">Presentazioni</div></div></div>`;
-      })()}
+      <div class="leg-stats">
+        <div class="leg-stat"><div class="leg-stat-val" style="color:${color}">${stats.prospects}</div><div class="leg-stat-lbl">Prospect totali</div></div>
+        <div class="leg-stat"><div class="leg-stat-val" style="color:var(--green)">${stats.newWk}</div><div class="leg-stat-lbl">Nuovi (7gg)</div></div>
+        <div class="leg-stat"><div class="leg-stat-val" style="color:var(--blue)">${stats.presentations}</div><div class="leg-stat-lbl">Presentazioni</div></div>
+        <div class="leg-stat"><div class="leg-stat-val" style="color:var(--amber)">${stats.payment}</div><div class="leg-stat-lbl">Attesa pag.</div></div>
+      </div>
+      <div class="leg-bar-wrap"><div class="leg-bar-fill" style="width:${pct}%;background:${color}"></div></div>
       <div style="font-size:11px;color:var(--text3);margin-top:8px;margin-bottom:4px;">Leader in questa gamba (${leaders.length})</div>
       <div class="leg-members">
         ${leaders.map(m=>`<span class="leg-member-tag leader-tag">👑 ${x(m.name||m.email)}${m.userNumber?` #${m.userNumber}`:''}</span>`).join('')||'<span style="font-size:11px;color:var(--text3);">Nessun leader</span>'}
@@ -2753,16 +2215,17 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
 
   // Members grid
   const COLS=[{bg:'rgba(201,168,76,.12)',c:'#c9a84c'},{bg:'rgba(74,156,240,.12)',c:'#4a9cf0'},{bg:'rgba(74,240,154,.12)',c:'#4af09a'},{bg:'rgba(240,180,74,.12)',c:'#f0b44a'},{bg:'rgba(240,90,74,.12)',c:'#f05a4a'},{bg:'rgba(180,74,240,.12)',c:'#b44af0'}];
-  const directUids=new Set(show.filter(u=>u.uplineUid===myUid || ((u.uplinePath||[]).length && u.uplinePath[u.uplinePath.length-1]===myUid)).map(u=>u.id));
+  const directUids=new Set(show.filter(u=>(u.uplinePath||[]).slice(-1)[0]===myUid).map(u=>u.id));
   const getLevel=u=>{const path=u.uplinePath||[];const myIdx=path.indexOf(myUid);return myIdx===-1?99:path.length-myIdx;};
   const sorted_show=[...show].sort((a,b)=>{const la=getLevel(a),lb=getLevel(b);if(la!==lb)return la-lb;return(a.name||'').localeCompare(b.name||'');});
   // Exclude hidden members from grid — they appear only in "Membri disattivati" section
   const visibleForGrid = sorted_show.filter(function(u){ return !hiddenMembers.has(u.id); });
-  const mdata=visibleForGrid.map((m,i)=>{const mp=prospectsByUid[m.id]||[];return {m,level:getLevel(m),mp,mpWk:mp.filter(p=>(p.createdAt?.toMillis()||0)>=(wk||Date.now()-7*86400000)),c:COLS[i%COLS.length]};});
+  const mdata=visibleForGrid.map((m,i)=>({m,level:getLevel(m),mp:ps.filter(p=>p.uid===m.id),mpWk:ps.filter(p=>p.uid===m.id&&(p.createdAt?.toMillis()||0)>=(wk||Date.now()-7*86400000)),c:COLS[i%COLS.length]}));
+  // Split mdata by leg
   const _myUid = cUser.uid;
-  const mdLeft  = mdata.filter(d => effectiveLeg(d.m,_myUid) === 'left');
-  const mdRight = mdata.filter(d => effectiveLeg(d.m,_myUid) === 'right');
-  const mdNone  = mdata.filter(d => !effectiveLeg(d.m,_myUid));
+  const mdLeft  = mdata.filter(d => getLegFor(d.m, _myUid) === 'left');
+  const mdRight = mdata.filter(d => getLegFor(d.m, _myUid) === 'right');
+  const mdNone  = mdata.filter(d => !getLegFor(d.m, _myUid));
 
   // Update counts
 
@@ -2788,10 +2251,10 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
     const levelLabel=level===1?'Diretto':level===2?'Livello 2':`Livello ${level}`;
     const levelColor=level===1?'var(--accent)':level===2?'var(--blue)':'var(--text3)';
     const roleIcon=m.role==='leader'?'👑 ':'';
-    const _mLeg = effectiveLeg(m, cUser.uid);
+    const _mLeg = getLegFor(m, cUser.uid);
     const legTag=_mLeg?`<span style="font-size:10px;padding:1px 5px;border-radius:8px;margin-left:4px;background:${_mLeg==='right'?'var(--accent-dim)':'var(--blue-dim)'};color:${_mLeg==='right'?'var(--accent)':'var(--blue)'};">${_mLeg==='right'?'👉':'👈'}</span>`:'';
     const el=document.createElement('div'); el.className='tc';
-    el.innerHTML=`<div class="tc-head" style="cursor:pointer;" onclick="openMemberDetail('${m.id}')"><div class="tc-av" style="background:${c.bg};color:${c.c}">${ini}</div><div><div class="tc-name">${roleIcon}${x(m.name)}${legTag}</div><div class="tc-role">${mp.length} prospect · <span style="color:${levelColor}">${levelLabel}</span></div></div>${mpWk.length?`<div class="wk-tag">+${mpWk.length} sett.</div>`:''}</div><div class="tc-nums"><div class="tc-num"><div class="tc-num-val" style="color:${c.c}">${mp.filter(p=>p.presentation).length}</div><div class="tc-num-lbl">Presentazioni</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="tc-num-lbl">Attesa pag.</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--green)">${mp.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length}</div><div class="tc-num-lbl">FU completi</div></div></div><div style="margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:var(--text3);">Gamba:</span><button onclick="event.stopPropagation();setLeg('${m.id}','right',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${_mLeg==='right'?'var(--accent)':'var(--border2)'};background:${_mLeg==='right'?'var(--accent-dim)':'transparent'};color:${_mLeg==='right'?'var(--accent)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👉 Destra</button><button onclick="event.stopPropagation();setLeg('${m.id}','left',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${_mLeg==='left'?'var(--blue)':'var(--border2)'};background:${_mLeg==='left'?'var(--blue-dim)':'transparent'};color:${_mLeg==='left'?'var(--blue)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👈 Sinistra</button>${_mLeg?`<button onclick="event.stopPropagation();setLeg('${m.id}','',this)" style="padding:3px 8px;border-radius:20px;border:.5px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">✕</button>`:''}<span class="tc-drag-handle" draggable="false" title="Trascina per riordinare">⠿</span><div class="tc-move-btns"><button class="tc-move-btn" onclick="event.stopPropagation();moveMember('${m.id}','up')" title="Sposta su">↑</button><button class="tc-move-btn" onclick="event.stopPropagation();moveMember('${m.id}','down')" title="Sposta giù">↓</button></div><button onclick="event.stopPropagation();toggleHideMember('${m.id}')" style="padding:3px 10px;border-radius:20px;border:.5px solid var(--border2);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">🙈 Nascondi</button></div>`;
+    el.innerHTML=`<div class="tc-head" style="cursor:pointer;" onclick="openMemberDetail('${m.id}')"><div class="tc-av" style="background:${c.bg};color:${c.c}">${ini}</div><div><div class="tc-name">${roleIcon}${x(m.name)}${legTag}</div><div class="tc-role">${mp.length} prospect · <span style="color:${levelColor}">${levelLabel}</span></div></div>${mpWk.length?`<div class="wk-tag">+${mpWk.length} sett.</div>`:''}</div><div class="tc-nums"><div class="tc-num"><div class="tc-num-val" style="color:${c.c}">${mp.filter(p=>p.presentation).length}</div><div class="tc-num-lbl">Presentazioni</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="tc-num-lbl">Attesa pag.</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--green)">${mp.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length}</div><div class="tc-num-lbl">FU completi</div></div></div><div style="margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:var(--text3);">Gamba:</span><button onclick="event.stopPropagation();setLeg('${m.id}','right',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='right'?'var(--accent)':'var(--border2)'};background:${m.leg==='right'?'var(--accent-dim)':'transparent'};color:${m.leg==='right'?'var(--accent)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👉 Destra</button><button onclick="event.stopPropagation();setLeg('${m.id}','left',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='left'?'var(--blue)':'var(--border2)'};background:${m.leg==='left'?'var(--blue-dim)':'transparent'};color:${m.leg==='left'?'var(--blue)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👈 Sinistra</button>${m.leg?`<button onclick="event.stopPropagation();setLeg('${m.id}','',this)" style="padding:3px 8px;border-radius:20px;border:.5px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">✕</button>`:''}<span class="tc-drag-handle" draggable="false" title="Trascina per riordinare">⠿</span><div class="tc-move-btns"><button class="tc-move-btn" onclick="event.stopPropagation();moveMember('${m.id}','up')" title="Sposta su">↑</button><button class="tc-move-btn" onclick="event.stopPropagation();moveMember('${m.id}','down')" title="Sposta giù">↓</button></div><button onclick="event.stopPropagation();toggleHideMember('${m.id}')" style="padding:3px 10px;border-radius:20px;border:.5px solid var(--border2);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">🙈 Nascondi</button></div>`;
       // Drag & drop
       el.setAttribute('draggable','true');
       el.dataset.uid = m.id;
@@ -3203,7 +2666,7 @@ window.doUpgrade=async()=>{
   const code=id('s-lcode').value.trim(), errEl=id('s-upgrade-err');
   if(!code){errEl.textContent='Inserisci il codice';errEl.style.display='block';return;}
   if(code!==LEADER_CODE){
-    errEl.textContent='Codice errato. Assicurati di scrivere: retiredyoung';
+    errEl.textContent='Codice errato. Assicurati di scrivere: RYOUNG';
     errEl.style.display='block';return;
   }
   errEl.style.display='none';
@@ -3252,16 +2715,9 @@ window.copyInvite=()=>{
   }).catch(()=>{id('invite-input').select();document.execCommand('copy');});
 };
 
-function showGuideRole(role){
-  const leader=role==='leader';
-  id('guide-member')?.classList.toggle('hidden',leader);
-  id('guide-leader')?.classList.toggle('hidden',!leader);
-  const b=id('guide-role-badge'); if(b)b.textContent=leader?'👑 Team Leader':'👤 Membro';
-}
-
 // ── TAB SWITCHING ──
 function doSwitchTab(t){
-  ['lista','team','tree','guide','admin'].forEach(v=>{
+  ['lista','team','tree','admin'].forEach(v=>{
     id('view-'+v)?.classList.toggle('hidden',v!==t);
     id('tab-'+v)?.classList.toggle('on',v===t);
   });
@@ -3272,9 +2728,8 @@ window.switchTab=t=>{
     id('al-overlay').classList.remove('hidden'); return;
   }
   doSwitchTab(t);
-  if(t==='team'){ window._teamLoadStarted=Date.now(); loadTeamDashboard(); }
+  if(t==='team') loadTeamDashboard();
   if(t==='tree') loadNetworkTree();
-  if(t==='guide') showGuideRole(cData?.role||'member');
   if(t==='admin') loadAdminPanel();
 };
 
@@ -3324,171 +2779,5 @@ function errMsg(code){
   return msgs[code]||('Errore: '+code);
 }
 </script>
-
-<script>
-/* RY Manager bilingual interface: Italian / Spanish */
-const RY_I18N={
-  'Accedi':'Iniciar sesión','Registrati':'Registrarse','Bentornato':'Bienvenido de nuevo','Gestisci i tuoi prospect e monitora il team':'Gestiona tus prospectos y supervisa el equipo',
-  'Nome completo':'Nombre completo','Password':'Contraseña','Email':'Correo electrónico','Min. 6 caratteri':'Mín. 6 caracteres','Codice Leader':'Código de Líder','Codice riservato ai Leader':'Código reservado para Líderes','Hai un codice Leader? Clicca qui':'¿Tienes un código de Líder? Haz clic aquí','Crea account →':'Crear cuenta →','Hai dimenticato la password?':'¿Has olvidado tu contraseña?','Stai per unirti al team di':'Estás a punto de unirte al equipo de',
-  'Lista Prospect':'Lista de prospectos','Dashboard Team':'Panel del equipo','🌳 Albero':'🌳 Árbol','📘 Guide':'📘 Guías','⚙ Admin':'⚙ Admin','Impostazioni':'Configuración','Esci':'Salir','Cerca prospect...':'Buscar prospectos...','Tutti':'Todos','Nuovo':'Nuevo','Attivo':'Activo','In attesa pag.':'Pago pendiente','FU completo':'FU completo','FU 1+':'FU 1+','FU 2+':'FU 2+','FU 3+':'FU 3+','Prov.':'Prov.','Provincia':'Provincia','Importa CSV':'Importar CSV','＋ Nuovo prospect':'＋ Nuevo prospecto','0 selezionati':'0 seleccionados','🗑 Elimina selezionati':'🗑 Eliminar seleccionados','✕ Deseleziona tutto':'✕ Deseleccionar todo','Seleziona tutti visibili':'Seleccionar todos los visibles','Seleziona tutti "Facebook Ads"':'Seleccionar todos "Facebook Ads"','Nome / Note':'Nombre / Notas','Telefono':'Teléfono','Giorni':'Días','Presentazione':'Presentación','Follow-up 1→4':'Seguimiento 1→4','Pagamento':'Pago','Stato':'Estado','Paese / Reg.':'País / Reg.','Iscritto':'Registrado','Contattato':'Contactado',
-  '💾 Backup struttura':'💾 Copia de seguridad','↩ Ripristina':'↩ Restaurar','Albero Network':'Árbol de red','↻ Reset':'↻ Restablecer','Impossibile caricare la Dashboard Team.':'No se puede cargar el Panel del equipo.','Carica prima la Dashboard Team.':'Carga primero el Panel del equipo.','Ripristinare l’ultimo backup della Dashboard Team? Il Network Tree personale non verrà modificato.':'¿Restaurar la última copia de seguridad del Panel del equipo? El Árbol de red personal no se modificará.',
-  'Membro':'Miembro','Team Leader':'Líder de equipo','👑 Team Leader':'👑 Líder de equipo','👤 Membro':'👤 Miembro','Guide':'Guías','Regole fondamentali':'Reglas fundamentales','Sinistra':'Izquierda','Destra':'Derecha','Gamba Sinistra':'Pierna izquierda','Gamba Destra':'Pierna derecha','Open':'Abierto','Posizione Open':'Posición abierta','Reset':'Restablecer','Dashboard Team':'Panel del equipo','Network Tree':'Árbol de red','downline':'downline','Upline':'Upline',
-  'Copia di sicurezza':'Copia de seguridad','Ripristina':'Restaurar','Salva una copia del posizionamento reale della Dashboard Team':'Guardar una copia de la posición real del Panel del equipo','Ripristina l’ultimo backup della Dashboard Team':'Restaurar la última copia de seguridad del Panel del equipo',
-  'Sostituisci':'Sustituir','Conferma':'Confirmar','Annulla':'Cancelar','Chiudi':'Cerrar','Clicca per scegliere chi inserire qui':'Haz clic para elegir quién colocar aquí','Clicca per sostituire o spostare questa persona':'Haz clic para sustituir o mover a esta persona',
-  'Lista Prospect':'Lista de prospectos','Nuovo prospect':'Nuevo prospecto','Cerca prospect':'Buscar prospectos','Inserisci e gestisci i tuoi prospect, aggiorna gli stati e completa i follow-up.':'Añade y gestiona tus prospectos, actualiza los estados y completa los seguimientos.',
-  'Dashboard Team':'Panel del equipo','Albero personale':'Árbol personal','Open, scambi e Reset':'Abiertos, intercambios y restablecimiento','Drag & Drop':'Arrastrar y soltar','Posizionamento personale: non modifica la Dashboard Team':'Posición personal: no modifica el Panel del equipo','Seleziona Leader o Membri':'Selecciona Líderes o Miembros',
-  'Nuovi (7gg)':'Nuevos (7 días)','Totale':'Total','Contattati':'Contactados','Presentazioni':'Presentaciones','Attesa pag.':'Pago pendiente','Iscritti':'Registrados','Presentaz.':'Presentaciones','FU completi':'Seguimientos completos','Nuovi':'Nuevos','Attivi':'Activos','Attesa pagamento':'Pago pendiente','Prospect':'Prospectos','Nuovi ultimi 7 giorni':'Nuevos últimos 7 días','Confronto gambe':'Comparación de piernas','Tutta la struttura':'Toda la estructura','Filtra per leader o membro per vedere le sue gambe':'Filtra por líder o miembro para ver sus piernas','Salva una copia del posizionamento reale della Dashboard Team':'Guardar una copia de la posición real del Panel del equipo','Ripristina l’ultimo backup della Dashboard Team':'Restaurar la última copia de seguridad del Panel del equipo','Ultimi 7 giorni':'Últimos 7 días','Membri disattivati':'Miembros desactivados','Questi membri non appaiono nelle statistiche né nella griglia. Clicca "Riattiva" per includerli di nuovo.':'Estos miembros no aparecen en las estadísticas ni en la cuadrícula. Haz clic en «Reactivar» para incluirlos de nuevo.','Riattiva':'Reactivar','Ranking nuovi prospect (settimana)':'Ranking de nuevos prospectos (semana)','Gamba:':'Pierna:','Nessun leader':'Ningún líder','Nessun membro assegnato':'Ningún miembro asignado','Nessun membro nella gamba sinistra.':'Ningún miembro en la pierna izquierda.','Nessun membro nella gamba destra.':'Ningún miembro en la pierna derecha.','Gamba non assegnata':'Pierna no asignada','Assegna la gamba cliccando i pulsanti sulla scheda':'Asigna la pierna haciendo clic en los botones de la tarjeta','Diretto':'Directo','Livello 2':'Nivel 2','Livello':'Nivel','sett.':'sem.','Sposta su':'Mover arriba','Sposta giù':'Mover abajo','Trascina per riordinare':'Arrastra para reordenar','Nascondi':'Ocultar','Membri':'Miembros','Leader':'Líderes','Sinistra':'Izquierda','Destra':'Derecha','Gamba Sinistra':'Pierna izquierda','Gamba Destra':'Pierna derecha','Diagrammi delle gambe di':'Diagramas de las piernas de','Filtra per leader o membro per vedere le sue gambe':'Filtra por líder o miembro para ver sus piernas','Nessun membro.':'Ningún miembro.','membro':'miembro','membri':'miembros','persone':'personas','prospect':'prospectos','Tutta la struttura':'Toda la estructura',
-  'Sei pronto?':'¿Listo?','Errore':'Error','Utente non trovato. Controlla email e password.':'Usuario no encontrado. Comprueba el correo y la contraseña.','Password errata.':'Contraseña incorrecta.','Email già registrata. Usa la funzione Accedi.':'El correo ya está registrado. Usa la función Iniciar sesión.','Password troppo corta (minimo 6 caratteri).':'Contraseña demasiado corta (mínimo 6 caracteres).','Formato email non valido.':'Formato de correo no válido.','Email o password non corretti.':'Correo o contraseña incorrectos.','Troppi tentativi. Attendi qualche minuto e riprova.':'Demasiados intentos. Espera unos minutos y vuelve a intentarlo.'
-};
-const RY_I18N_EXTRA={
-  'Gestisci i tuoi prospect e monitora il team':'Gestiona tus prospectos y supervisa el equipo',
-  'Stai per unirti al team di':'Estás a punto de unirte al equipo de',
-  'Codice riservato ai Leader':'Código reservado para Líderes',
-  'Filtra per provincia':'Filtrar por provincia',
-  '📥 Importa lead da Facebook Ads CSV':'📥 Importar leads de Facebook Ads CSV',
-  'Bulk action bar':'Barra de acciones masivas',
-  'Nome / Note':'Nombre / Notas','Paese / Reg.':'País / Reg.','Follow-up 1→4':'Seguimiento 1→4',
-  'Seleziona tutti':'Seleccionar todos','Seleziona tutti "Facebook Ads"':'Seleccionar todos "Facebook Ads"',
-  'Seleziona tutti visibili':'Seleccionar todos los visibles',
-  'Confronto gambe':'Comparación de piernas','Tutta la struttura':'Toda la estructura',
-  'Filtra per leader o membro per vedere le sue gambe':'Filtra por líder o miembro para ver sus piernas',
-  'Salva una copia del posizionamento reale della Dashboard Team':'Guardar una copia de la posición real del Panel del equipo',
-  'Filtra per leader o membro per vedere le sue gambe':'Filtra por líder o miembro para ver sus piernas',
-  'Nuovi ultimi 7 giorni':'Nuevos últimos 7 días','Ultimi 7 giorni':'Últimos 7 días',
-  'Nuovi (7gg)':'Nuevos (7 días)','Nuovi':'Nuevos','Totale':'Total','Contattati':'Contactados',
-  'Presentazioni':'Presentaciones','Presentaz.':'Presentaciones','Attesa pag.':'Pago pendiente','Attesa pagamento':'Pago pendiente',
-  'Iscritti':'Registrados','Prospect':'Prospectos','FU completi':'Seguimientos completos','Attivi':'Activos',
-  'Prospect aggiunti questa settimana':'Prospectos añadidos esta semana','Prospect aggiunti':'Prospectos añadidos',
-  '📋 Prospect aggiunti questa settimana':'📋 Prospectos añadidos esta semana',
-  '👈 Gamba Sinistra':'👈 Pierna izquierda','👉 Gamba Destra':'👉 Pierna derecha','Gamba Sinistra':'Pierna izquierda','Gamba Destra':'Pierna derecha',
-  '⚠️ Gamba non assegnata':'⚠️ Pierna no asignada','Gamba non assegnata':'Pierna no asignada',
-  '— Assegna la gamba cliccando i pulsanti sulla scheda':'— Asigna la pierna haciendo clic en los botones de la tarjeta',
-  'Assegna la gamba cliccando i pulsanti sulla scheda':'Asigna la pierna haciendo clic en los botones de la tarjeta',
-  'Ranking nuovi prospect (settimana)':'Ranking de nuevos prospectos (semana)',
-  'Membri disattivati':'Miembros desactivados',
-  'Questi membri non appaiono nelle statistiche né nella griglia. Clicca "Riattiva" per includerli di nuovo.':'Estos miembros no aparecen en las estadísticas ni en la cuadrícula. Haz clic en «Reactivar» para incluirlos de nuevo.',
-  'Riattiva':'Reactivar','Nessun leader':'Ningún líder','Nessun membro assegnato':'Ningún miembro asignado',
-  'Nessun membro nella gamba sinistra.':'Ningún miembro en la pierna izquierda.',
-  'Nessun membro nella gamba destra.':'Ningún miembro en la pierna derecha.',
-  'Nessun membro.':'Ningún miembro.','Nessun membro':'Ningún miembro','Nessun prospect aggiunto questa settimana.':'Ningún prospecto añadido esta semana.',
-  'Nessun nuovo lead da importare.':'No hay nuevos leads para importar.','membro':'miembro','membri':'miembros','persone':'personas','prospect':'prospectos',
-  'Diretto':'Directo','Livello':'Nivel','Livello 2':'Nivel 2','sett.':'sem.','Sposta su':'Mover arriba','Sposta giù':'Mover abajo','Nascondi':'Ocultar',
-  'Trascina per riordinare':'Arrastra para reordenar','Diagrammi delle gambe di':'Diagramas de las piernas de',
-  'La mia struttura':'Mi estructura','Leader':'Líderes','Membri':'Miembros','Membro':'Miembro','Team Leader':'Líder de equipo',
-  'Posizione Open':'Posición abierta','Open':'Abierto','Reset':'Restablecer','Network Tree':'Árbol de red','Albero Network':'Árbol de red',
-  'Posizionamento personale: non modifica la Dashboard Team':'Posición personal: no modifica el Panel del equipo',
-  'Seleziona Leader o Membri':'Selecciona Líderes o Miembros',
-  'Trascina una persona su Open o su un\'altra persona per spostarla / sostituirla':'Arrastra una persona a Abierto o sobre otra persona para moverla / sustituirla',
-  '💡 Trascina una persona su Open o su un\'altra persona per spostarla / sostituirla':'💡 Arrastra una persona a Abierto o sobre otra persona para moverla / sustituirla',
-  'Trascina una persona su Open oppure su un\'altra persona per spostare o scambiare la posizione.':'Arrastra una persona a Abierto o sobre otra persona para mover o intercambiar la posición.',
-  'Clicca per scegliere chi inserire qui':'Haz clic para elegir a quién colocar aquí',
-  'Clicca per sostituire o spostare questa persona':'Haz clic para sustituir o mover a esta persona',
-  '📍 Gestisci posizione':'📍 Gestionar posición','Posizione':'Posición','Persona da inserire':'Persona a colocar',
-  'Conferma':'Confirmar','Annulla':'Cancelar','Chiudi':'Cerrar','Salva':'Guardar','Elimina':'Eliminar','Modifica':'Editar',
-  'Modifica prospect':'Editar prospect','Nuovo prospect':'Nuevo prospecto','Nome e cognome *':'Nombre y apellidos *','Canale di contatto':'Canal de contacto',
-  'Paese':'País','Provincia / Regione':'Provincia / Región','Telefono':'Teléfono','Note':'Notas','Note aggiuntive':'Notas adicionales',
-  '— Seleziona paese —':'— Selecciona país —','— Seleziona prima il paese —':'— Selecciona primero el país —','— seleziona colonna —':'— selecciona columna —','— Seleziona colonna —':'— Selecciona columna —',
-  '— nessuna —':'— ninguna —','— Nessuna —':'— Ninguna —','— Ignora —':'— Ignorar —','— Non assegnata —':'— No asignada —',
-  'Destra 👉':'Derecha 👉','Sinistra 👈':'Izquierda 👈','👈 Sinistra':'👈 Izquierda','👉 Destra':'👉 Derecha',
-  'Impostazioni account':'Configuración de la cuenta','Upgrade a Team Leader':'Convertirse en Líder de equipo',
-  'Inserisci il codice Leader per sbloccare la Dashboard Team. Se il tuo leader ha già cambiato il tuo ruolo, chiudi e riapri le impostazioni.':'Introduce el código de Líder para desbloquear el Panel del equipo. Si tu líder ya ha cambiado tu rol, cierra y vuelve a abrir la configuración.',
-  'Attiva accesso Leader →':'Activar acceso de Líder →','✅ Sei già Team Leader':'✅ Ya eres Líder de equipo','🔗 Il tuo link di invito':'🔗 Tu enlace de invitación',
-  'Condividi con i tuoi diretti. Chi si registra tramite questo link viene collegato automaticamente al tuo team.':'Compártelo con tus miembros directos. Quien se registre mediante este enlace quedará conectado automáticamente a tu equipo.',
-  'Copia':'Copiar','Il tuo ruolo è stato aggiornato dall\'admin? Ricarica.':'¿El administrador ha actualizado tu rol? Recarga.','🔄 Ricarica sessione':'🔄 Recargar sesión',
-  '🔐 Accesso Admin':'🔐 Acceso de administrador','Inserisci il codice Admin per gestire utenti e network.':'Introduce el código de administrador para gestionar usuarios y la red.',
-  'Codice Admin':'Código de administrador','✏️ Modifica utente':'✏️ Editar usuario','Ruolo':'Rol','Sposta upline diretto':'Mover upline directo','Gamba nel team dell\'upline':'Pierna en el equipo del upline',
-  'Elimina':'Eliminar','Salva':'Guardar','Annulla':'Cancelar',
-  '📥 Importa lead da Facebook Ads':'📥 Importar leads de Facebook Ads','Seleziona quale colonna del CSV corrisponde a ciascun campo.':'Selecciona qué columna del CSV corresponde a cada campo.',
-  'Seleziona quale colonna del CSV corrisponde a ciascun campo.':'Selecciona qué columna del CSV corresponde a cada campo.',
-  'righe trovate':'filas encontradas','Mostra anteprima →':'Mostrar vista previa →','← Torna al mapping':'← Volver al mapeo','✅ Importa prospect':'✅ Importar prospectos',
-  'Step 1: Column mapping':'Paso 1: Mapeo de columnas','Step 2: Preview':'Paso 2: Vista previa','Step 1: column mapping':'Paso 1: mapeo de columnas','Step 2: preview before import':'Paso 2: vista previa antes de importar',
-  'Il sistema prova a indovinare automaticamente — correggilo se necessario.':'El sistema intenta detectarlo automáticamente — corrígelo si es necesario.',
-  '← Modifica':'← Editar','↩ Annulla ultima':'↩ Deshacer última','✓ Importa':'✓ Importar',
-  'Errore':'Error','Account non trovato. Contatta Simone indicando la tua email.':'Cuenta no encontrada. Contacta con Simone indicando tu correo electrónico.',
-  'Inserisci email e password':'Introduce correo electrónico y contraseña','Compila tutti i campi':'Completa todos los campos','Codice Leader non valido':'Código de Líder no válido',
-  'Account creato ma profilo non salvato. Contatta Simone con il tuo ID:':'Cuenta creada pero el perfil no se ha guardado. Contacta con Simone con tu ID:',
-  'Errore nel reset:':'Error al restablecer:','Puoi gestire solo la tua downline.':'Solo puedes gestionar tu downline.',
-  'Errore nello spostamento:':'Error al mover:','Posizione non valida.':'Posición no válida.','Puoi posizionare solo persone appartenenti alla tua downline.':'Solo puedes colocar personas que pertenezcan a tu downline.',
-  'Non puoi inserire un upline o un suo discendente sotto questa posizione.':'No puedes colocar a un upline ni a uno de sus descendientes debajo de esta posición.',
-  'Conferma':'Confirmar','Backup della struttura Team salvato.':'Copia de seguridad de la estructura del equipo guardada.','Errore nel backup:':'Error en la copia de seguridad:',
-  'Nessun backup della struttura disponibile.':'No hay ninguna copia de seguridad de la estructura disponible.',
-  'Ripristinare l’ultimo backup della Dashboard Team? Il Network Tree personale non verrà modificato.':'¿Restaurar la última copia de seguridad del Panel del equipo? El Árbol de red personal no se modificará.',
-  'Struttura Team ripristinata dal backup.':'Estructura del equipo restaurada desde la copia de seguridad.','Errore nel ripristino:':'Error al restaurar:',
-  'Seleziona la colonna del Nome per continuare.':'Selecciona la columna del Nombre para continuar.','Nessuna importazione recente da annullare. Funziona solo nella stessa sessione.':'No hay ninguna importación reciente que deshacer. Solo funciona durante la misma sesión.',
-  'Eliminati':'Eliminados','prospect importati da Facebook Ads!':'prospectos importados desde Facebook Ads!','Nessun nuovo lead da importare.':'No hay nuevos leads para importar.',
-  'Eliminare definitivamente':'Eliminar definitivamente','Azione non reversibile.':'Esta acción no se puede deshacer.','Verranno rimossi':'Se eliminarán','Tutti gli utenti hanno già un ID assegnato.':'Todos los usuarios ya tienen un ID asignado.',
-  'Assegnare un ID numerico a':'Asignar un ID numérico a','utenti che ne sono privi?':'usuarios que no lo tienen?',
-  'Clicca per riordinare':'Haz clic para reordenar','Trascina per spostare/sostituire · clicca per gestire':'Arrastra para mover/sustituir · haz clic para gestionar',
-  'Trascina per riordinare':'Arrastra para reordenar','Sposta su':'Mover arriba','Sposta giù':'Mover abajo','Nascondi':'Ocultar',
-  'membri non hanno':'miembros no tienen','ancora una gamba assegnata. Vai nel pannello Admin per assegnarla.':'todavía una pierna asignada. Ve al panel de administración para asignarla.',
-  'Struttura non trovata.':'Estructura no encontrada.','tutta la struttura':'toda la estructura','gamba destra':'pierna derecha','gamba sinistra':'pierna izquierda',
-  'Distribuzione prospect':'Distribución de prospectos','per':'para','oggi':'hoy','fa':'hace','giorni':'días',
-  'Nessun duplicato trovato.':'No se encontraron duplicados.','Synced leader role from email match':'Rol de líder sincronizado mediante coincidencia de correo electrónico',
-  'già registrata':'ya está registrado','Utente non trovato. Controlla email e password.':'Usuario no encontrado. Comprueba el correo y la contraseña.',
-  'Password errata.':'Contraseña incorrecta.','Email o password non corretti.':'Correo o contraseña incorrectos.',
-  'Email già registrata. Usa la funzione Accedi.':'El correo ya está registrado. Usa la función Iniciar sesión.',
-  'Password troppo corta (minimo 6 caratteri).':'Contraseña demasiado corta (mínimo 6 caracteres).','Formato email non valido.':'Formato de correo no válido.',
-  'Troppi tentativi. Attendi qualche minuto e riprova.':'Demasiados intentos. Espera unos minutos y vuelve a intentarlo.',
-  'La mia struttura':'Mi estructura','Impara a usare la piattaforma':'Aprende a usar la plataforma',
-  'Guida pratica integrata direttamente nell\'app. I contenuti si adattano automaticamente al tuo ruolo.':'Guía práctica integrada directamente en la aplicación. El contenido se adapta automáticamente a tu rol.',
-  'Guida Membro':'Guía para miembros','Inserisci e gestisci i tuoi prospect, aggiorna gli stati e completa i follow-up.':'Añade y gestiona tus prospectos, actualiza los estados y completa los seguimientos.',
-  'Visualizza la tua struttura e gestisci esclusivamente la tua':'Visualiza tu estructura y gestiona exclusivamente tu','downline':'downline',
-  'Posizione Open':'Posición abierta','Clicca su':'Haz clic en','per scegliere una persona. La lista mostra solo la tua downline ed è alfabetica.':'para elegir una persona. La lista muestra solo tu downline y está ordenada alfabéticamente.',
-  'Drag & Drop':'Arrastrar y soltar','Trascina una persona su Open oppure su un\'altra persona per spostare o scambiare la posizione.':'Arrastra una persona a Abierto o sobre otra persona para mover o intercambiar la posición.',
-  'Guida Team Leader':'Guía para líderes de equipo','È il riferimento per il':'Es la referencia para el','posizionamento reale':'posicionamiento real','della tua struttura. Seleziona Leader o Membri della tua downline.':'de tu estructura. Selecciona Líderes o Miembros de tu downline.',
-  'Backup e Ripristino':'Copia de seguridad y restauración','Fai un backup prima di modifiche importanti. Ripristina recupera l\'ultimo backup disponibile.':'Haz una copia de seguridad antes de realizar cambios importantes. Restaurar recupera la última copia disponible.',
-  'Albero personale':'Árbol personal','Il Network Tree è indipendente dalla Dashboard Team. Ogni Leader ha la propria visualizzazione personale.':'El Árbol de red es independiente del Panel del equipo. Cada Líder tiene su propia visualización personal.',
-  'Open, scambi e Reset':'Abierto, intercambios y restablecimiento','per scegliere una persona,':'para elegir una persona,','per spostare/scambiare,':'para mover/intercambiar,','per riallineare la vista alla Dashboard Team.':'para volver a alinear la vista con el Panel del equipo.',
-  'Regole fondamentali':'Reglas fundamentales','Gestisce la struttura reale.':'Gestiona la estructura real.','Gestisce la visualizzazione personale.':'Gestiona la visualización personal.',
-  'Puoi gestire solo la struttura verso il basso.':'Solo puedes gestionar la estructura hacia abajo.','Lista limitata alla tua downline e ordinata alfabeticamente.':'Lista limitada a tu downline y ordenada alfabéticamente.',
-  '💡 Usa la Dashboard Team per il posizionamento ufficiale e l\'Albero per la tua visualizzazione personale.':'💡 Usa el Panel del equipo para el posicionamiento oficial y el Árbol para tu visualización personal.',
-  'Assegna ID mancanti':'Asignar ID faltantes','Senza upline':'Sin upline','Albero del network':'Árbol de la red','Upline diretto':'Upline directo','Registrato':'Registrado',
-  'Nessun membro.':'Ningún miembro.','Nessun membro nella gamba sinistra.':'Ningún miembro en la pierna izquierda.','Nessun membro nella gamba destra.':'Ningún miembro en la pierna derecha.',
-  'Non assegnati':'Sin asignar','Posizione non valida.':'Posición no válida.'
-};
-// Extend the original dictionary without changing the app's data/logic.
-Object.assign(RY_I18N,RY_I18N_EXTRA);
-
-function ryTranslateText(root=document){
-  if(localStorage.getItem('ryLang')!=='es') return;
-  const target=root===document?document.body:root;
-  if(!target) return;
-  const entries=Object.entries(RY_I18N).filter(([a,b])=>a&&b).sort((a,b)=>b[0].length-a[0].length);
-  const walker=document.createTreeWalker(target,NodeFilter.SHOW_TEXT);
-  const nodes=[]; let n; while(n=walker.nextNode()) nodes.push(n);
-  nodes.forEach(node=>{
-    if(!node.nodeValue.trim()) return;
-    let v=node.nodeValue;
-    for(const [it,es] of entries){
-      if(v.includes(it)) v=v.split(it).join(es);
-    }
-    if(v!==node.nodeValue) node.nodeValue=v;
-  });
-  const attrs=['placeholder','title','aria-label','data-label'];
-  (target===document.body?document.querySelectorAll('*'):target.querySelectorAll('*')).forEach(el=>attrs.forEach(a=>{
-    const v=el.getAttribute(a); if(!v) return;
-    let nv=v; for(const [it,es] of entries){ if(nv.includes(it)) nv=nv.split(it).join(es); }
-    if(nv!==v) el.setAttribute(a,nv);
-  }));
-}
-function ryRestoreItalian(){ location.reload(); }
-window.setLanguage=function(lang){ localStorage.setItem('ryLang',lang); document.documentElement.lang=lang; if(lang==='it'){ location.reload(); return; } ryTranslateText(); document.querySelectorAll('.lang-switch button').forEach(b=>b.classList.toggle('on',b.dataset.lang===lang)); };
-function ryUpdateLangButtons(){ const lang=localStorage.getItem('ryLang')||'it'; document.querySelectorAll('.lang-switch button').forEach(b=>b.classList.toggle('on',b.dataset.lang===lang)); document.documentElement.lang=lang; if(lang==='es') ryTranslateText(); }
-const ryObserver=new MutationObserver(muts=>{ if(localStorage.getItem('ryLang')!=='es') return; muts.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1) ryTranslateText(n);})); });
-document.addEventListener('DOMContentLoaded',()=>{ ryUpdateLangButtons(); ryObserver.observe(document.body,{childList:true,subtree:true}); });
-</script>
-<script>
-/* ProTracker modern micro-interactions — no data/model changes */
-document.addEventListener('DOMContentLoaded',()=>{
-  document.querySelectorAll('button').forEach(btn=>{
-    btn.addEventListener('pointerdown',()=>btn.classList.add('pressing'));
-    btn.addEventListener('pointerup',()=>btn.classList.remove('pressing'));
-    btn.addEventListener('pointerleave',()=>btn.classList.remove('pressing'));
-  });
-});
-</script>
-<style>
-button.pressing{transform:scale(.98)!important}
-</style>
 </body>
 </html>
