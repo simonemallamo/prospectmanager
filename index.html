@@ -790,7 +790,9 @@ const firebaseConfig = {
   messagingSenderId: "85066394723",
   appId: "1:85066394723:web:1687432bb2c1c07eae9c56"
 };
-// ── LANGUAGE ──
+// ── LANGUAGE / I18N ──
+// Spanish is applied to both the static UI and HTML generated later by render functions.
+// The Italian source remains untouched; switching back to IT simply reloads the original UI.
 const LANG_TEXT = {
   es: {
     'Bentornato':'Bienvenido de nuevo','Gestisci i tuoi prospect e monitora il team':'Gestiona tus prospectos y supervisa el equipo',
@@ -802,33 +804,104 @@ const LANG_TEXT = {
     '＋ Nuovo prospect':'＋ Nuevo prospecto','Nome / Note':'Nombre / Notas','Telefono':'Teléfono','Giorni':'Días','Presentazione':'Presentación',
     'Follow-up 1→4':'Seguimiento 1→4','Pagamento':'Pago','Stato':'Estado','Paese / Reg.':'País / Reg.',
     'Iscritto':'Registrado','Contattato':'Contactado','Annulla':'Cancelar','Salva':'Guardar','Modifica':'Editar','Elimina':'Eliminar',
-    'Nuovo prospecto':'Nuevo prospecto','Nuovo prospect':'Nuevo prospecto','Paese':'País','Provincia / Regione':'Provincia / Región',
+    'Nuovo prospect':'Nuevo prospecto','Paese':'País','Provincia / Regione':'Provincia / Región',
     '— Seleziona paese —':'— Selecciona país —','— Seleziona prima il paese —':'— Selecciona primero el país —','— Seleziona regione —':'— Selecciona región —',
     'Canale di contatto':'Canal de contacto','Note':'Notas','Cerca utente...':'Buscar usuario...','Leader':'Líder','Membri':'Miembros',
     'Senza upline':'Sin upline','Upline diretto':'Upline directo','Albero del network':'Árbol de la red','La mia struttura':'Mi estructura',
     'Reimposta':'Restablecer','Membro':'Miembro','Team Leader':'Líder de equipo','Leader e Membri':'Líderes y miembros',
     'Impostazioni account':'Configuración de la cuenta','Codice Leader':'Código de líder','Inserisci il codice...':'Introduce el código...',
     'Attiva accesso Leader →':'Activar acceso de líder →','Sei già Team Leader':'Ya eres líder de equipo','Il tuo link di invito':'Tu enlace de invitación',
-    'Copia':'Copiar','Copiato ✓':'Copiado ✓','Bentornato':'Bienvenido de nuevo','Elimina definitivamente':'Eliminar definitivamente',
-    'Dashboard Team':'Dashboard del equipo','Albero Network':'Árbol de la red','Membri disattivati':'Miembros desactivados','Riattiva':'Reactivar',
-    'Tutta la struttura':'Toda la estructura','Destra 👉':'Derecha 👉','Sinistra 👈':'Izquierda 👈','— Non assegnata —':'— Sin asignar —'
+    'Copia':'Copiar','Copiato ✓':'Copiado ✓','Elimina definitivamente':'Eliminar definitivamente',
+    'Albero Network':'Árbol de la red','Membri disattivati':'Miembros desactivados','Riattiva':'Reactivar',
+    'Tutta la struttura':'Toda la estructura','Destra 👉':'Derecha 👉','Sinistra 👈':'Izquierda 👈','— Non assegnata —':'— Sin asignar —',
+    'Ultimi 7 giorni':'Últimos 7 días','Totale':'Total','Prospect':'Prospectos','Presentaz.':'Presentaciones','FU completi':'FU completos',
+    'Prospect aggiunti questa settimana':'Prospectos añadidos esta semana','Sett.':'Sem.','Pres.':'Pres.','Pag.':'Pago',
+    'Membri del team':'Miembros del equipo','Dashboard':'Dashboard','Dettagli':'Detalles','Chiudi':'Cerrar',
+    'Apri':'Abrir','Conferma':'Confirmar','Posizione':'Posición','Open':'Libre','Gestisci posizione':'Gestionar posición',
+    'Sinistra':'Izquierda','Destra':'Derecha','Reset':'Restablecer','Cerca...':'Buscar...','Seleziona':'Seleccionar',
+    'Backup struttura':'Copia de seguridad de la estructura','Ripristina':'Restaurar','Struttura':'Estructura',
+    'Albero Network personale':'Árbol de red personal','Trascina per riposizionare':'Arrastra para reposicionar',
+    'Hover su una scheda per i numeri':'Pasa el cursor sobre una tarjeta para ver los datos',
+    'Cambia password':'Cambiar contraseña','Codice Leader':'Código de líder','Inserisci il codice Leader':'Introduce el código de líder',
+    'Attiva accesso Leader':'Activar acceso de líder','Copia link':'Copiar enlace','Condividi con i tuoi diretti':'Comparte con tus directos',
+    'Errore':'Error','Conferma eliminazione':'Confirmar eliminación','Nessun risultato':'Sin resultados'
   }
 };
+
+const I18N_KEYS = Object.keys(LANG_TEXT.es).sort((a,b)=>b.length-a.length);
+let _i18nObserver = null;
+let _i18nBusy = false;
+
+function translateStringToSpanish(value){
+  if(!value || typeof value!=='string') return value;
+  let out=value;
+  for(const key of I18N_KEYS){
+    if(out.includes(key)) out=out.split(key).join(LANG_TEXT.es[key]);
+  }
+  return out;
+}
+
+function translateNodeToSpanish(node){
+  if(_i18nBusy || !node) return;
+  _i18nBusy=true;
+  try{
+    const walker=document.createTreeWalker(node,NodeFilter.SHOW_TEXT);
+    const nodes=[]; let n;
+    while(n=walker.nextNode()) nodes.push(n);
+    nodes.forEach(t=>{
+      if(t.parentElement && ['SCRIPT','STYLE','NOSCRIPT'].includes(t.parentElement.tagName)) return;
+      const v=t.nodeValue;
+      const nv=translateStringToSpanish(v);
+      if(nv!==v)t.nodeValue=nv;
+    });
+    node.querySelectorAll?.('input,textarea,[title],[aria-label]').forEach(el=>{
+      if(el.placeholder) el.placeholder=translateStringToSpanish(el.placeholder);
+      if(el.title) el.title=translateStringToSpanish(el.title);
+      if(el.getAttribute('aria-label')) el.setAttribute('aria-label',translateStringToSpanish(el.getAttribute('aria-label')));
+    });
+    node.querySelectorAll?.('option').forEach(o=>{o.textContent=translateStringToSpanish(o.textContent);});
+  }finally{_i18nBusy=false;}
+}
+
+function startSpanishObserver(){
+  if(_i18nObserver) return;
+  _i18nObserver=new MutationObserver(mutations=>{
+    if(_i18nBusy) return;
+    for(const m of mutations){
+      if(m.type==='characterData'){
+        const v=m.target.nodeValue, nv=translateStringToSpanish(v);
+        if(v!==nv)m.target.nodeValue=nv;
+      }else if(m.type==='childList'){
+        m.addedNodes.forEach(n=>{
+          if(n.nodeType===Node.TEXT_NODE){
+            const v=n.nodeValue,nv=translateStringToSpanish(v);if(v!==nv)n.nodeValue=nv;
+          }else if(n.nodeType===Node.ELEMENT_NODE){translateNodeToSpanish(n);}
+        });
+      }
+    }
+  });
+  _i18nObserver.observe(document.body,{subtree:true,childList:true,characterData:true});
+}
+
 function setLanguage(lang){
   lang=(lang==='es'?'es':'it');
   localStorage.setItem('pm_lang',lang);
-  const sels=[id('lang-select'),id('lang-select-auth')].filter(Boolean); sels.forEach(s=>s.value=lang);
-  if(lang==='it'){ location.reload(); return; }
-  const map=LANG_TEXT.es;
-  const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
-  const nodes=[]; let n; while(n=walker.nextNode()) nodes.push(n);
-  nodes.forEach(t=>{let v=t.nodeValue, k=v.trim(); if(map[k]) t.nodeValue=v.replace(k,map[k]);});
-  document.querySelectorAll('input,textarea').forEach(el=>{if(map[el.placeholder])el.placeholder=map[el.placeholder];});
-  document.documentElement.lang=lang;
+  const sels=[id('lang-select'),id('lang-select-auth')].filter(Boolean);
+  sels.forEach(s=>s.value=lang);
+  if(lang==='it'){
+    // Reloading restores every original Italian label, including labels generated dynamically.
+    location.reload();
+    return;
+  }
+  document.documentElement.lang='es';
+  translateNodeToSpanish(document.body);
+  startSpanishObserver();
 }
+
 function initLanguage(){
   const lang=localStorage.getItem('pm_lang')||'it';
-  const sels=[id('lang-select'),id('lang-select-auth')].filter(Boolean); sels.forEach(s=>s.value=lang);
+  const sels=[id('lang-select'),id('lang-select-auth')].filter(Boolean);
+  sels.forEach(s=>s.value=lang);
   if(lang==='es') setLanguage('es');
 }
 
