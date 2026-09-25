@@ -816,7 +816,8 @@ const LANG_TEXT = {
     'Tutta la struttura':'Toda la estructura','Destra 👉':'Derecha 👉','Sinistra 👈':'Izquierda 👈','— Non assegnata —':'— Sin asignar —',
     'Ultimi 7 giorni':'Últimos 7 días','Totale':'Total','Prospect':'Prospectos','Presentaz.':'Presentaciones','FU completi':'FU completos',
     'Prospect aggiunti questa settimana':'Prospectos añadidos esta semana','Sett.':'Sem.','Pres.':'Pres.','Pag.':'Pago',
-    'Membri del team':'Miembros del equipo','Dashboard':'Dashboard','Dettagli':'Detalles','Chiudi':'Cerrar',
+    'Membri del team':'Miembros del equipo','Dashboard':'Dashboard','Dashboard Team':'Panel del equipo','Dettagli':'Detalles','Chiudi':'Cerrar',
+    'Presentazioni':'Presentaciones','Attesa pag.':'Pendiente de pago','Gamba':'Pierna','Nessun membro.':'Ningún miembro.','Nessun membro nella gamba sinistra.':'Ningún miembro en la pierna izquierda.','Nessun membro nella gamba destra.':'Ningún miembro en la pierna derecha.','Membro':'Miembro','membro':'miembro','membri':'miembros','persone':'personas',
     'Apri':'Abrir','Conferma':'Confirmar','Posizione':'Posición','Open':'Libre','Gestisci posizione':'Gestionar posición',
     'Sinistra':'Izquierda','Destra':'Derecha','Reset':'Restablecer','Cerca...':'Buscar...','Seleziona':'Seleccionar',
     'Backup struttura':'Copia de seguridad de la estructura','Ripristina':'Restaurar','Struttura':'Estructura',
@@ -897,6 +898,10 @@ function setLanguage(lang){
   translateNodeToSpanish(document.body);
   startSpanishObserver();
 }
+
+// Expose the handler because the language selector uses inline onchange="setLanguage(...)"
+// and this file runs inside a type="module" script. Module functions are not global by default.
+window.setLanguage = setLanguage;
 
 function initLanguage(){
   const lang=localStorage.getItem('pm_lang')||'it';
@@ -1354,6 +1359,22 @@ window.sortBy = col => {
 var hiddenMembers = new Set();
 try { hiddenMembers = new Set(JSON.parse(localStorage.getItem('pm_hidden')||'[]')); } catch(e){}
 
+// ── BINARY LEG HELPER ──
+// The Team Dashboard calls getLegFor(). The previous language build accidentally
+// omitted this helper, causing renderTeamDashboard() to stop before creating cards.
+function getLegFor(user, refUid) {
+  if(!user || !refUid || user.id === refUid) return null;
+  const map = user.legMap;
+  if(map && Object.prototype.hasOwnProperty.call(map, refUid)) {
+    const leg = map[refUid];
+    return leg === 'left' || leg === 'right' ? leg : null;
+  }
+  if(user.uplineUid === refUid && (user.leg === 'left' || user.leg === 'right')) {
+    return user.leg;
+  }
+  return null;
+}
+window.getLegFor = getLegFor;
 
 // ── MEMBER ORDERING ──
 window.moveMember = async function(uid, dir) {
