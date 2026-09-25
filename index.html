@@ -2273,9 +2273,6 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
     legCard('left',  lStats, leftMembers) +
     legCard('right', rStats, rightMembers);
 
-  // Donut composition charts follow the same leader/structure filter.
-  renderTeamCharts(leftMembers, rightMembers, ps, wk);
-
   // If there are unassigned members show a note
   const existingNote = id('no-leg-note');
   if(noLeg.length>0){
