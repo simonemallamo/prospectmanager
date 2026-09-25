@@ -289,8 +289,7 @@ td{padding:9px 13px;vertical-align:middle;}
           <div class="logo-sub">developed by Simone Mallamo</div>
         </div>
       </div>
-      <div class="lang-wrap" style="display:flex;align-items:center;gap:5px;margin-right:8px;">
-        <select id="lang-select-auth" onchange="setLanguage(this.value)" style="padding:4px 7px;border:.5px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--text);font-size:11px;cursor:pointer;"><option value="it">🇮🇹 IT</option><option value="es">🇪🇸 ES</option></select>
+      <div class="toggle-wrap">
         <span>☀️</span><div class="t-toggle" onclick="toggleTheme()"></div><span>🌙</span>
       </div>
     </div>
@@ -349,9 +348,6 @@ td{padding:9px 13px;vertical-align:middle;}
     <button class="t-tab leader hidden" id="tab-tree" onclick="switchTab('tree')">🌳 Albero</button>
     <button class="t-tab admin-tab hidden" id="tab-admin" onclick="switchTab('admin')">⚙ Admin</button>
     <div class="topbar-right">
-      <div class="lang-wrap" style="display:flex;align-items:center;gap:5px;margin-right:8px;">
-        <select id="lang-select" onchange="setLanguage(this.value)" style="padding:5px 7px;border:.5px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--text);font-size:11px;cursor:pointer;"><option value="it">🇮🇹 IT</option><option value="es">🇪🇸 ES</option></select>
-      </div>
       <div class="toggle-wrap"><span>☀️</span><div class="t-toggle" onclick="toggleTheme()"></div><span>🌙</span></div>
       <div class="user-av" id="u-av">?</div>
       <div class="user-nm" id="u-nm">—</div>
@@ -790,126 +786,6 @@ const firebaseConfig = {
   messagingSenderId: "85066394723",
   appId: "1:85066394723:web:1687432bb2c1c07eae9c56"
 };
-// ── LANGUAGE / I18N ──
-// Spanish is applied to both the static UI and HTML generated later by render functions.
-// The Italian source remains untouched; switching back to IT simply reloads the original UI.
-const LANG_TEXT = {
-  es: {
-    'Bentornato':'Bienvenido de nuevo','Gestisci i tuoi prospect e monitora il team':'Gestiona tus prospectos y supervisa el equipo',
-    'Accedi':'Iniciar sesión','Registrati':'Registrarse','Email':'Correo electrónico','Password':'Contraseña',
-    'Hai dimenticato la password?':'¿Has olvidado la contraseña?','Nome completo':'Nombre completo','Crea account →':'Crear cuenta →',
-    'Lista Prospect':'Lista de prospectos','Dashboard Team':'Dashboard del equipo','🌳 Albero':'🌳 Árbol','⚙ Admin':'⚙ Admin',
-    'Impostazioni':'Configuración','Esci':'Salir','Cerca prospect...':'Buscar prospectos...','Tutti':'Todos','Nuovo':'Nuevo','Attivo':'Activo',
-    'In attesa pag.':'Pendiente de pago','FU completo':'FU completo','FU 1+':'FU 1+','FU 2+':'FU 2+','FU 3+':'FU 3+',
-    '＋ Nuovo prospect':'＋ Nuevo prospecto','Nome / Note':'Nombre / Notas','Telefono':'Teléfono','Giorni':'Días','Presentazione':'Presentación',
-    'Follow-up 1→4':'Seguimiento 1→4','Pagamento':'Pago','Stato':'Estado','Paese / Reg.':'País / Reg.',
-    'Iscritto':'Registrado','Contattato':'Contactado','Annulla':'Cancelar','Salva':'Guardar','Modifica':'Editar','Elimina':'Eliminar',
-    'Nuovo prospect':'Nuevo prospecto','Paese':'País','Provincia / Regione':'Provincia / Región',
-    '— Seleziona paese —':'— Selecciona país —','— Seleziona prima il paese —':'— Selecciona primero el país —','— Seleziona regione —':'— Selecciona región —',
-    'Canale di contatto':'Canal de contacto','Note':'Notas','Cerca utente...':'Buscar usuario...','Leader':'Líder','Membri':'Miembros',
-    'Senza upline':'Sin upline','Upline diretto':'Upline directo','Albero del network':'Árbol de la red','La mia struttura':'Mi estructura',
-    'Reimposta':'Restablecer','Membro':'Miembro','Team Leader':'Líder de equipo','Leader e Membri':'Líderes y miembros',
-    'Impostazioni account':'Configuración de la cuenta','Codice Leader':'Código de líder','Inserisci il codice...':'Introduce el código...',
-    'Attiva accesso Leader →':'Activar acceso de líder →','Sei già Team Leader':'Ya eres líder de equipo','Il tuo link di invito':'Tu enlace de invitación',
-    'Copia':'Copiar','Copiato ✓':'Copiado ✓','Elimina definitivamente':'Eliminar definitivamente',
-    'Albero Network':'Árbol de la red','Membri disattivati':'Miembros desactivados','Riattiva':'Reactivar',
-    'Tutta la struttura':'Toda la estructura','Destra 👉':'Derecha 👉','Sinistra 👈':'Izquierda 👈','— Non assegnata —':'— Sin asignar —',
-    'Ultimi 7 giorni':'Últimos 7 días','Totale':'Total','Prospect':'Prospectos','Presentaz.':'Presentaciones','FU completi':'FU completos',
-    'Prospect aggiunti questa settimana':'Prospectos añadidos esta semana','Sett.':'Sem.','Pres.':'Pres.','Pag.':'Pago',
-    'Membri del team':'Miembros del equipo','Dashboard':'Dashboard','Dashboard Team':'Panel del equipo','Dettagli':'Detalles','Chiudi':'Cerrar',
-    'Presentazioni':'Presentaciones','Attesa pag.':'Pendiente de pago','Gamba':'Pierna','Nessun membro.':'Ningún miembro.','Nessun membro nella gamba sinistra.':'Ningún miembro en la pierna izquierda.','Nessun membro nella gamba destra.':'Ningún miembro en la pierna derecha.','Membro':'Miembro','membro':'miembro','membri':'miembros','persone':'personas',
-    'Apri':'Abrir','Conferma':'Confirmar','Posizione':'Posición','Open':'Libre','Gestisci posizione':'Gestionar posición',
-    'Sinistra':'Izquierda','Destra':'Derecha','Reset':'Restablecer','Cerca...':'Buscar...','Seleziona':'Seleccionar',
-    'Backup struttura':'Copia de seguridad de la estructura','Ripristina':'Restaurar','Struttura':'Estructura',
-    'Albero Network personale':'Árbol de red personal','Trascina per riposizionare':'Arrastra para reposicionar',
-    'Hover su una scheda per i numeri':'Pasa el cursor sobre una tarjeta para ver los datos',
-    'Cambia password':'Cambiar contraseña','Codice Leader':'Código de líder','Inserisci il codice Leader':'Introduce el código de líder',
-    'Attiva accesso Leader':'Activar acceso de líder','Copia link':'Copiar enlace','Condividi con i tuoi diretti':'Comparte con tus directos',
-    'Errore':'Error','Conferma eliminazione':'Confirmar eliminación','Nessun risultato':'Sin resultados'
-  }
-};
-
-const I18N_KEYS = Object.keys(LANG_TEXT.es).sort((a,b)=>b.length-a.length);
-let _i18nObserver = null;
-let _i18nBusy = false;
-
-function translateStringToSpanish(value){
-  if(!value || typeof value!=='string') return value;
-  let out=value;
-  for(const key of I18N_KEYS){
-    if(out.includes(key)) out=out.split(key).join(LANG_TEXT.es[key]);
-  }
-  return out;
-}
-
-function translateNodeToSpanish(node){
-  if(_i18nBusy || !node) return;
-  _i18nBusy=true;
-  try{
-    const walker=document.createTreeWalker(node,NodeFilter.SHOW_TEXT);
-    const nodes=[]; let n;
-    while(n=walker.nextNode()) nodes.push(n);
-    nodes.forEach(t=>{
-      if(t.parentElement && ['SCRIPT','STYLE','NOSCRIPT'].includes(t.parentElement.tagName)) return;
-      const v=t.nodeValue;
-      const nv=translateStringToSpanish(v);
-      if(nv!==v)t.nodeValue=nv;
-    });
-    node.querySelectorAll?.('input,textarea,[title],[aria-label]').forEach(el=>{
-      if(el.placeholder) el.placeholder=translateStringToSpanish(el.placeholder);
-      if(el.title) el.title=translateStringToSpanish(el.title);
-      if(el.getAttribute('aria-label')) el.setAttribute('aria-label',translateStringToSpanish(el.getAttribute('aria-label')));
-    });
-    node.querySelectorAll?.('option').forEach(o=>{o.textContent=translateStringToSpanish(o.textContent);});
-  }finally{_i18nBusy=false;}
-}
-
-function startSpanishObserver(){
-  if(_i18nObserver) return;
-  _i18nObserver=new MutationObserver(mutations=>{
-    if(_i18nBusy) return;
-    for(const m of mutations){
-      if(m.type==='characterData'){
-        const v=m.target.nodeValue, nv=translateStringToSpanish(v);
-        if(v!==nv)m.target.nodeValue=nv;
-      }else if(m.type==='childList'){
-        m.addedNodes.forEach(n=>{
-          if(n.nodeType===Node.TEXT_NODE){
-            const v=n.nodeValue,nv=translateStringToSpanish(v);if(v!==nv)n.nodeValue=nv;
-          }else if(n.nodeType===Node.ELEMENT_NODE){translateNodeToSpanish(n);}
-        });
-      }
-    }
-  });
-  _i18nObserver.observe(document.body,{subtree:true,childList:true,characterData:true});
-}
-
-function setLanguage(lang){
-  lang=(lang==='es'?'es':'it');
-  localStorage.setItem('pm_lang',lang);
-  const sels=[id('lang-select'),id('lang-select-auth')].filter(Boolean);
-  sels.forEach(s=>s.value=lang);
-  if(lang==='it'){
-    // Reloading restores every original Italian label, including labels generated dynamically.
-    location.reload();
-    return;
-  }
-  document.documentElement.lang='es';
-  translateNodeToSpanish(document.body);
-  startSpanishObserver();
-}
-
-// Expose the handler because the language selector uses inline onchange="setLanguage(...)"
-// and this file runs inside a type="module" script. Module functions are not global by default.
-window.setLanguage = setLanguage;
-
-function initLanguage(){
-  const lang=localStorage.getItem('pm_lang')||'it';
-  const sels=[id('lang-select'),id('lang-select-auth')].filter(Boolean);
-  sels.forEach(s=>s.value=lang);
-  if(lang==='es') setLanguage('es');
-}
-
 // ════════════════════════════════════
 
 const COUNTRIES = {
@@ -919,37 +795,8 @@ const COUNTRIES = {
   'Argentina': ['Buenos Aires','Catamarca','Chaco','Chubut','Córdoba','Corrientes','Entre Ríos','Formosa','Jujuy','La Pampa','La Rioja','Mendoza','Misiones','Neuquén','Río Negro','Salta','San Juan','San Luis','Santa Cruz','Santa Fe','Santiago del Estero','Tierra del Fuego','Tucumán'],
   'Austria': ['Burgenland','Kärnten','Niederösterreich','Oberösterreich','Salzburg','Steiermark','Tirol','Vorarlberg','Wien'],
   'Belgio': ['Anversa','Brabante Vallone','Brabante Fiammingo','Brussel','Est','Fiandre Occidentali','Fiandre Orientali','Hainaut','Liegi','Limburgo','Lussemburgo','Namur'],
-  'Antigua e Barbuda': ['Saint John','Saint Mary','Saint Paul','Saint Peter','Saint Philip','Saint George'],
-  'Bahamas': ['New Providence','Grand Bahama','Abaco','Eleuthera','Exuma','Long Island','Andros','Bimini','Cat Island','San Salvador','Inagua'],
-  'Barbados': ['Christ Church','Saint Andrew','Saint George','Saint James','Saint John','Saint Joseph','Saint Lucy','Saint Michael','Saint Peter','Saint Philip','Saint Thomas'],
-  'Belize': ['Belize','Cayo','Corozal','Orange Walk','Stann Creek','Toledo'],
-  'Bolivia': ['Beni','Chuquisaca','Cochabamba','La Paz','Oruro','Pando','Potosí','Santa Cruz','Tarija'],
   'Bosnia': ['Federazione BiH','Repubblica Srpska','Distretto di Brčko'],
   'Brasile': ['Acre','Alagoas','Amapá','Amazonas','Bahia','Ceará','Distrito Federal','Espírito Santo','Goiás','Maranhão','Mato Grosso','Mato Grosso do Sul','Minas Gerais','Pará','Paraíba','Paraná','Pernambuco','Piauí','Rio de Janeiro','Rio Grande do Norte','Rio Grande do Sul','Rondônia','Roraima','Santa Catarina','São Paulo','Sergipe','Tocantins'],
-  'Cile': ['Arica y Parinacota','Tarapacá','Antofagasta','Atacama','Coquimbo','Valparaíso','Metropolitana de Santiago','O’Higgins','Maule','Ñuble','Biobío','La Araucanía','Los Ríos','Los Lagos','Aysén','Magallanes'],
-  'Colombia': ['Amazonas','Antioquia','Arauca','Atlántico','Bolívar','Boyacá','Caldas','Caquetá','Casanare','Cauca','Cesar','Chocó','Córdoba','Cundinamarca','Guainía','Guaviare','Huila','La Guajira','Magdalena','Meta','Nariño','Norte de Santander','Putumayo','Quindío','Risaralda','San Andrés y Providencia','Santander','Sucre','Tolima','Valle del Cauca','Vaupés','Vichada'],
-  'Costa Rica': ['Alajuela','Cartago','Guanacaste','Heredia','Limón','Puntarenas','San José'],
-  'Cuba': ['Artemisa','Camagüey','Ciego de Ávila','Cienfuegos','Ciudad de La Habana','Granma','Guantánamo','Holguín','Isla de la Juventud','La Habana','Las Tunas','Matanzas','Mayabeque','Pinar del Río','Sancti Spíritus','Santiago de Cuba','Villa Clara'],
-  'Dominica': ['Saint Andrew','Saint David','Saint George','Saint John','Saint Joseph','Saint Luke','Saint Mark','Saint Patrick','Saint Paul','Saint Peter'],
-  'Ecuador': ['Azuay','Bolívar','Cañar','Carchi','Chimborazo','Cotopaxi','El Oro','Esmeraldas','Galápagos','Guayas','Imbabura','Loja','Los Ríos','Manabí','Morona-Santiago','Napo','Orellana','Pastaza','Pichincha','Santa Elena','Santo Domingo de los Tsáchilas','Sucumbíos','Tungurahua','Zamora-Chinchipe'],
-  'El Salvador': ['Ahuachapán','Cabañas','Chalatenango','Cuscatlán','La Libertad','La Paz','La Unión','Morazán','San Miguel','San Salvador','San Vicente','Santa Ana','Sonsonate','Usulután'],
-  'Grenada': ['Saint Andrew','Saint David','Saint George','Saint John','Saint Mark','Saint Patrick','Carriacou and Petite Martinique'],
-  'Guatemala': ['Alta Verapaz','Baja Verapaz','Chimaltenango','Chiquimula','El Progreso','Escuintla','Guatemala','Huehuetenango','Izabal','Jalapa','Jutiapa','Petén','Quetzaltenango','Quiché','Retalhuleu','Sacatepéquez','San Marcos','Santa Rosa','Sololá','Suchitepéquez','Totonicapán','Zacapa'],
-  'Guyana': ['Barima-Waini','Cuyuni-Mazaruni','Demerara-Mahaica','East Berbice-Corentyne','Essequibo Islands-West Demerara','Mahaica-Berbice','Pomeroon-Supenaam','Potaro-Siparuni','Upper Demerara-Berbice','Upper Takutu-Upper Essequibo'],
-  'Haiti': ['Artibonite','Centre','Grand’Anse','Nippes','Nord','Nord-Est','Nord-Ouest','Ouest','Sud','Sud-Est'],
-  'Honduras': ['Atlántida','Choluteca','Colón','Comayagua','Copán','Cortés','El Paraíso','Francisco Morazán','Gracias a Dios','Intibucá','Islas de la Bahía','La Paz','Lempira','Ocotepeque','Olancho','Santa Bárbara','Valle','Yoro'],
-  'Jamaica': ['Clarendon','Hanover','Kingston','Manchester','Portland','Saint Andrew','Saint Ann','Saint Catherine','Saint Elizabeth','Saint James','Saint Mary','Saint Thomas','Trelawny','Westmoreland'],
-  'Messico': ['Aguascalientes','Baja California','Baja California Sur','Campeche','Chiapas','Chihuahua','Ciudad de México','Coahuila','Colima','Durango','Guanajuato','Guerrero','Hidalgo','Jalisco','México','Michoacán','Morelos','Nayarit','Nuevo León','Oaxaca','Puebla','Querétaro','Quintana Roo','San Luis Potosí','Sinaloa','Sonora','Tabasco','Tamaulipas','Tlaxcala','Veracruz','Yucatán','Zacatecas'],
-  'Nicaragua': ['Boaco','Carazo','Chinandega','Chontales','Estelí','Granada','Jinotega','León','Madriz','Managua','Masaya','Matagalpa','Nueva Segovia','Río San Juan','Rivas','Costa Caribe Norte','Costa Caribe Sur'],
-  'Panama': ['Bocas del Toro','Chiriquí','Coclé','Colón','Darién','Herrera','Los Santos','Panamá','Panamá Oeste','Veraguas','Guna Yala','Emberá-Wounaan','Ngäbe-Buglé'],
-  'Paraguay': ['Alto Paraguay','Alto Paraná','Amambay','Asunción','Boquerón','Caaguazú','Caazapá','Canindeyú','Central','Concepción','Cordillera','Guairá','Itapúa','Misiones','Ñeembucú','Paraguarí','Presidente Hayes','San Pedro'],
-  'Perù': ['Amazonas','Áncash','Apurímac','Arequipa','Ayacucho','Cajamarca','Callao','Cusco','Huancavelica','Huánuco','Ica','Junín','La Libertad','Lambayeque','Lima','Loreto','Madre de Dios','Moquegua','Pasco','Piura','Puno','San Martín','Tacna','Tumbes','Ucayali'],
-  'Saint Kitts e Nevis': ['Christ Church Nichola Town','Saint Anne Sandy Point','Saint George Basseterre','Saint George Gingerland','Saint James Windward','Saint John Capisterre','Saint John Figtree','Saint Mary Cayon','Saint Paul Capisterre','Saint Paul Charlestown','Saint Peter Basseterre','Saint Thomas Middle Island','Trinity Palmetto Point'],
-  'Saint Lucia': ['Anse la Raye','Canaries','Castries','Choiseul','Dennery','Gros Islet','Laborie','Micoud','Soufrière','Vieux Fort'],
-  'Saint Vincent e Grenadine': ['Charlotte','Grenadines','Saint Andrew','Saint David','Saint George','Saint Patrick'],
-  'Suriname': ['Brokopondo','Commewijne','Coronie','Marowijne','Nickerie','Para','Paramaribo','Saramacca','Sipaliwini','Wanica'],
-  'Trinidad e Tobago': ['Arima','Chaguanas','Couva-Tabaquite-Talparo','Diego Martin','Eastern Tobago','Penal-Debe','Point Fortin','Port of Spain','Princes Town','Rio Claro-Mayaro','San Fernando','San Juan-Laventille','Sangre Grande','Siparia','Tunapuna-Piarco','Western Tobago'],
-  'Uruguay': ['Artigas','Canelones','Cerro Largo','Colonia','Durazno','Flores','Florida','Lavalleja','Maldonado','Montevideo','Paysandú','Río Negro','Rivera','Rocha','Salto','San José','Soriano','Tacuarembó','Treinta y Tres'],
   'Bulgaria': ['Blagoevgrad','Burgas','Dobrich','Gabrovo','Haskovo','Kardzhali','Kyustendil','Lovech','Montana','Pazardzhik','Pernik','Pleven','Plovdiv','Razgrad','Ruse','Shumen','Silistra','Sliven','Smolyan','Sofia','Stara Zagora','Targovishte','Varna','Veliko Tarnovo','Vidin','Vratsa','Yambol'],
   'Canada': ['Alberta','British Columbia','Manitoba','New Brunswick','Newfoundland','Nova Scotia','Ontario','PEI','Quebec','Saskatchewan','Yukon','NWT','Nunavut'],
   'Capo Verde': ['Boa Vista','Brava','Fogo','Maio','Sal','Santiago','Santo Antão','São Nicolau','São Vicente'],
@@ -985,9 +832,6 @@ const COUNTRIES = {
 const COUNTRY_LIST = Object.keys(COUNTRIES).sort();
 
 const LEADER_CODE = "RYOUNG";
-
-// Apply saved interface language after the page is built.
-setTimeout(initLanguage, 0);
 const ADMIN_CODE  = "Giftedbird609";
 // ════════════════════════════════════
 
@@ -1359,22 +1203,6 @@ window.sortBy = col => {
 var hiddenMembers = new Set();
 try { hiddenMembers = new Set(JSON.parse(localStorage.getItem('pm_hidden')||'[]')); } catch(e){}
 
-// ── BINARY LEG HELPER ──
-// The Team Dashboard calls getLegFor(). The previous language build accidentally
-// omitted this helper, causing renderTeamDashboard() to stop before creating cards.
-function getLegFor(user, refUid) {
-  if(!user || !refUid || user.id === refUid) return null;
-  const map = user.legMap;
-  if(map && Object.prototype.hasOwnProperty.call(map, refUid)) {
-    const leg = map[refUid];
-    return leg === 'left' || leg === 'right' ? leg : null;
-  }
-  if(user.uplineUid === refUid && (user.leg === 'left' || user.leg === 'right')) {
-    return user.leg;
-  }
-  return null;
-}
-window.getLegFor = getLegFor;
 
 // ── MEMBER ORDERING ──
 window.moveMember = async function(uid, dir) {
