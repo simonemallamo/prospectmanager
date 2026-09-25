@@ -199,6 +199,50 @@ td{padding:9px 13px;vertical-align:middle;}
 .rank-bar{height:100%;border-radius:2px;background:var(--accent);}
 .rank-val{font-size:11px;font-family:'JetBrains Mono','DM Mono',monospace;color:var(--text2);min-width:24px;text-align:right;}
 
+/* ── TEAM DONUT CHARTS ── */
+.team-charts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem;}
+.team-chart-card{background:var(--surface);border:.5px solid var(--border);border-radius:13px;padding:1.125rem;}
+.team-chart-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;}
+.team-chart-title{font-size:13px;font-weight:600;}
+.team-chart-total{font-family:'JetBrains Mono','DM Mono',monospace;font-size:11px;color:var(--text3);}
+.team-chart-body{display:flex;align-items:center;gap:18px;min-height:150px;}
+.team-donut{width:142px;height:142px;border-radius:50%;position:relative;flex:0 0 142px;display:flex;align-items:center;justify-content:center;}
+.team-donut::after{content:'';position:absolute;width:76px;height:76px;border-radius:50%;background:var(--surface);}
+.team-donut-center{position:relative;z-index:2;text-align:center;width:76px;}
+.team-donut-value{font-family:'JetBrains Mono','DM Mono',monospace;font-size:22px;font-weight:600;line-height:1.1;}
+.team-donut-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.45px;margin-top:3px;}
+.team-chart-legend{display:flex;flex-direction:column;gap:7px;flex:1;min-width:0;}
+.team-chart-row{display:grid;grid-template-columns:9px minmax(0,1fr) auto auto;align-items:center;gap:6px;font-size:11px;}
+.team-chart-dot{width:8px;height:8px;border-radius:50%;}
+.team-chart-name{color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.team-chart-count{font-family:'JetBrains Mono','DM Mono',monospace;color:var(--text);font-size:10px;}
+.team-chart-pct{font-family:'JetBrains Mono','DM Mono',monospace;color:var(--text3);font-size:10px;min-width:34px;text-align:right;}
+.team-chart-foot{display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:.5px solid var(--border);}
+.team-chart-mini{flex:1;background:var(--surface2);border-radius:8px;padding:7px 8px;}
+.team-chart-mini-val{font-family:'JetBrains Mono','DM Mono',monospace;font-size:15px;font-weight:600;}
+.team-chart-mini-lbl{font-size:9px;color:var(--text3);margin-top:2px;}
+.team-chart-empty{font-size:12px;color:var(--text3);padding:20px 0;}
+@media(max-width:760px){.team-charts{grid-template-columns:1fr;}.team-chart-body{justify-content:center;}.team-chart-legend{max-width:300px;}}
+
+/* ── TEAM LEG DONUTS ── */
+.leg-visual{display:grid;grid-template-columns:150px 1fr;gap:18px;align-items:center;margin:16px 0 14px;}
+.leg-donut{width:142px;height:142px;border-radius:50%;position:relative;display:grid;place-items:center;flex-shrink:0;box-shadow:inset 0 0 0 1px var(--border);}
+.leg-donut::after{content:'';position:absolute;width:88px;height:88px;border-radius:50%;background:var(--surface);box-shadow:0 3px 14px rgba(0,0,0,.08);}
+.leg-donut-center{position:relative;z-index:2;text-align:center;line-height:1.1;}
+.leg-donut-total{font-size:27px;font-weight:800;letter-spacing:-1px;}
+.leg-donut-label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-top:4px;}
+.leg-legend{display:flex;flex-direction:column;gap:9px;}
+.leg-legend-row{display:grid;grid-template-columns:10px 1fr auto;align-items:center;gap:8px;font-size:11px;}
+.leg-legend-dot{width:9px;height:9px;border-radius:50%;}
+.leg-legend-name{color:var(--text2);}
+.leg-legend-value{font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
+.leg-legend-pct{font-size:10px;color:var(--text3);margin-left:4px;}
+.leg-mini-metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px;}
+.leg-mini-metric{padding:9px 10px;border:.5px solid var(--border);border-radius:11px;background:var(--surface2);}
+.leg-mini-value{font-size:17px;font-weight:750;line-height:1.1;}
+.leg-mini-label{font-size:10px;color:var(--text3);margin-top:3px;}
+@media(max-width:700px){.leg-visual{grid-template-columns:1fr;justify-items:center}.leg-legend{width:100%}}
+
 /* ── ADMIN ── */
 .admin-badge{display:inline-flex;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:500;text-transform:uppercase;}
 .admin-badge.leader{background:var(--accent-dim);color:var(--accent);border:.5px solid var(--accent);}
@@ -2178,9 +2222,32 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
     const pct = Math.round((stats.prospects/total)*100);
     const leaders = members.filter(m=>m.role==='leader');
     const topMembers = members.slice(0,8);
+    const chartLabels = currentLanguage==='es'
+      ? {new:'Nuevos',active:'Activos',done:'FU completos',payment:'Pago pendiente',prospects:'Prospectos',new7:'Nuevos últimos 7 días',pres:'Presentaciones'}
+      : {new:'Nuovi',active:'Attivi',done:'FU completi',payment:'Attesa pagamento',prospects:'Prospect',new7:'Nuovi ultimi 7 giorni',pres:'Presentazioni'};
+    const allLegProspects = members.flatMap(m=>ps.filter(p=>p.uid===m.id));
+    const stageOf = p => {
+      const n=(p.followUps||[]).filter(Boolean).length;
+      if(p.payment) return 'payment';
+      if(n===4) return 'done';
+      if(p.presentation || n>0) return 'active';
+      return 'new';
+    };
+    const stageVals={new:0,active:0,done:0,payment:0};
+    allLegProspects.forEach(p=>stageVals[stageOf(p)]++);
+    const stageTotal=Math.max(allLegProspects.length,1);
+    const stageColors={new:'var(--green)',active:'var(--blue)',done:'var(--accent)',payment:'var(--amber)'};
+    const stageOrder=['new','active','done','payment'];
+    let cursor=0;
+    const donutStops=stageOrder.map(k=>{const a=cursor/stageTotal*100;cursor+=stageVals[k];const b=cursor/stageTotal*100;return `${stageColors[k]} ${a}% ${b}%`;}).join(',');
+    const chartRows=stageOrder.map(k=>`<div class="leg-legend-row"><span class="leg-legend-dot" style="background:${stageColors[k]}"></span><span class="leg-legend-name">${chartLabels[k]}</span><span class="leg-legend-value">${stageVals[k]} <span class="leg-legend-pct">${Math.round(stageVals[k]/stageTotal*100)}%</span></span></div>`).join('');
+    const new7=allLegProspects.filter(p=>(p.createdAt?.toMillis?.()||p._insertedAt||0)>=(wk||Date.now()-7*86400000)).length;
+    const pres=allLegProspects.filter(p=>p.presentation).length;
     return `<div class="leg-card ${side}">
       <div class="leg-title" style="color:${color}">${label}</div>
       <div class="leg-sub">${stats.members} persone · ${pct}% dei prospect totali</div>
+      <div class="leg-visual"><div class="leg-donut" role="img" aria-label="${side==='right'?'Gamba destra':'Gamba sinistra'}" style="background:conic-gradient(${donutStops})"><div class="leg-donut-center"><div class="leg-donut-total">${stats.prospects}</div><div class="leg-donut-label">${chartLabels.prospects}</div></div></div><div class="leg-legend">${chartRows}</div></div>
+      <div class="leg-mini-metrics"><div class="leg-mini-metric"><div class="leg-mini-value" style="color:var(--green)">${new7}</div><div class="leg-mini-label">${chartLabels.new7}</div></div><div class="leg-mini-metric"><div class="leg-mini-value" style="color:var(--blue)">${pres}</div><div class="leg-mini-label">${chartLabels.pres}</div></div></div>
       <div class="leg-stats">
         <div class="leg-stat"><div class="leg-stat-val" style="color:${color}">${stats.prospects}</div><div class="leg-stat-lbl">Prospect totali</div></div>
         <div class="leg-stat"><div class="leg-stat-val" style="color:var(--green)">${stats.newWk}</div><div class="leg-stat-lbl">Nuovi (7gg)</div></div>
@@ -2205,6 +2272,9 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
   id('binary-view').innerHTML =
     legCard('left',  lStats, leftMembers) +
     legCard('right', rStats, rightMembers);
+
+  // Donut composition charts follow the same leader/structure filter.
+  renderTeamCharts(leftMembers, rightMembers, ps, wk);
 
   // If there are unassigned members show a note
   const existingNote = id('no-leg-note');
@@ -2783,6 +2853,13 @@ const I18N_ES = {
   'Seleziona tutti visibili':'Seleccionar todos los visibles',
   'Seleziona tutti "Facebook Ads"':'Seleccionar todos los de "Facebook Ads"',
   'Confronto gambe':'Comparativa de ramas',
+  'Distribuzione prospect per gamba':'Distribución de prospectos por rama',
+  'GAMBA SINISTRA':'RAMA IZQUIERDA',
+  'GAMBA DESTRA':'RAMA DERECHA',
+  'Nuovi ultimi 7 giorni':'Nuevos últimos 7 días',
+  'Attesa pagamento':'Pago pendiente',
+  'Prospect totali':'Prospectos totales',
+  'persone':'personas',
   'Tutta la struttura':'Toda la estructura',
   'Filtra per leader per vedere le sue gambe':'Filtrar por líder para ver sus ramas',
   '✕ Chiudi':'✕ Cerrar',
@@ -2946,6 +3023,9 @@ window.setLanguage=function(lang){
   currentLanguage=lang;
   localStorage.setItem('pm_language',lang);
   translatePage();
+  if(window._cachedUs && window._cachedPs && window._cachedShow && document.getElementById('view-team') && !document.getElementById('view-team').classList.contains('hidden')){
+    renderTeamDashboard();
+  }
 };
 window.getCurrentLanguage=()=>currentLanguage;
 
