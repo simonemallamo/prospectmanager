@@ -289,7 +289,8 @@ td{padding:9px 13px;vertical-align:middle;}
           <div class="logo-sub">developed by Simone Mallamo</div>
         </div>
       </div>
-      <div class="toggle-wrap">
+      <div class="lang-wrap" style="display:flex;align-items:center;gap:5px;margin-right:8px;">
+        <select id="lang-select-auth" onchange="setLanguage(this.value)" style="padding:4px 7px;border:.5px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--text);font-size:11px;cursor:pointer;"><option value="it">🇮🇹 IT</option><option value="es">🇪🇸 ES</option></select>
         <span>☀️</span><div class="t-toggle" onclick="toggleTheme()"></div><span>🌙</span>
       </div>
     </div>
@@ -348,6 +349,9 @@ td{padding:9px 13px;vertical-align:middle;}
     <button class="t-tab leader hidden" id="tab-tree" onclick="switchTab('tree')">🌳 Albero</button>
     <button class="t-tab admin-tab hidden" id="tab-admin" onclick="switchTab('admin')">⚙ Admin</button>
     <div class="topbar-right">
+      <div class="lang-wrap" style="display:flex;align-items:center;gap:5px;margin-right:8px;">
+        <select id="lang-select" onchange="setLanguage(this.value)" style="padding:5px 7px;border:.5px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--text);font-size:11px;cursor:pointer;"><option value="it">🇮🇹 IT</option><option value="es">🇪🇸 ES</option></select>
+      </div>
       <div class="toggle-wrap"><span>☀️</span><div class="t-toggle" onclick="toggleTheme()"></div><span>🌙</span></div>
       <div class="user-av" id="u-av">?</div>
       <div class="user-nm" id="u-nm">—</div>
@@ -786,6 +790,48 @@ const firebaseConfig = {
   messagingSenderId: "85066394723",
   appId: "1:85066394723:web:1687432bb2c1c07eae9c56"
 };
+// ── LANGUAGE ──
+const LANG_TEXT = {
+  es: {
+    'Bentornato':'Bienvenido de nuevo','Gestisci i tuoi prospect e monitora il team':'Gestiona tus prospectos y supervisa el equipo',
+    'Accedi':'Iniciar sesión','Registrati':'Registrarse','Email':'Correo electrónico','Password':'Contraseña',
+    'Hai dimenticato la password?':'¿Has olvidado la contraseña?','Nome completo':'Nombre completo','Crea account →':'Crear cuenta →',
+    'Lista Prospect':'Lista de prospectos','Dashboard Team':'Dashboard del equipo','🌳 Albero':'🌳 Árbol','⚙ Admin':'⚙ Admin',
+    'Impostazioni':'Configuración','Esci':'Salir','Cerca prospect...':'Buscar prospectos...','Tutti':'Todos','Nuovo':'Nuevo','Attivo':'Activo',
+    'In attesa pag.':'Pendiente de pago','FU completo':'FU completo','FU 1+':'FU 1+','FU 2+':'FU 2+','FU 3+':'FU 3+',
+    '＋ Nuovo prospect':'＋ Nuevo prospecto','Nome / Note':'Nombre / Notas','Telefono':'Teléfono','Giorni':'Días','Presentazione':'Presentación',
+    'Follow-up 1→4':'Seguimiento 1→4','Pagamento':'Pago','Stato':'Estado','Paese / Reg.':'País / Reg.',
+    'Iscritto':'Registrado','Contattato':'Contactado','Annulla':'Cancelar','Salva':'Guardar','Modifica':'Editar','Elimina':'Eliminar',
+    'Nuovo prospecto':'Nuevo prospecto','Nuovo prospect':'Nuevo prospecto','Paese':'País','Provincia / Regione':'Provincia / Región',
+    '— Seleziona paese —':'— Selecciona país —','— Seleziona prima il paese —':'— Selecciona primero el país —','— Seleziona regione —':'— Selecciona región —',
+    'Canale di contatto':'Canal de contacto','Note':'Notas','Cerca utente...':'Buscar usuario...','Leader':'Líder','Membri':'Miembros',
+    'Senza upline':'Sin upline','Upline diretto':'Upline directo','Albero del network':'Árbol de la red','La mia struttura':'Mi estructura',
+    'Reimposta':'Restablecer','Membro':'Miembro','Team Leader':'Líder de equipo','Leader e Membri':'Líderes y miembros',
+    'Impostazioni account':'Configuración de la cuenta','Codice Leader':'Código de líder','Inserisci il codice...':'Introduce el código...',
+    'Attiva accesso Leader →':'Activar acceso de líder →','Sei già Team Leader':'Ya eres líder de equipo','Il tuo link di invito':'Tu enlace de invitación',
+    'Copia':'Copiar','Copiato ✓':'Copiado ✓','Bentornato':'Bienvenido de nuevo','Elimina definitivamente':'Eliminar definitivamente',
+    'Dashboard Team':'Dashboard del equipo','Albero Network':'Árbol de la red','Membri disattivati':'Miembros desactivados','Riattiva':'Reactivar',
+    'Tutta la struttura':'Toda la estructura','Destra 👉':'Derecha 👉','Sinistra 👈':'Izquierda 👈','— Non assegnata —':'— Sin asignar —'
+  }
+};
+function setLanguage(lang){
+  lang=(lang==='es'?'es':'it');
+  localStorage.setItem('pm_lang',lang);
+  const sels=[id('lang-select'),id('lang-select-auth')].filter(Boolean); sels.forEach(s=>s.value=lang);
+  if(lang==='it'){ location.reload(); return; }
+  const map=LANG_TEXT.es;
+  const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+  const nodes=[]; let n; while(n=walker.nextNode()) nodes.push(n);
+  nodes.forEach(t=>{let v=t.nodeValue, k=v.trim(); if(map[k]) t.nodeValue=v.replace(k,map[k]);});
+  document.querySelectorAll('input,textarea').forEach(el=>{if(map[el.placeholder])el.placeholder=map[el.placeholder];});
+  document.documentElement.lang=lang;
+}
+function initLanguage(){
+  const lang=localStorage.getItem('pm_lang')||'it';
+  const sels=[id('lang-select'),id('lang-select-auth')].filter(Boolean); sels.forEach(s=>s.value=lang);
+  if(lang==='es') setLanguage('es');
+}
+
 // ════════════════════════════════════
 
 const COUNTRIES = {
@@ -861,6 +907,9 @@ const COUNTRIES = {
 const COUNTRY_LIST = Object.keys(COUNTRIES).sort();
 
 const LEADER_CODE = "RYOUNG";
+
+// Apply saved interface language after the page is built.
+setTimeout(initLanguage, 0);
 const ADMIN_CODE  = "Giftedbird609";
 // ════════════════════════════════════
 
