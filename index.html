@@ -2029,10 +2029,25 @@ async function loadTeamDashboard() {
   if(id('team-grid-left')) id('team-grid-left').innerHTML=loader();
   if(id('team-grid-right')) id('team-grid-right').innerHTML=loader();
   if(id('binary-view')) id('binary-view').innerHTML=loader();
-  const [ps,us] = await Promise.all([
-    getDocs(collection(db,'prospects')).then(s=>s.docs.map(d=>({id:d.id,...d.data()}))),
-    getDocs(collection(db,'users')).then(s=>s.docs.map(d=>({id:d.id,...d.data()})))
-  ]);
+  let ps = [], us = [];
+  try {
+    const [psSnap, usSnap] = await Promise.all([
+      getDocs(collection(db,'prospects')),
+      getDocs(collection(db,'users'))
+    ]);
+    ps = psSnap.docs.map(d=>({id:d.id,...d.data()}));
+    us = usSnap.docs.map(d=>({id:d.id,...d.data()}));
+  } catch (e) {
+    console.error('Team Dashboard load error:', e);
+    const msg = e?.code === 'permission-denied'
+      ? 'Permessi Firebase insufficienti per caricare la Dashboard Team.'
+      : ('Errore caricamento Dashboard Team: ' + (e?.message || e));
+    ['team-grid-left','team-grid-right','binary-view'].forEach(function(k){
+      const el=id(k);
+      if(el) el.innerHTML='<div style="padding:1.5rem;color:var(--red);background:var(--red-dim);border:.5px solid var(--red);border-radius:10px;font-size:13px;">⚠️ '+x(msg)+'</div>';
+    });
+    return;
+  }
   const wk=Date.now()-7*86400000, myUid=cUser.uid;
 
   // Build downline by walking DOWN the tree using uplineUid links only
