@@ -266,6 +266,13 @@ td{padding:9px 13px;vertical-align:middle;}
 .nt-popover-stat{background:var(--surface2);border-radius:6px;padding:6px 4px;text-align:center;border:.5px solid var(--border);}
 .nt-popover-val{font-size:16px;font-weight:600;font-family:monospace;line-height:1;}
 .nt-popover-lbl{font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;margin-top:2px;}
+
+/* ── LANGUAGE SWITCH ── */
+.lang-switch{display:inline-flex;align-items:center;gap:0;padding:2px;background:var(--surface2);border:.5px solid var(--border2);border-radius:999px;white-space:nowrap;}
+.lang-btn{border:0;background:transparent;color:var(--text3);font-size:10px;font-weight:600;padding:4px 7px;border-radius:999px;cursor:pointer;line-height:1;transition:all .15s;}
+.lang-btn.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.18);}
+.auth-lang{margin-left:auto;}
+.topbar .lang-switch{margin-right:2px;}
 </style>
 </head>
 <body>
@@ -289,8 +296,14 @@ td{padding:9px 13px;vertical-align:middle;}
           <div class="logo-sub">developed by Simone Mallamo</div>
         </div>
       </div>
-      <div class="toggle-wrap">
-        <span>☀️</span><div class="t-toggle" onclick="toggleTheme()"></div><span>🌙</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="lang-switch auth-lang" aria-label="Lingua">
+          <button type="button" class="lang-btn active" data-lang-btn="it" onclick="setLanguage('it')">IT</button>
+          <button type="button" class="lang-btn" data-lang-btn="es" onclick="setLanguage('es')">ES</button>
+        </div>
+        <div class="toggle-wrap">
+          <span>☀️</span><div class="t-toggle" onclick="toggleTheme()"></div><span>🌙</span>
+        </div>
       </div>
     </div>
     <div class="auth-title">Bentornato</div>
@@ -348,6 +361,10 @@ td{padding:9px 13px;vertical-align:middle;}
     <button class="t-tab leader hidden" id="tab-tree" onclick="switchTab('tree')">🌳 Albero</button>
     <button class="t-tab admin-tab hidden" id="tab-admin" onclick="switchTab('admin')">⚙ Admin</button>
     <div class="topbar-right">
+      <div class="lang-switch" aria-label="Lingua">
+        <button type="button" class="lang-btn active" data-lang-btn="it" onclick="setLanguage('it')">IT</button>
+        <button type="button" class="lang-btn" data-lang-btn="es" onclick="setLanguage('es')">ES</button>
+      </div>
       <div class="toggle-wrap"><span>☀️</span><div class="t-toggle" onclick="toggleTheme()"></div><span>🌙</span></div>
       <div class="user-av" id="u-av">?</div>
       <div class="user-nm" id="u-nm">—</div>
@@ -2701,6 +2718,246 @@ window.copyInvite=()=>{
   }).catch(()=>{id('invite-input').select();document.execCommand('copy');});
 };
 
+// ── LANGUAGE SYSTEM (IT / ES) ──
+// Italian is the source language. Every DOM text node is registered with its
+// original Italian value, so switching back to IT never depends on reverse
+// translating Spanish. New dynamic nodes are automatically translated too.
+const I18N_ES = {
+  'Bentornato':'Bienvenido de nuevo',
+  'Gestisci i tuoi prospect e monitora il team':'Gestiona tus prospectos y supervisa el equipo',
+  'Accedi':'Iniciar sesión',
+  'Registrati':'Registrarse',
+  'Accedi →':'Iniciar sesión →',
+  'Hai dimenticato la password?':'¿Has olvidado la contraseña?',
+  'Nome completo':'Nombre completo',
+  'Codice Leader':'Código de líder',
+  'Codice riservato ai Leader':'Código reservado para líderes',
+  'Hai un codice Leader? Clicca qui':'¿Tienes un código de líder? Haz clic aquí',
+  'Crea account →':'Crear cuenta →',
+  'Lista Prospect':'Lista de prospectos',
+  'Dashboard Team':'Panel del equipo',
+  '🌳 Albero':'🌳 Árbol',
+  '⚙ Admin':'⚙ Admin',
+  'Impostazioni':'Configuración',
+  'Esci':'Salir',
+  'Cerca prospect...':'Buscar prospectos...',
+  'Cerca utente...':'Buscar usuario...',
+  'Tutti':'Todos',
+  'Nuovo':'Nuevo',
+  'Attivo':'Activo',
+  'In attesa pag.':'Pago pendiente',
+  'FU completo':'FU completo',
+  'FU 1+':'FU 1+',
+  'FU 2+':'FU 2+',
+  'FU 3+':'FU 3+',
+  'Nome / Note':'Nombre / Notas',
+  'Giorni':'Días',
+  'Presentazione':'Presentación',
+  'Follow-up 1→4':'Seguimiento 1→4',
+  'Pagamento':'Pago',
+  'Stato':'Estado',
+  'Paese / Reg.':'País / Región',
+  'Iscritto':'Registrado',
+  'Contattato':'Contactado',
+  'Provincia':'Provincia',
+  'Provincia / Regione':'Provincia / Región',
+  'Telefono':'Teléfono',
+  'Note':'Notas',
+  'Importa CSV':'Importar CSV',
+  '📥 Importa lead da Facebook Ads':'📥 Importar leads de Facebook Ads',
+  '＋ Nuovo prospect':'＋ Nuevo prospecto',
+  'Bulk action bar':'Barra de acciones masivas',
+  '0 selezionati':'0 seleccionados',
+  '🗑 Elimina selezionati':'🗑 Eliminar seleccionados',
+  '✕ Deseleziona tutto':'✕ Deseleccionar todo',
+  'Seleziona tutti visibili':'Seleccionar todos los visibles',
+  'Seleziona tutti "Facebook Ads"':'Seleccionar todos los de "Facebook Ads"',
+  'Confronto gambe':'Comparativa de ramas',
+  'Tutta la struttura':'Toda la estructura',
+  'Filtra per leader per vedere le sue gambe':'Filtrar por líder para ver sus ramas',
+  '✕ Chiudi':'✕ Cerrar',
+  '⚡ Ultimi 7 giorni':'⚡ Últimos 7 días',
+  'Nuovi':'Nuevos',
+  'Presentaz.':'Presentaciones',
+  'Attesa pag.':'Pago pendiente',
+  '📊 Totale':'📊 Total',
+  'Prospect':'Prospectos',
+  'FU completi':'FU completos',
+  '📋 Prospect aggiunti questa settimana':'📋 Prospectos añadidos esta semana',
+  '👈 Gamba Sinistra':'👈 Rama izquierda',
+  '👉 Gamba Destra':'👉 Rama derecha',
+  'Gamba:':'Rama:',
+  'Destra 👉':'Derecha 👉',
+  'Sinistra 👈':'Izquierda 👈',
+  '⚠️ Gamba non assegnata':'⚠️ Rama no asignada',
+  '— Assegna la gamba cliccando i pulsanti sulla scheda':'— Asigna la rama haciendo clic en los botones de la tarjeta',
+  'Ranking nuovi prospect (settimana)':'Ranking de nuevos prospectos (semana)',
+  'Membri disattivati':'Miembros desactivados',
+  'Questi membri non appaiono nelle statistiche né nella griglia. Clicca "Riattiva" per includerli di nuovo.':'Estos miembros no aparecen en las estadísticas ni en la cuadrícula. Haz clic en «Reactivar» para incluirlos de nuevo.',
+  'Riattiva':'Reactivar',
+  'Albero Network':'Árbol de red',
+  'Hover su una scheda per i numeri · Trascina per riposizionare':'Pasa el cursor sobre una tarjeta para ver los números · Arrastra para reposicionar',
+  'La mia struttura':'Mi estructura',
+  '✋ Trascina su Open Position per assegnare':'✋ Arrastra a una posición abierta para asignar',
+  'Membri':'Miembros',
+  'Senza upline':'Sin upline',
+  '⚡ Assegna ID mancanti':'⚡ Asignar ID faltantes',
+  'Utente':'Usuario',
+  'Upline diretto':'Upline directo',
+  'Registrato':'Registrado',
+  'Albero del network':'Árbol de la red',
+  'Nuovo prospect':'Nuevo prospecto',
+  'Nome e cognome *':'Nombre y apellidos *',
+  'Canale di contatto':'Canal de contacto',
+  'Paese':'País',
+  '— Seleziona paese —':'— Selecciona país —',
+  '— Seleziona prima il paese —':'— Selecciona primero el país —',
+  '— Seleziona regione —':'— Selecciona región —',
+  'Annulla':'Cancelar',
+  'Salva':'Guardar',
+  'Modifica prospect':'Editar prospecto',
+  'Impostazioni account':'Configuración de la cuenta',
+  'Upgrade a Team Leader':'Ascender a Team Leader',
+  'Inserisci il codice Leader per sbloccare la Dashboard Team. Se il tuo leader ha già cambiato il tuo ruolo, chiudi e riapri le impostazioni.':'Introduce el código de líder para desbloquear el panel del equipo. Si tu líder ya ha cambiado tu rol, cierra y vuelve a abrir la configuración.',
+  'Attiva accesso Leader →':'Activar acceso de líder →',
+  '✅ Sei già Team Leader':'✅ Ya eres Team Leader',
+  '🔗 Il tuo link di invito':'🔗 Tu enlace de invitación',
+  'Condividi con i tuoi diretti. Chi si registra tramite questo link viene collegato automaticamente al tuo team.':'Compártelo con tus directos. Quien se registre mediante este enlace quedará conectado automáticamente a tu equipo.',
+  'Copia':'Copiar',
+  'Copiato ✓':'Copiado ✓',
+  "Il tuo ruolo è stato aggiornato dall'admin? Ricarica.":'¿El administrador ha actualizado tu rol? Recarga.',
+  '🔄 Ricarica sessione':'🔄 Recargar sesión',
+  'Chiudi':'Cerrar',
+  '🔐 Accesso Admin':'🔐 Acceso de administrador',
+  'Inserisci il codice Admin per gestire utenti e network.':'Introduce el código de administrador para gestionar usuarios y la red.',
+  'Codice Admin':'Código de administrador',
+  '✏️ Modifica utente':'✏️ Editar usuario',
+  'Ruolo':'Rol',
+  'Membro':'Miembro',
+  'Team Leader':'Team Leader',
+  'Sposta upline diretto':'Mover upline directo',
+  "Gamba nel team dell'upline":'Rama en el equipo del upline',
+  '— Non assegnata —':'— No asignada —',
+  'Elimina':'Eliminar',
+  'Seleziona quale colonna del CSV corrisponde a ciascun campo.':'Selecciona qué columna del CSV corresponde a cada campo.',
+  'Seleziona quale colonna del CSV corrisponde a ogni campo.':'Selecciona qué columna del CSV corresponde a cada campo.',
+  'Il sistema prova a indovinare automaticamente — correggilo se necessario.':'El sistema intenta detectarlo automáticamente — corrígelo si es necesario.',
+  'Mostra anteprima →':'Mostrar vista previa →',
+  'Anteprima →':'Vista previa →',
+  '← Torna al mapping':'← Volver al mapeo',
+  '← Modifica':'← Modificar',
+  '↩ Annulla ultima':'↩ Deshacer última',
+  '✓ Importa':'✓ Importar',
+  '✅ Importa prospect':'✅ Importar prospectos',
+  'Luogo / Isola':'Lugar / Isla',
+  'Isola / Luogo':'Isla / Lugar',
+  'Note aggiuntive':'Notas adicionales',
+  'Note / Interessi':'Notas / Intereses',
+  'File:':'Archivo:',
+  'righe trovate':'filas encontradas',
+  '— seleziona colonna —':'— selecciona columna —',
+  'Account non trovato. Contatta Simone indicando la tua email.':'Cuenta no encontrada. Contacta con Simone indicando tu email.',
+  'Inserisci email e password':'Introduce email y contraseña',
+  'Compila tutti i campi':'Completa todos los campos',
+  'Codice Leader non valido':'Código de líder no válido',
+  'Account creato ma profilo non salvato. Contatta Simone con il tuo ID:':'Cuenta creada pero el perfil no se ha guardado. Contacta con Simone con tu ID:',
+  '⚠️ Email già registrata. Usa la funzione Accedi con questa email.':'⚠️ Email ya registrada. Usa la función Iniciar sesión con este email.',
+  'Utente non trovato. Controlla email e password.':'Usuario no encontrado. Comprueba el email y la contraseña.',
+  'Errore caricamento Dashboard Team:':'Error al cargar el panel del equipo:',
+  'Permessi Firebase insufficienti per caricare la Dashboard Team.':'Permisos de Firebase insuficientes para cargar el panel del equipo.',
+  'Nessun membro assegnato':'Ningún miembro asignado',
+  'Nessun membro nella gamba sinistra.':'Ningún miembro en la rama izquierda.',
+  'Nessun membro nella gamba destra.':'Ningún miembro en la rama derecha.',
+  'Nessun membro.':'Ningún miembro.',
+  'Struttura attiva':'Estructura activa',
+  'Diretti':'Directos',
+  'Prospect totali':'Prospectos totales',
+  'Presentazioni sett.':'Presentaciones sem.',
+  'Nuovi (7gg)':'Nuevos (7 días)',
+  'Nessun prospect aggiunto questa settimana.':'Ningún prospecto añadido esta semana.',
+  'Struttura non trovata.':'Estructura no encontrada.',
+  'Tutti gli utenti hanno già un ID assegnato.':'Todos los usuarios ya tienen un ID asignado.',
+  'Account senza ruolo ne ID':'Cuentas sin rol ni ID',
+  'Nessun duplicato trovato.':'No se encontraron duplicados.',
+  'Errore:':'Error:',
+  'questo utente':'este usuario',
+  'Eliminati':'Eliminados',
+  'prospect selezionati? Azione non reversibile.':'prospectos seleccionados? Esta acción no se puede deshacer.',
+  'Elimina definitivamente':'Eliminar definitivamente',
+  'Sì':'Sí',
+  'No':'No'
+};
+
+const i18nTextNodes = new WeakMap();
+let currentLanguage = localStorage.getItem('pm_language') || 'it';
+let i18nBusy = false;
+const i18nKeys = Object.keys(I18N_ES).sort((a,b)=>b.length-a.length);
+
+function translateItalianText(value){
+  let out = value;
+  for(const k of i18nKeys){
+    if(out.includes(k)) out = out.split(k).join(I18N_ES[k]);
+  }
+  return out;
+}
+function rememberTextNode(node){
+  if(!i18nTextNodes.has(node)) i18nTextNodes.set(node,node.nodeValue);
+  return i18nTextNodes.get(node);
+}
+function applyTextNode(node){
+  if(!node || !node.nodeValue || i18nBusy) return;
+  const original=rememberTextNode(node);
+  const next=currentLanguage==='es' ? translateItalianText(original) : original;
+  if(node.nodeValue!==next){ i18nBusy=true; node.nodeValue=next; i18nBusy=false; }
+}
+function translateElement(el){
+  if(!el || el.nodeType!==1 || el.closest('.lang-switch')) return;
+  const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);
+  const nodes=[]; let n;
+  while((n=walker.nextNode())) nodes.push(n);
+  nodes.forEach(applyTextNode);
+  ['placeholder','title','aria-label'].forEach(attr=>{
+    if(el.hasAttribute(attr)){
+      const original=el.getAttribute('data-i18n-'+attr) ?? el.getAttribute(attr);
+      if(!el.hasAttribute('data-i18n-'+attr)) el.setAttribute('data-i18n-'+attr,original);
+      const next=currentLanguage==='es'?translateItalianText(original):original;
+      if(el.getAttribute(attr)!==next) el.setAttribute(attr,next);
+    }
+  });
+}
+function translatePage(){
+  const root=document.body;
+  if(root) translateElement(root);
+  document.documentElement.lang=currentLanguage;
+  document.querySelectorAll('[data-lang-btn]').forEach(btn=>btn.classList.toggle('active',btn.dataset.langBtn===currentLanguage));
+}
+window.setLanguage=function(lang){
+  if(lang!=='it'&&lang!=='es') return;
+  currentLanguage=lang;
+  localStorage.setItem('pm_language',lang);
+  translatePage();
+};
+window.getCurrentLanguage=()=>currentLanguage;
+
+// Translate alert/confirm dialogs too, without changing application logic.
+const nativeAlert=window.alert.bind(window), nativeConfirm=window.confirm.bind(window);
+window.alert=(msg)=>nativeAlert(currentLanguage==='es'?translateItalianText(String(msg)):msg);
+window.confirm=(msg)=>nativeConfirm(currentLanguage==='es'?translateItalianText(String(msg)):msg);
+
+const i18nObserver=new MutationObserver(mutations=>{
+  if(i18nBusy) return;
+  for(const m of mutations){
+    if(m.type==='childList') m.addedNodes.forEach(n=>{
+      if(n.nodeType===1) translateElement(n);
+      else if(n.nodeType===3) applyTextNode(n);
+    });
+  }
+});
+function initLanguageSystem(){
+  translatePage();
+  i18nObserver.observe(document.body,{childList:true,subtree:true});
+}
+
 // ── TAB SWITCHING ──
 function doSwitchTab(t){
   ['lista','team','tree','admin'].forEach(v=>{
@@ -2771,6 +3028,9 @@ function errMsg(code){
   };
   return msgs[code]||('Errore: '+code);
 }
+
+// Initialize language after the full app DOM exists.
+initLanguageSystem();
 </script>
 </body>
 </html>
