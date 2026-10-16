@@ -12,7 +12,9 @@ export default async function handler(request) {
     const state = crypto.randomBytes(32).toString('hex');
     await db.collection('meta_oauth_states').doc(state).set({uid, createdAt:new Date(), expiresAt:new Date(Date.now()+10*60*1000)});
     const params = new URLSearchParams({client_id:appId, redirect_uri:redirectUri, state, config_id:configId, response_type:'code'});
-    return Response.redirect(`https://www.facebook.com/dialog/oauth?${params}`,302);
+    const authUrl = `https://www.facebook.com/dialog/oauth?${params}`;
+    if (request.method === 'POST') return json({authUrl});
+    return Response.redirect(authUrl,302);
   } catch(e) { console.error(e); return json({error:e.message||'OAuth start failed'},401); }
 }
 export const config={path:'/.netlify/functions/meta-oauth-start'};
