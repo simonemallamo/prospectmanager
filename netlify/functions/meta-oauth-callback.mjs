@@ -29,7 +29,7 @@ export default async function handler(request) {
     const batch=db.batch();
     for(const p of pages.data||[]) if(p.id&&p.access_token) batch.set(db.collection('meta_pages').doc(String(p.id)),{uid,pageId:String(p.id),pageName:p.name||'',pageAccessToken:p.access_token,updatedAt:FieldValue.serverTimestamp()},{merge:true});
     batch.delete(stateRef); await batch.commit();
-    const appUrl=process.env.APP_URL||'https://rymanager.netlify.app';
+    const appUrl=(process.env.FRONTEND_URL||'https://simonemallamo.github.io/prospectmanager/').replace(/\/$/,'');
     return Response.redirect(`${appUrl}/?meta=connected&pages=${encodeURIComponent((pages.data||[]).length)}`,302);
   } catch(e){console.error('meta-oauth-callback:',e);return new Response(`Meta connection failed: ${e.message||'unknown error'}`,{status:500});}
 }
