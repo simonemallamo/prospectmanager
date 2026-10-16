@@ -671,6 +671,15 @@ td{padding:9px 13px;vertical-align:middle;}
         </div>
       </div>
     </div>
+    <!-- Meta Ads integration -->
+    <div id="meta-integration" style="margin-top:1rem;padding:1rem;border:1px solid var(--border2);border-radius:10px;background:var(--surface2);">
+      <div style="font-size:14px;font-weight:600;margin-bottom:5px;">🔗 Integrazione Meta Ads</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:12px;">Collega la tua Pagina Facebook per ricevere i lead pubblicitari direttamente in RY Manager.</div>
+      <div id="meta-connection-status" role="status" style="font-size:12px;color:var(--text2);margin-bottom:10px;">Stato: non verificato</div>
+      <div id="meta-connection-error" style="display:none;font-size:12px;color:var(--red);margin-bottom:10px;"></div>
+      <button id="meta-connect-btn" class="btn-primary" style="width:100%;" onclick="connectMetaAds()">Collega account Meta →</button>
+      <div style="font-size:10px;color:var(--text3);margin-top:8px;">L'autorizzazione avviene su Facebook. Non inserire password o token in RY Manager.</div>
+    </div>
     <div style="margin-top:.75rem;padding-top:.75rem;border-top:.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
       <span style="font-size:11px;color:var(--text3);">Il tuo ruolo è stato aggiornato dall'admin? Ricarica.</span>
       <button onclick="reloadSession()" style="padding:5px 12px;border:.5px solid var(--border2);border-radius:6px;background:transparent;color:var(--text2);font-size:12px;cursor:pointer;">🔄 Ricarica sessione</button>
@@ -899,6 +908,11 @@ const ADMIN_CODE  = "Giftedbird609";
 const fbApp = initializeApp(firebaseConfig);
 const auth  = getAuth(fbApp);
 const db    = getFirestore(fbApp);
+const metaParams = new URLSearchParams(window.location.search);
+if(metaParams.get('meta')==='connected'){
+  window.addEventListener('DOMContentLoaded',()=>alert('Account Meta collegato. Pagine autorizzate: '+(metaParams.get('pages')||'0')+'.'));
+  history.replaceState({},'',window.location.pathname+window.location.hash);
+}
 
 // ── STATE ──
 let cUser = null, cData = null;
@@ -2711,6 +2725,28 @@ window.openSettings=async()=>{
   id('s-lcode').value='';
   if(role==='leader') await genInviteLink();
   id('s-overlay').classList.remove('hidden');
+};
+window.connectMetaAds=async()=>{
+  const btn=id('meta-connect-btn'), status=id('meta-connection-status'), err=id('meta-connection-error');
+  err.style.display='none'; err.textContent='';
+  if(!cUser){err.textContent='Sessione scaduta. Accedi nuovamente.';err.style.display='block';return;}
+  btn.disabled=true; btn.textContent='Connessione in corso…'; status.textContent='Preparazione del collegamento Meta…';
+  try{
+    const token=await cUser.getIdToken(true);
+    const response=await fetch('/.netlify/functions/meta-oauth-start',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+      body:JSON.stringify({})
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok) throw new Error(data.error||'Impossibile avviare il collegamento Meta.');
+    if(!data.authUrl) throw new Error('La funzione OAuth non ha restituito l’URL di autorizzazione. Aggiornare meta-oauth-start.');
+    window.location.href=data.authUrl;
+  }catch(e){
+    err.textContent=e.message||'Errore durante il collegamento Meta.'; err.style.display='block';
+    status.textContent='Collegamento non avviato.';
+    btn.disabled=false; btn.textContent='Riprova collegamento Meta →';
+  }
 };
 window.closeSettings=()=>id('s-overlay').classList.add('hidden');
 
