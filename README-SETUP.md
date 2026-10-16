@@ -6,6 +6,7 @@ Questi file sono aggiuntivi: non sostituiscono `index.html` e non toccano la V2 
 - `netlify/functions/_firebase-admin.mjs`
 - `netlify/functions/meta-oauth-start.mjs`
 - `netlify/functions/meta-oauth-callback.mjs`
+- `netlify/functions/meta-connection-status.mjs`
 - `netlify/functions/meta-webhook.mjs`
 - `package.json`
 
@@ -17,7 +18,7 @@ Impostare:
 - `META_REDIRECT_URI` = `https://rymanager.netlify.app/.netlify/functions/meta-oauth-callback`
 - `META_WEBHOOK_VERIFY_TOKEN` = stringa casuale scelta da te
 - `META_GRAPH_VERSION` = versione Graph API attiva/supportata dalla tua app
-- `APP_URL` = `https://rymanager.netlify.app`
+- `FRONTEND_URL` = `https://simonemallamo.github.io/prospectmanager/` (destinazione dopo il callback OAuth; il callback Meta resta su Netlify)
 - `FIREBASE_SERVICE_ACCOUNT_JSON_B64` = service-account JSON Firebase codificato Base64
 
 Le Functions leggono le variabili con `process.env`. Dopo aver cambiato una variabile, fare un nuovo deploy.

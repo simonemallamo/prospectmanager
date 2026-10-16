@@ -2677,6 +2677,31 @@ window.deleteUser=async()=>{
 };
 
 // ── SETTINGS ──
+async function refreshMetaConnectionStatus(){
+  const status=id('meta-connection-status'), err=id('meta-connection-error'), btn=id('meta-connect-btn');
+  if(!status || !cUser) return;
+  status.textContent='Verifica collegamento Meta…';
+  err.style.display='none'; err.textContent='';
+  try {
+    const token=await cUser.getIdToken();
+    const response=await fetch('https://rymanager.netlify.app/.netlify/functions/meta-connection-status', {
+      method:'GET', headers:{'Authorization':'Bearer '+token}
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok) throw new Error(data.error||'Impossibile verificare il collegamento Meta.');
+    if(data.connected){
+      status.textContent='✅ Business Manager collegato · '+data.pageCount+' pagine autorizzate';
+      status.style.color='var(--green)';
+      btn.textContent='Ricollega account Meta →';
+    } else {
+      status.textContent='Non collegato'; status.style.color='var(--text2)';
+      btn.textContent='Collega account Meta →';
+    }
+  } catch(e) {
+    status.textContent='Stato non verificabile'; status.style.color='var(--text2)';
+    err.textContent='Impossibile verificare lo stato: '+(e.message||'errore di rete'); err.style.display='block';
+  }
+}
 window.openSettings=async()=>{
   // Step 1: Re-fetch fresh data by UID
   try {
@@ -2725,6 +2750,7 @@ window.openSettings=async()=>{
   id('s-lcode').value='';
   if(role==='leader') await genInviteLink();
   id('s-overlay').classList.remove('hidden');
+  await refreshMetaConnectionStatus();
 };
 window.connectMetaAds=async()=>{
   const btn=id('meta-connect-btn'), status=id('meta-connection-status'), err=id('meta-connection-error');
