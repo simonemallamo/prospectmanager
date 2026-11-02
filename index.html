@@ -1020,11 +1020,8 @@ window.doSignup = async () => {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
 
     // Step 2: Generate progressive user number
-    let userNumber = 1;
-    try {
-      const allUsersSnap = await getDocs(collection(db, 'users'));
-      userNumber = allUsersSnap.size + 1;
-    } catch(e) { userNumber = Date.now() % 10000; } // fallback if read fails
+    // Evita la lettura globale degli utenti durante la registrazione
+    const userNumber = Date.now() % 1000000;
 
     // Step 3: Save Firestore document — retry once if it fails
     const userData = {
