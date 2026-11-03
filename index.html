@@ -373,13 +373,12 @@ td{padding:9px 13px;vertical-align:middle;}
 
     <!-- SIGNUP -->
     <div id="form-signup" class="hidden">
-      <div class="fg"><label>Nome completo</label><input type="text" id="s-name" placeholder="Mario Rossi"></div>
-      <div class="fg"><label>Email</label><input type="email" id="s-email" placeholder="tua@email.com"></div>
+      <div class="fg"><label>Nome</label><input type="text" id="s-name" placeholder="Mario" required></div>
+      <div class="fg"><label>Cognome</label><input type="text" id="s-surname" placeholder="Rossi" required></div>
+      <div class="fg"><label>Email</label><input type="email" id="s-email" placeholder="tua@email.com" required></div>
+      <div class="fg"><label>Numero di telefono</label><input type="tel" id="s-phone" placeholder="+39 333 1234567" required></div>
+      <div class="fg"><label>JIFU ID</label><input type="text" id="s-jifu" placeholder="Il tuo ID JIFU" required></div>
       <div class="fg"><label>Password</label><input type="password" id="s-pass" placeholder="Min. 6 caratteri"></div>
-      <div id="leader-code-wrap" class="hidden">
-        <div class="fg"><label>Codice Leader</label><input type="password" id="s-lcode" placeholder="Codice riservato ai Leader"></div>
-      </div>
-      <button class="leader-link" onclick="toggleLeaderField()">Hai un codice Leader? Clicca qui</button>
       <button class="btn-primary" onclick="doSignup()">Crea account →</button>
     </div>
   </div>
@@ -618,6 +617,25 @@ td{padding:9px 13px;vertical-align:middle;}
 
 <!-- ══ MODALS ══ -->
 
+<!-- Completamento profilo obbligatorio -->
+<div id="profile-overlay" class="overlay hidden">
+  <div class="modal">
+    <div class="modal-title">Completa il tuo profilo</div>
+    <div class="modal-info">
+      <div class="mi-name">Per continuare a utilizzare RY Manager, completa i tuoi dati.</div>
+    </div>
+    <div class="fg"><label>Nome *</label><input type="text" id="profile-name" required></div>
+    <div class="fg"><label>Cognome *</label><input type="text" id="profile-surname" required></div>
+    <div class="fg"><label>Telefono *</label><input type="tel" id="profile-phone" required></div>
+    <div class="fg"><label>JIFU ID *</label><input type="text" id="profile-jifu" required></div>
+    <div class="modal-err" id="profile-err"></div>
+    <div class="modal-actions">
+      <button class="btn-save" id="profile-save-btn" onclick="saveRequiredProfile()">Salva e continua</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- Prospect -->
 <div id="p-overlay" class="overlay hidden">
   <div class="modal">
@@ -656,9 +674,8 @@ td{padding:9px 13px;vertical-align:middle;}
     <div id="s-upgrade">
       <div style="font-size:13px;font-weight:500;margin-bottom:5px;">Upgrade a Team Leader</div>
       <div style="font-size:12px;color:var(--text2);margin-bottom:.75rem;line-height:1.6;">Inserisci il codice Leader per sbloccare la Dashboard Team. Se il tuo leader ha già cambiato il tuo ruolo, chiudi e riapri le impostazioni.</div>
-      <div class="fg"><label>Codice Leader</label><input type="password" id="s-lcode" placeholder="Inserisci il codice..."></div>
       <div class="modal-err" id="s-upgrade-err"></div>
-      <button class="btn-primary" style="margin-top:6px;" onclick="doUpgrade()">Attiva accesso Leader →</button>
+      <button class="btn-primary" style="margin-top:6px;" onclick="doUpgrade()">Richiedi accesso Leader →</button>
     </div>
     <div id="s-already-leader" class="hidden" style="text-align:center;padding:.75rem 0;font-size:13px;color:var(--green);">✅ Sei già Team Leader</div>
     <div id="s-invite" class="hidden">
@@ -692,8 +709,7 @@ td{padding:9px 13px;vertical-align:middle;}
 <div id="al-overlay" class="overlay hidden">
   <div class="modal" style="max-width:340px;">
     <div class="modal-title">🔐 Accesso Admin</div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:1rem;">Inserisci il codice Admin per gestire utenti e network.</div>
-    <div class="fg"><label>Codice Admin</label><input type="password" id="al-code" placeholder="••••••••••"></div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:1rem;">L’accesso viene verificato per il tuo account.</div>
     <div class="modal-err" id="al-err"></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeAdminLogin()">Annulla</button>
@@ -901,8 +917,6 @@ const COUNTRIES = {
 };
 const COUNTRY_LIST = Object.keys(COUNTRIES).sort();
 
-const LEADER_CODE = "RYOUNG";
-const ADMIN_CODE  = "Giftedbird609";
 // ════════════════════════════════════
 
 const fbApp = initializeApp(firebaseConfig);
@@ -943,18 +957,6 @@ onAuthStateChanged(auth, async user => {
     // If user doc exists in 'users', they are ALWAYS valid — never block them
     if (snap.exists()) {
       cData = snap.data();
-      // If member, check if there's a leader doc with same email (UID mismatch fix)
-      if((cData.role||'member')==='member' && user.email) {
-        try {
-          const eq = await getDocs(query(collection(db,'users'),where('email','==',user.email.toLowerCase())));
-          const ld = eq.docs.find(d=>d.data().role==='leader' && d.id!==user.uid);
-          if(ld) {
-            await setDoc(doc(db,'users',user.uid),{...ld.data(),uplineUid:cData.uplineUid||ld.data().uplineUid||null,uplinePath:cData.uplinePath||ld.data().uplinePath||[]},{merge:true});
-            const rs = await getDoc(doc(db,'users',user.uid));
-            if(rs.exists()) cData = rs.data();
-          }
-        } catch(e){}
-      }
       showApp();
       return;
     }
@@ -995,24 +997,28 @@ window.doLogin = async () => {
 };
 
 window.doSignup = async () => {
-  const name   = id('s-name').value.trim();
-  const email  = id('s-email').value.trim();
-  const pass   = id('s-pass').value;
-  const lcode  = id('s-lcode').value;
-  if (!name || !email || !pass) { showErr('Compila tutti i campi'); return; }
-  if (lcode && lcode !== LEADER_CODE) { showErr('Codice Leader non valido'); return; }
-  const role = lcode === LEADER_CODE ? 'leader' : 'member';
+  const name = id('s-name').value.trim();
+  const surname = id('s-surname').value.trim();
+  const email = id('s-email').value.trim().toLowerCase();
+  const phone = id('s-phone').value.trim();
+  const jifuId = id('s-jifu').value.trim();
+  const pass = id('s-pass').value;
+
+  if (!name || !surname || !email || !phone || !jifuId || !pass) {
+    showErr('Compila tutti i campi obbligatori');
+    return;
+  }
+
 
   // Read invite token
   const token = new URLSearchParams(window.location.search).get('invite');
-  let uplineUid = null, uplinePath = [];
+  let uplineUid = null, uplinePath = [], inviteId = null;
   if (token) {
     try {
       const inv = await getDoc(doc(db, 'invites', token));
-      if (inv.exists()) { uplineUid = inv.data().uid; uplinePath = inv.data().uplinePath || []; }
+      if (inv.exists()) { inviteId=token; uplineUid = inv.data().uid; uplinePath = [...(inv.data().uplinePath || []), inv.data().uid]; }
     } catch(e) {}
   }
-  const myPath = uplineUid ? [...uplinePath, uplineUid] : [];
 
   try {
     // Step 1: check if email already has a Firestore document (orphan Auth account)
@@ -1025,11 +1031,9 @@ window.doSignup = async () => {
 
     // Step 3: Save Firestore document — retry once if it fails
     const userData = {
-      name, email, role,
-      userNumber,
-      uplineUid: uplineUid || null,
-      uplinePath: myPath,
-      createdAt: serverTimestamp()
+      name, surname, email, phone, jifuId, role: 'member', profileComplete: true,
+      userNumber, uplineUid, uplinePath, createdAt: serverTimestamp(),
+      ...(inviteId ? { inviteId } : {})
     };
     try {
       await setDoc(doc(db, 'users', cred.user.uid), userData);
@@ -1059,6 +1063,58 @@ window.doSignup = async () => {
   }
 };
 
+window.saveRequiredProfile = async () => {
+  const name = id('profile-name').value.trim();
+  const surname = id('profile-surname').value.trim();
+  const phone = id('profile-phone').value.trim();
+  const jifuId = id('profile-jifu').value.trim();
+  const err = id('profile-err');
+  const btn = id('profile-save-btn');
+
+  err.style.display = 'none';
+
+  if (!name || !surname || !phone || !jifuId) {
+    err.textContent = 'Compila tutti i campi obbligatori.';
+    err.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Salvataggio...';
+
+  try {
+    const updatedData = {
+      name,
+      surname,
+      phone,
+      jifuId,
+      email: cUser.email,
+      profileComplete: true
+    };
+    if (!cData) {
+      updatedData.role = 'member';
+      updatedData.uplineUid = null;
+      updatedData.uplinePath = [];
+      updatedData.createdAt = serverTimestamp();
+    }
+
+    await setDoc(doc(db, 'users', cUser.uid), updatedData, { merge: true });
+
+    cData = { ...cData, ...updatedData };
+    id('profile-overlay').classList.add('hidden');
+    showApp();
+
+  } catch (e) {
+    console.error('Errore salvataggio profilo:', e);
+    err.textContent = 'Impossibile salvare. Riprova.';
+    err.style.display = 'block';
+
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Salva e continua';
+  }
+};
+
 window.doLogout = async () => { if (unsub) unsub(); await signOut(auth); };
 
 window.authTab = t => {
@@ -1068,11 +1124,6 @@ window.authTab = t => {
   id('atab-signup').classList.toggle('on', t === 'signup');
 };
 
-window.toggleLeaderField = () => {
-  id('leader-code-wrap').classList.toggle('hidden');
-  if (!id('leader-code-wrap').classList.contains('hidden')) id('s-lcode').focus();
-};
-
 // ── SHOW AUTH / APP ──
 function showAuth() {
   id('auth-screen').style.display = 'flex';
@@ -1080,14 +1131,43 @@ function showAuth() {
   checkInviteBanner();
 }
 function showApp() {
+  const requiredFields = ['name', 'surname', 'phone', 'jifuId'];
+  const missingProfile = !cData || requiredFields.some(
+    field => !String(cData[field] || '').trim()
+  );
+
+  if (missingProfile) {
+    id('auth-screen').style.display = 'none';
+    id('app-screen').style.display = 'none';
+
+    id('profile-name').value = cData?.name || '';
+    id('profile-surname').value = cData?.surname || '';
+    id('profile-phone').value = cData?.phone || '';
+    id('profile-jifu').value = cData?.jifuId || '';
+
+    id('profile-overlay').classList.remove('hidden');
+    return;
+  }
+
+  id('profile-overlay').classList.add('hidden');
   id('auth-screen').style.display = 'none';
-  id('app-screen').style.display  = 'block';
-  const ini = (cData?.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-  id('u-av').textContent = ini;
-  id('u-nm').textContent = cData?.name || cUser.email;
+  id('app-screen').style.display = 'block';
+
+  const ini = [cData?.name, cData?.surname]
+    .filter(Boolean)
+    .map(w => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  id('u-av').textContent = ini || '?';
+  id('u-nm').textContent =
+    [cData?.name, cData?.surname].filter(Boolean).join(' ') || cUser.email;
+
   if (cData?.role === 'leader') id('tab-team').classList.remove('hidden');
   id('tab-tree').classList.remove('hidden');
-  id('tab-admin').classList.remove('hidden'); // always visible, protected by code
+  id('tab-admin').classList.remove('hidden');
+
   loadProspects();
 }
 
@@ -1107,9 +1187,13 @@ async function checkInviteBanner() {
 // ── PROSPECTS ──
 function loadProspects() {
   if (unsub) unsub();
-  const q = query(collection(db, 'prospects'), where('uid','==', cUser.uid));
-  unsub = onSnapshot(q, snap => {
-    prospects = snap.docs.map(d=>({id:d.id,...d.data()}))
+  const ownQuery = query(collection(db, 'prospects'), where('uid','==', cUser.uid));
+  const sharedQuery = query(collection(db, 'prospects'), where('sharedWith','array-contains', cUser.uid));
+  let ownDocs = new Map(), sharedDocs = new Map();
+  const refresh = () => {
+    const all = new Map();
+    [...ownDocs.values(), ...sharedDocs.values()].forEach(p=>all.set(p.id,p));
+    prospects = [...all.values()]
       .sort((a,b)=>(b.createdAt?.toMillis()||0)-(a.createdAt?.toMillis()||0));
     // Populate provincia filter with used provinces
     const provSel = id('p-prov-filter');
@@ -1119,7 +1203,10 @@ function loadProspects() {
       provSel.innerHTML = '<option value="">Provincia</option>' + used.map(p=>`<option${p===cur?' selected':''}>${p}</option>`).join('');
     }
     renderStats(); renderTable();
-  });
+  };
+  const ownUnsub = onSnapshot(ownQuery, snap => { ownDocs=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}])); refresh(); });
+  const sharedUnsub = onSnapshot(sharedQuery, snap => { sharedDocs=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}])); refresh(); });
+  unsub = () => { ownUnsub(); sharedUnsub(); };
 }
 
 function renderStats() {
@@ -1186,18 +1273,30 @@ window.renderTable = () => {
       <td style="white-space:nowrap;">${p.country?`<div style="font-size:12px;font-weight:500;">${x(p.country)}</div>`:''} ${p.provincia?`<div style="font-family:monospace;font-size:10px;color:var(--text3);">${x(p.provincia)}</div>`:''}${!p.country&&!p.provincia?'<span style="color:var(--text3)">—</span>':''}</td>
       <td><button class="chk${p.iscritto?' on':''}" onclick="tField('${p.id}','iscritto',${!p.iscritto})" title="Segna come iscritto">${p.iscritto?'✓':''}</button></td>
       <td><button class="chk${p.contattato?' on':''}" style="${p.contattato?'background:var(--green);border-color:var(--green);color:#0f0f0f;':''}" onclick="tField('${p.id}','contattato',${!p.contattato})" title="Segna come contattato">${p.contattato?'✓':''}</button></td>
-      <td><div class="act-btns"><button class="act-btn" onclick="editProspect('${p.id}')">Modifica</button><button class="act-btn del" onclick="delProspect('${p.id}','${x(p.name)}')">Elimina</button></div></td>
+      <td><div class="act-btns">${p.uid===cUser.uid?`<button class="act-btn" onclick="editProspect('${p.id}')">Modifica</button><button class="act-btn" onclick="shareProspect('${p.id}')">Condividi</button><button class="act-btn del" onclick="delProspect('${p.id}','${x(p.name)}')">Elimina</button>`:'Condiviso con te'}</div></td>
     </tr>`;
   }).join('');
 };
 
-window.tField = async (id_,f,v) => await updateDoc(doc(db,'prospects',id_),{[f]:v,lastCheckAt:serverTimestamp()});
+window.tField = async (id_,f,v) => { const p=prospects.find(x=>x.id===id_); if(p?.uid!==cUser.uid)return; await updateDoc(doc(db,'prospects',id_),{[f]:v,lastCheckAt:serverTimestamp()}); };
 window.tFu = async (id_,i,v) => {
   const p=prospects.find(x=>x.id===id_); if(!p) return;
+  if(p.uid!==cUser.uid)return;
   const fu=[...(p.followUps||[false,false,false,false])]; fu[i]=v;
   await updateDoc(doc(db,'prospects',id_),{followUps:fu,lastCheckAt:serverTimestamp()});
 };
-window.delProspect = async (id_,name) => { if(confirm(`Eliminare ${name}?`)) await deleteDoc(doc(db,'prospects',id_)); };
+window.delProspect = async (id_,name) => { const p=prospects.find(x=>x.id===id_); if(p?.uid===cUser.uid && confirm(`Eliminare ${name}?`)) await deleteDoc(doc(db,'prospects',id_)); };
+window.shareProspect = async pid => {
+  const p=prospects.find(x=>x.id===pid); if(!p || p.uid!==cUser.uid)return;
+  const targetUid=prompt('Inserisci l’ID utente con cui condividere questo prospect. Puoi revocare l’accesso inserendo di nuovo lo stesso ID.');
+  if(!targetUid || targetUid===cUser.uid)return;
+  const sharedWith=Array.isArray(p.sharedWith)?[...p.sharedWith]:[];
+  const i=sharedWith.indexOf(targetUid.trim());
+  const action=i<0?'condividere':'revocare la condivisione di';
+  if(!confirm(`Confermi di ${action} questo prospect?`))return;
+  if(i<0)sharedWith.push(targetUid.trim()); else sharedWith.splice(i,1);
+  await updateDoc(doc(db,'prospects',pid),{sharedWith});
+};
 window.editProspect = pid => {
   const p=prospects.find(x=>x.id===pid); if(!p) return;
   editingPid=pid;
@@ -1248,7 +1347,7 @@ window.saveProspect = async () => {
   const name=id('p-name').value.trim();
   if(!name){id('p-name').style.borderColor='var(--red)';return;}
   const data={name,channel:id('p-channel').value.trim(),phone:id('p-phone').value.trim(),country:id('p-country').value,provincia:id('p-provincia').value,note:id('p-note').value.trim(),uid:cUser.uid,userName:cData?.name||cUser.email};
-  if(editingPid) await updateDoc(doc(db,'prospects',editingPid),data);
+  if(editingPid) { if(prospects.find(p=>p.id===editingPid)?.uid!==cUser.uid)return; await updateDoc(doc(db,'prospects',editingPid),data); }
   else await addDoc(collection(db,'prospects'),{...data,presentation:false,followUps:[false,false,false,false],payment:false,createdAt:serverTimestamp(),lastCheckAt:null,_insertedAt:Date.now()});
   closeProspectModal();
 };
@@ -1429,8 +1528,8 @@ async function loadNetworkTree(){
   const ct=id('network-tree-root');
   if(ct)ct.innerHTML='<div class="loader"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div>';
   const[us,ps]=await Promise.all([
-    getDocs(collection(db,'users')).then(s=>s.docs.map(d=>({id:d.id,...d.data()}))),
-    getDocs(collection(db,'prospects')).then(s=>s.docs.map(d=>({id:d.id,...d.data()})))
+    getDocs(query(collection(db,'users'),where('uplinePath','array-contains',cUser.uid))).then(s=>s.docs.map(d=>({id:d.id,...d.data()}))),
+    getDocs(query(collection(db,'prospects'),where('sharedWith','array-contains',cUser.uid))).then(s=>s.docs.map(d=>({id:d.id,...d.data()})))
   ]);
   window._treeUs=us; window._treePs=ps;
   const myUid=cUser.uid;
@@ -2103,11 +2202,14 @@ async function loadTeamDashboard() {
   if(id('binary-view')) id('binary-view').innerHTML=loader();
   let ps = [], us = [];
   try {
-    const [psSnap, usSnap] = await Promise.all([
-      getDocs(collection(db,'prospects')),
-      getDocs(collection(db,'users'))
+    const [ownPsSnap, sharedPsSnap, usSnap] = await Promise.all([
+      getDocs(query(collection(db,'prospects'),where('uid','==',cUser.uid))),
+      getDocs(query(collection(db,'prospects'),where('sharedWith','array-contains',cUser.uid))),
+      getDocs(query(collection(db,'users'),where('uplinePath','array-contains',cUser.uid)))
     ]);
-    ps = psSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const mergedProspects=new Map();
+    [...ownPsSnap.docs,...sharedPsSnap.docs].forEach(d=>mergedProspects.set(d.id,{id:d.id,...d.data()}));
+    ps = [...mergedProspects.values()];
     us = usSnap.docs.map(d=>({id:d.id,...d.data()}));
   } catch (e) {
     console.error('Team Dashboard load error:', e);
@@ -2406,13 +2508,15 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
 
 
 // ── ADMIN ──
-window.verifyAdmin = () => {
-  const code=id('al-code').value;
-  if(code!==ADMIN_CODE){id('al-err').textContent='Codice non valido.';id('al-err').style.display='block';return;}
-  adminUnlocked=true;
-  id('al-overlay').classList.add('hidden');
-  doSwitchTab('admin');
-  loadAdminPanel();
+window.verifyAdmin = async () => {
+  try {
+    const claims=await cUser.getIdTokenResult(true);
+    if(claims.claims.admin!==true){id('al-err').textContent='Questo account non è autorizzato come amministratore.';id('al-err').style.display='block';return;}
+    adminUnlocked=true;
+    id('al-overlay').classList.add('hidden');
+    doSwitchTab('admin');
+    loadAdminPanel();
+  } catch(e) { id('al-err').textContent='Impossibile verificare i permessi admin.';id('al-err').style.display='block'; }
 };
 window.closeAdminLogin = () => id('al-overlay').classList.add('hidden');
 
@@ -2681,7 +2785,7 @@ async function refreshMetaConnectionStatus(){
   err.style.display='none'; err.textContent='';
   try {
     const token=await cUser.getIdToken();
-    const response=await fetch('https://rymanager.netlify.app/.netlify/functions/meta-connection-status', {
+    const response=await fetch(window.location.origin+'/.netlify/functions/meta-connection-status', {
       method:'GET', headers:{'Authorization':'Bearer '+token}
     });
     const data=await response.json().catch(()=>({}));
@@ -2706,32 +2810,6 @@ window.openSettings=async()=>{
     if(freshSnap.exists()) cData = freshSnap.data();
   } catch(e) { console.warn('Could not refresh user data:', e); }
 
-  // Step 2: If still showing as member, search ALL users by email
-  // This handles the case where admin updated a different UID document
-  if((cData?.role||'member') === 'member' && cUser?.email) {
-    try {
-      const emailQuery = await getDocs(query(
-        collection(db,'users'),
-        where('email','==',cUser.email.toLowerCase())
-      ));
-      const leaderDoc = emailQuery.docs.find(d => d.data().role === 'leader');
-      if(leaderDoc && leaderDoc.id !== cUser.uid) {
-        // Found a leader doc with same email but different UID
-        // Copy the leader role to the current UID's doc
-        const leaderData = leaderDoc.data();
-        await setDoc(doc(db,'users',cUser.uid), {
-          ...leaderData,
-          // Keep current UID's connection data if it exists
-          uplineUid: cData?.uplineUid || leaderData.uplineUid || null,
-          uplinePath: cData?.uplinePath || leaderData.uplinePath || [],
-        }, {merge:true});
-        const recheckSnap = await getDoc(doc(db,'users',cUser.uid));
-        if(recheckSnap.exists()) cData = recheckSnap.data();
-        console.log('Synced leader role from email match');
-      }
-    } catch(e) { console.warn('Email sync check failed:', e); }
-  }
-
   const role=cData?.role||'member';
   id('s-name').textContent=cData?.name||'—';
   id('s-email').textContent=cUser?.email||'—';
@@ -2744,7 +2822,6 @@ window.openSettings=async()=>{
   id('s-already-leader').classList.toggle('hidden',role!=='leader');
   id('s-invite').classList.toggle('hidden',role!=='leader');
   id('s-upgrade-err').style.display='none';
-  id('s-lcode').value='';
   if(role==='leader') await genInviteLink();
   id('s-overlay').classList.remove('hidden');
   await refreshMetaConnectionStatus();
@@ -2756,7 +2833,7 @@ window.connectMetaAds=async()=>{
   btn.disabled=true; btn.textContent='Connessione in corso…'; status.textContent='Preparazione del collegamento Meta…';
   try{
     const token=await cUser.getIdToken(true);
-    const response=await fetch('https://rymanager.netlify.app/.netlify/functions/meta-oauth-start',{
+    const response=await fetch(window.location.origin+'/.netlify/functions/meta-oauth-start',{
       method:'POST',
       headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
       body:JSON.stringify({})
@@ -2792,37 +2869,9 @@ window.reloadSession=async()=>{
 };
 
 window.doUpgrade=async()=>{
-  const code=id('s-lcode').value.trim(), errEl=id('s-upgrade-err');
-  if(!code){errEl.textContent='Inserisci il codice';errEl.style.display='block';return;}
-  if(code!==LEADER_CODE){
-    errEl.textContent='Codice errato. Assicurati di scrivere: RYOUNG';
-    errEl.style.display='block';return;
-  }
-  errEl.style.display='none';
-  const saveBtn = document.querySelector('#s-upgrade .btn-primary');
-  if(saveBtn) saveBtn.textContent='Aggiornamento...';
-  try{
-    // Update Firestore
-    await setDoc(doc(db,'users',cUser.uid),{role:'leader'},{merge:true});
-    // Re-fetch to confirm
-    const snap = await getDoc(doc(db,'users',cUser.uid));
-    if(snap.exists()) cData = snap.data();
-    // Update UI
-    id('tab-team').classList.remove('hidden');
-  id('tab-tree').classList.remove('hidden');
-    id('s-upgrade').classList.add('hidden');
-    id('s-already-leader').classList.remove('hidden');
-    id('s-invite').classList.remove('hidden');
-    const myNum = cData?.userNumber
-      ? ' <span style="font-family:monospace;font-size:10px;color:var(--accent);background:var(--accent-dim);padding:1px 6px;border-radius:4px;">#'+cData.userNumber+'</span>'
-      : '';
-    id('s-role-badge').innerHTML='<span class="pill done">Team Leader</span>'+myNum;
-    await genInviteLink();
-  }catch(e){
-    errEl.textContent='Errore: '+e.message;
-    errEl.style.display='block';
-    if(saveBtn) saveBtn.textContent='Attiva accesso Leader →';
-  }
+  const errEl=id('s-upgrade-err');
+  errEl.textContent='Invia la richiesta a un amministratore: solo un amministratore autorizzato può assegnare il ruolo Leader.';
+  errEl.style.display='block';
 };
 
 async function genInviteLink(){
