@@ -3162,7 +3162,7 @@ function doSwitchTab(t){
 }
 window.switchTab=t=>{
   if(t==='admin'&&!adminUnlocked){
-    id('al-code').value=''; id('al-err').style.display='none';
+    id('al-err').textContent=''; id('al-err').style.display='none';
     id('al-overlay').classList.remove('hidden'); return;
   }
   doSwitchTab(t);
