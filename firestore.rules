@@ -93,6 +93,36 @@ service cloud.firestore {
         (signedIn() && resource.data.uid == request.auth.uid);
     }
 
+    match /account_requests/{userId} {
+      // Request details, including sponsor codes, are visible only to their owner and admins.
+      allow get: if isAdmin() || (signedIn() && request.auth.uid == userId);
+      allow list: if isAdmin();
+      allow create: if signedIn() && request.auth.uid == userId &&
+        request.resource.data.uid == userId &&
+        request.resource.data.keys().hasOnly([
+          'uid', 'leaderStatus', 'sponsorCode', 'sponsorStatus', 'createdAt', 'updatedAt'
+        ]) &&
+        (!('leaderStatus' in request.resource.data) || request.resource.data.leaderStatus == 'pending') &&
+        (!('sponsorStatus' in request.resource.data) || request.resource.data.sponsorStatus == 'pending') &&
+        (!('sponsorCode' in request.resource.data) ||
+          (request.resource.data.sponsorCode is string && request.resource.data.sponsorCode.size() > 0 && request.resource.data.sponsorCode.size() <= 128));
+      allow update: if isAdmin() || (
+        signedIn() && request.auth.uid == userId &&
+        request.resource.data.uid == userId &&
+        request.resource.data.keys().hasOnly([
+          'uid', 'leaderStatus', 'sponsorCode', 'sponsorStatus', 'createdAt', 'updatedAt'
+        ]) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'leaderStatus', 'sponsorCode', 'sponsorStatus', 'updatedAt'
+        ]) &&
+        (!('leaderStatus' in request.resource.data) || request.resource.data.leaderStatus == 'pending') &&
+        (!('sponsorStatus' in request.resource.data) || request.resource.data.sponsorStatus == 'pending') &&
+        (!('sponsorCode' in request.resource.data) ||
+          (request.resource.data.sponsorCode is string && request.resource.data.sponsorCode.size() > 0 && request.resource.data.sponsorCode.size() <= 128))
+      );
+      allow delete: if isAdmin();
+    }
+
     match /deleted_users/{userId} {
       allow get: if isAdmin() || (signedIn() && request.auth.uid == userId);
       allow list: if isAdmin();

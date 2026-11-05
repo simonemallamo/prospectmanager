@@ -378,6 +378,7 @@ td{padding:9px 13px;vertical-align:middle;}
       <div class="fg"><label>Email</label><input type="email" id="s-email" placeholder="tua@email.com" required></div>
       <div class="fg"><label>Numero di telefono</label><input type="tel" id="s-phone" placeholder="+39 333 1234567" required></div>
       <div class="fg"><label>JIFU ID</label><input type="text" id="s-jifu" placeholder="Il tuo ID JIFU" required></div>
+      <div class="fg"><label>Codice sponsor (UID Firebase o JIFU ID, facoltativo)</label><input type="text" id="s-sponsor-code" placeholder="Codice dello sponsor"><div style="font-size:10px;color:var(--text3);margin-top:4px;">La richiesta verrà verificata dall’amministratore. Se usi il link corretto dello sponsor, non serve inserire il codice.</div></div>
       <div class="fg"><label>Password</label><input type="password" id="s-pass" placeholder="Min. 6 caratteri"></div>
       <button class="btn-primary" onclick="doSignup()">Crea account →</button>
     </div>
@@ -592,6 +593,7 @@ td{padding:9px 13px;vertical-align:middle;}
       <div class="stats" id="admin-stats"></div>
       <!-- Diagnostic banner -->
       <div id="admin-diag" style="display:none;background:var(--red-dim);border:.5px solid rgba(240,90,74,0.3);border-radius:8px;padding:.875rem 1rem;margin-bottom:.875rem;font-size:12px;color:var(--text2);line-height:1.8;"></div>
+      <div id="admin-requests" class="hidden" style="background:var(--surface);border:.5px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:1rem;"></div>
 
       <div class="toolbar" style="margin-top:.25rem;">
         <input class="search" type="text" id="a-search" placeholder="Cerca utente..." oninput="renderAdminTable()">
@@ -673,9 +675,18 @@ td{padding:9px 13px;vertical-align:middle;}
     </div>
     <div id="s-upgrade">
       <div style="font-size:13px;font-weight:500;margin-bottom:5px;">Upgrade a Team Leader</div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:.75rem;line-height:1.6;">Inserisci il codice Leader per sbloccare la Dashboard Team. Se il tuo leader ha già cambiato il tuo ruolo, chiudi e riapri le impostazioni.</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:.75rem;line-height:1.6;">Inserisci il codice RYOUNG per inviare la richiesta. Il ruolo Leader viene attivato solo dopo approvazione dell’amministratore.</div>
+      <div class="fg"><label>Codice Leader</label><input type="password" id="s-leader-code" autocomplete="off" placeholder="Codice RYOUNG"></div>
       <div class="modal-err" id="s-upgrade-err"></div>
       <button class="btn-primary" style="margin-top:6px;" onclick="doUpgrade()">Richiedi accesso Leader →</button>
+    </div>
+    <div id="s-sponsor-request" style="margin-top:1rem;padding-top:1rem;border-top:.5px solid var(--border);">
+      <div style="font-size:13px;font-weight:500;margin-bottom:5px;">Codice sponsor</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:.75rem;line-height:1.6;">Inserisci l’UID Firebase o l’ID JIFU dello sponsor corretto. La modifica sarà applicata dopo verifica dell’amministratore.</div>
+      <div class="fg"><label>UID Firebase o ID JIFU</label><input type="text" id="s-sponsor-code-setting" placeholder="Codice dello sponsor"></div>
+      <div id="s-sponsor-status" style="font-size:11px;color:var(--text3);margin:5px 0 8px;">Nessuna richiesta sponsor.</div>
+      <div class="modal-err" id="s-sponsor-err"></div>
+      <button class="btn-primary" style="margin-top:6px;" onclick="requestSponsorChange()">Invia richiesta sponsor →</button>
     </div>
     <div id="s-already-leader" class="hidden" style="text-align:center;padding:.75rem 0;font-size:13px;color:var(--green);">✅ Sei già Team Leader</div>
     <div id="s-invite" class="hidden">
@@ -858,7 +869,7 @@ import { initializeApp }        from "https://www.gstatic.com/firebasejs/10.12.0
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged }
                                  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc,
-         onSnapshot, query, where, serverTimestamp, getDocs }
+         onSnapshot, query, where, serverTimestamp, getDocs, writeBatch }
                                  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ════════════════════════════════════
@@ -936,7 +947,7 @@ let sortCol = 'date';
 let sortDir = 'desc';
 let editingPid = null;
 let adminUnlocked = false;
-let allUsers = [], allProspects = [];
+let allUsers = [], allProspects = [], allAccountRequests = [];
 let editingUid = null;
 let aFilter = 'tutti';
 let unsub = null;
@@ -1002,6 +1013,7 @@ window.doSignup = async () => {
   const email = id('s-email').value.trim().toLowerCase();
   const phone = id('s-phone').value.trim();
   const jifuId = id('s-jifu').value.trim();
+  const sponsorCode = id('s-sponsor-code').value.trim();
   const pass = id('s-pass').value;
 
   if (!name || !surname || !email || !phone || !jifuId || !pass) {
@@ -1013,7 +1025,7 @@ window.doSignup = async () => {
   // Read invite token
   const token = new URLSearchParams(window.location.search).get('invite');
   let uplineUid = null, uplinePath = [], inviteId = null;
-  if (token) {
+  if (token && !sponsorCode) {
     try {
       const inv = await getDoc(doc(db, 'invites', token));
       if (inv.exists()) { inviteId=token; uplineUid = inv.data().uid; uplinePath = [...(inv.data().uplinePath || []), inv.data().uid]; }
@@ -1049,6 +1061,17 @@ window.doSignup = async () => {
         showErr('Account creato ma profilo non salvato. Contatta Simone con il tuo ID: ' + cred.user.uid.slice(0,8));
         window.history.replaceState({}, '', window.location.pathname);
         return;
+      }
+    }
+
+    if (sponsorCode) {
+      try {
+        await setDoc(doc(db, 'account_requests', cred.user.uid), {
+          uid: cred.user.uid, sponsorCode, sponsorStatus: 'pending', createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+        }, { merge: true });
+      } catch(requestErr) {
+        console.error('Sponsor request could not be saved:', requestErr);
+        showErr('Account creato. Inserisci il codice sponsor dalle Impostazioni per inviare la richiesta.');
       }
     }
 
@@ -2535,9 +2558,10 @@ window.verifyAdmin = async () => {
 window.closeAdminLogin = () => id('al-overlay').classList.add('hidden');
 
 async function loadAdminPanel() {
-  const [uSnap,pSnap]=await Promise.all([getDocs(collection(db,'users')),getDocs(collection(db,'prospects'))]);
+  const [uSnap,pSnap,rSnap]=await Promise.all([getDocs(collection(db,'users')),getDocs(collection(db,'prospects')),getDocs(collection(db,'account_requests'))]);
   allUsers=uSnap.docs.map(d=>({id:d.id,...d.data()}));
   allProspects=pSnap.docs.map(d=>({id:d.id,...d.data()}));
+  allAccountRequests=rSnap.docs.map(d=>({id:d.id,...d.data()}));
   const leaders=allUsers.filter(u=>u.role==='leader').length;
   const members=allUsers.filter(u=>u.role==='member'||!u.role).length;
   const orphans=allUsers.filter(u=>!u.uplineUid).length;
@@ -2545,9 +2569,66 @@ async function loadAdminPanel() {
     sc('Utenti totali',allUsers.length,'ac')+sc('Leader',leaders,'g')+
     sc('Membri',members,'b')+sc('Senza upline',orphans,'a')+sc('Prospect totali',allProspects.length,'ac');
   renderAdminTable();
+  renderAccountRequests();
   renderTree();
   runDiagnostics();
 }
+
+function renderAccountRequests(){
+  const box=id('admin-requests');
+  if(!box)return;
+  const pending=allAccountRequests.filter(r=>r.leaderStatus==='pending'||r.sponsorStatus==='pending');
+  box.classList.toggle('hidden',pending.length===0);
+  if(!pending.length){box.innerHTML='';return;}
+  box.innerHTML='<div style="font-size:14px;font-weight:600;margin-bottom:10px;">Richieste in attesa ('+pending.length+')</div>'+pending.map(r=>{
+    const user=allUsers.find(u=>u.id===r.uid);
+    const who=x(user?.name||user?.email||r.uid);
+    const leader=r.leaderStatus==='pending'?'<div style="padding:8px 0;border-top:.5px solid var(--border);"><div style="font-size:12px;">Upgrade Leader richiesto da <b>'+who+'</b></div><div style="display:flex;gap:6px;margin-top:6px;"><button class="btn-save" onclick="approveLeaderRequest(\''+r.uid+'\')">Approva Leader</button><button class="btn-cancel" onclick="rejectAccountRequest(\''+r.uid+'\',\'leader\')">Rifiuta</button></div></div>':'';
+    let sponsor='';
+    if(r.sponsorStatus==='pending'){
+      const code=String(r.sponsorCode||'').trim();
+      const matches=allUsers.filter(u=>u.id===code||(u.jifuId||'').trim().toLowerCase()===code.toLowerCase());
+      const target=matches.length===1?matches[0]:null;
+      const valid=target&&target.id!==r.uid&&!(target.uplinePath||[]).includes(r.uid);
+      const matchText=matches.length>1?'Codice JIFU ambiguo: chiedere l’UID Firebase.':target?(valid?'Corrisponde a '+x(target.name||target.email)+' ('+x(target.id)+')':'Sponsor non valido o crea un ciclo.'): 'Codice non trovato: verificare l’UID Firebase o l’ID JIFU.';
+      sponsor='<div style="padding:8px 0;border-top:.5px solid var(--border);"><div style="font-size:12px;">Sponsor richiesto da <b>'+who+'</b>: <code>'+x(code)+'</code></div><div style="font-size:11px;color:var(--text3);margin:4px 0;">'+matchText+'</div><div style="display:flex;gap:6px;margin-top:6px;"><button class="btn-save" '+(valid?'':'disabled')+' onclick="approveSponsorRequest(\''+r.uid+'\')">Approva sponsor</button><button class="btn-cancel" onclick="rejectAccountRequest(\''+r.uid+'\',\'sponsor\')">Rifiuta</button></div></div>';
+    }
+    return leader+sponsor;
+  }).join('');
+}
+
+window.approveLeaderRequest=async uid=>{
+  const user=allUsers.find(u=>u.id===uid), request=allAccountRequests.find(r=>r.id===uid);
+  if(!user||!request||request.leaderStatus!=='pending')return;
+  try{
+    const batch=writeBatch(db);
+    batch.update(doc(db,'users',uid),{role:'leader'});
+    batch.update(doc(db,'account_requests',uid),{leaderStatus:'approved',updatedAt:serverTimestamp()});
+    await batch.commit();
+    await loadAdminPanel();
+  }catch(e){alert('Impossibile approvare la richiesta Leader: '+(e.message||'errore'));}
+};
+
+window.approveSponsorRequest=async uid=>{
+  const request=allAccountRequests.find(r=>r.id===uid);
+  const code=String(request?.sponsorCode||'').trim();
+  const matches=allUsers.filter(u=>u.id===code||(u.jifuId||'').trim().toLowerCase()===code.toLowerCase());
+  const sponsor=matches.length===1?matches[0]:null;
+  if(!request||request.sponsorStatus!=='pending'||!sponsor||sponsor.id===uid||(sponsor.uplinePath||[]).includes(uid))return;
+  try{
+    const batch=writeBatch(db);
+    batch.update(doc(db,'users',uid),{uplineUid:sponsor.id,uplinePath:[...(sponsor.uplinePath||[]),sponsor.id]});
+    batch.update(doc(db,'account_requests',uid),{sponsorStatus:'approved',sponsorUid:sponsor.id,updatedAt:serverTimestamp()});
+    await batch.commit();
+    await loadAdminPanel();
+  }catch(e){alert('Impossibile approvare lo sponsor: '+(e.message||'errore'));}
+};
+
+window.rejectAccountRequest=async(uid,kind)=>{
+  const field=kind==='leader'?'leaderStatus':'sponsorStatus';
+  try{await updateDoc(doc(db,'account_requests',uid),{[field]:'rejected',updatedAt:serverTimestamp()});await loadAdminPanel();}
+  catch(e){alert('Impossibile rifiutare la richiesta: '+(e.message||'errore'));}
+};
 
 function runDiagnostics() {
   var diag = id('admin-diag');
@@ -2836,6 +2917,27 @@ window.openSettings=async()=>{
   id('s-already-leader').classList.toggle('hidden',role!=='leader');
   id('s-invite').classList.toggle('hidden',role!=='leader');
   id('s-upgrade-err').style.display='none';
+  id('s-leader-code').value='';
+  id('s-sponsor-err').style.display='none';
+  id('s-sponsor-code-setting').value='';
+  id('s-sponsor-status').textContent='Nessuna richiesta sponsor.';
+  try {
+    const requestSnap=await getDoc(doc(db,'account_requests',cUser.uid));
+    if(requestSnap.exists()){
+      const request=requestSnap.data();
+      if(request.sponsorCode){
+        id('s-sponsor-code-setting').value=request.sponsorCode;
+        id('s-sponsor-status').textContent=request.sponsorStatus==='pending'?'Richiesta in attesa di verifica.':request.sponsorStatus==='approved'?'Sponsor aggiornato.':request.sponsorStatus==='rejected'?'Richiesta non approvata. Puoi inviarne una nuova.':'Richiesta salvata.';
+      }
+      if(request.leaderStatus==='pending'){
+        id('s-upgrade-err').textContent='Richiesta Leader in attesa di approvazione.';
+        id('s-upgrade-err').style.display='block';
+      } else if(request.leaderStatus==='rejected'){
+        id('s-upgrade-err').textContent='Richiesta Leader non approvata. Contatta l’amministratore.';
+        id('s-upgrade-err').style.display='block';
+      }
+    }
+  } catch(e) { console.warn('Could not refresh account requests:',e); }
   if(role==='leader') await genInviteLink();
   id('s-overlay').classList.remove('hidden');
   await refreshMetaConnectionStatus();
@@ -2884,8 +2986,34 @@ window.reloadSession=async()=>{
 
 window.doUpgrade=async()=>{
   const errEl=id('s-upgrade-err');
-  errEl.textContent='Invia la richiesta a un amministratore: solo un amministratore autorizzato può assegnare il ruolo Leader.';
-  errEl.style.display='block';
+  errEl.style.display='none';
+  if((id('s-leader-code').value||'').trim().toUpperCase()!=='RYOUNG'){
+    errEl.textContent='Codice non valido.'; errEl.style.display='block'; return;
+  }
+  try{
+    const ref=doc(db,'account_requests',cUser.uid), snap=await getDoc(ref);
+    const payload={uid:cUser.uid,leaderStatus:'pending',updatedAt:serverTimestamp()};
+    if(!snap.exists()) payload.createdAt=serverTimestamp();
+    await setDoc(ref,payload,{merge:true});
+    id('s-leader-code').value='';
+    errEl.textContent='Richiesta inviata. L’amministratore deve approvarla prima di attivare il ruolo Leader.';
+    errEl.style.display='block';
+  }catch(e){errEl.textContent='Impossibile inviare la richiesta: '+(e.message||'errore di rete');errEl.style.display='block';}
+};
+
+window.requestSponsorChange=async()=>{
+  const code=id('s-sponsor-code-setting').value.trim();
+  const errEl=id('s-sponsor-err'), status=id('s-sponsor-status');
+  errEl.style.display='none';
+  if(!code){errEl.textContent='Inserisci il codice UID Firebase o ID JIFU dello sponsor.';errEl.style.display='block';return;}
+  if(code===cUser.uid){errEl.textContent='Non puoi indicare te stesso come sponsor.';errEl.style.display='block';return;}
+  try{
+    const ref=doc(db,'account_requests',cUser.uid), snap=await getDoc(ref);
+    const payload={uid:cUser.uid,sponsorCode:code,sponsorStatus:'pending',updatedAt:serverTimestamp()};
+    if(!snap.exists()) payload.createdAt=serverTimestamp();
+    await setDoc(ref,payload,{merge:true});
+    status.textContent='Richiesta in attesa di verifica dell’amministratore.';
+  }catch(e){errEl.textContent='Impossibile inviare la richiesta: '+(e.message||'errore di rete');errEl.style.display='block';}
 };
 
 async function genInviteLink(){
