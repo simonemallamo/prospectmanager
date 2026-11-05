@@ -452,16 +452,15 @@ td{padding:9px 13px;vertical-align:middle;}
         <table>
           <thead><tr>
             <th style="width:36px;padding:9px 8px;"><input type="checkbox" id="select-all" onchange="toggleSelectAll(this)" style="cursor:pointer;width:15px;height:15px;accent-color:var(--accent);"></th>
-            <th class="th-sort active" id="th-name" onclick="sortBy('name')">Nome / Note <span class="sort-arrow">↕</span></th>
+            <th class="th-sort active" id="th-name" onclick="sortBy('name')">Nome <span class="sort-arrow">↕</span></th>
             <th>Telefono</th>
+            <th class="th-sort" id="th-prov" onclick="sortBy('prov')">Paese <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-days" onclick="sortBy('days')">Giorni <span class="sort-arrow">↕</span></th>
+            <th class="th-sort" id="th-contattato" onclick="sortBy('contattato')">Conoscitiva <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-pres" onclick="sortBy('pres')">Presentazione <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-fu" onclick="sortBy('fu')">Follow-up 1→4 <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-pay" onclick="sortBy('pay')">Pagamento <span class="sort-arrow">↕</span></th>
-            <th class="th-sort" id="th-status" onclick="sortBy('status')">Stato <span class="sort-arrow">↕</span></th>
-            <th class="th-sort" id="th-prov" onclick="sortBy('prov')">Paese / Reg. <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-iscritto" onclick="sortBy('iscritto')">Iscritto <span class="sort-arrow">↕</span></th>
-            <th class="th-sort" id="th-contattato" onclick="sortBy('contattato')">Contattato <span class="sort-arrow">↕</span></th>
             <th></th>
           </tr></thead>
           <tbody id="p-tbody"></tbody>
@@ -1293,7 +1292,7 @@ function renderStats() {
   const cont = prospects.filter(p=>p.contattato).length;
   id('my-stats').innerHTML =
     sc('Nuovi (7gg)',nw,'g')+sc('Totale',prospects.length,'ac')+
-    sc('Contattati',cont,'b')+sc('Presentazioni',pr,'b')+sc('Attesa pag.',pa,'a')+sc('Iscritti',iscr,'g');
+    sc('Conoscitive',cont,'b')+sc('Presentazioni',pr,'b')+sc('Attesa pag.',pa,'a')+sc('Iscritti',iscr,'g');
 }
 
 window.renderTable = () => {
@@ -1329,24 +1328,21 @@ window.renderTable = () => {
     return 0;
   });
   const tb = id('p-tbody');
-  if (!rows.length){tb.innerHTML=`<tr><td colspan="12"><div class="empty">📋 Nessun prospect. Aggiungine uno!</div></td></tr>`;return;}
+  if (!rows.length){tb.innerHTML=`<tr><td colspan="11"><div class="empty">📋 Nessun prospect. Aggiungine uno!</div></td></tr>`;return;}
   tb.innerHTML = rows.map(p=>{
     const d=days(p), dc=d<=3?'ok':d<=7?'warn':'bad';
     const fu=p.followUps||[false,false,false,false];
-    const st=status(p);
-    const pt={nuovo:'Nuovo',attivo:'Attivo',paga:'In attesa pag.',done:'Follow-up ✓'}[st];
     return `<tr data-id="${p.id}">
       <td style="padding:9px 8px;"><input type="checkbox" class="row-check" value="${p.id}" onchange="updateBulkBar()" style="cursor:pointer;width:15px;height:15px;accent-color:var(--accent);"></td>
       <td><div class="nm">${x(p.name)}</div>${p.channel||p.note?`<div class="note">${x(p.channel||'')}${p.channel&&p.note?' · ':''}${x(p.note||'')}</div>`:''}</td>
       <td style="white-space:nowrap;font-size:12px;color:var(--text2);">${p.phone?x(p.phone):'—'}</td>
+      <td style="white-space:nowrap;">${x(p.country||p.provincia||'—')}</td>
       <td><span class="dbadge ${dc}">${d}g</span></td>
+      <td><button class="chk${p.contattato?' on':''}" style="${p.contattato?'background:var(--green);border-color:var(--green);color:#0f0f0f;':''}" onclick="tField('${p.id}','contattato',${!p.contattato})" title="Segna come conoscitiva">${p.contattato?'✓':''}</button></td>
       <td><button class="chk${p.presentation?' on':''}" onclick="tField('${p.id}','presentation',${!p.presentation})">${p.presentation?'✓':''}</button></td>
       <td><div class="fu-row">${[0,1,2,3].map(i=>`<button class="chk fu${fu[i]?' on':''}" onclick="tFu('${p.id}',${i},${!fu[i]})">${fu[i]?'✓':(i+1)}</button>`).join('')}</div></td>
       <td><div class="pay-row" onclick="tField('${p.id}','payment',${!p.payment})"><div class="pay-dot${p.payment?' on':''}"></div><span class="pay-lbl${p.payment?' on':''}">${p.payment?'In attesa':'—'}</span></div></td>
-      <td><span class="pill ${st}">${pt}</span></td>
-      <td style="white-space:nowrap;">${p.country?`<div style="font-size:12px;font-weight:500;">${x(p.country)}</div>`:''} ${p.provincia?`<div style="font-family:monospace;font-size:10px;color:var(--text3);">${x(p.provincia)}</div>`:''}${!p.country&&!p.provincia?'<span style="color:var(--text3)">—</span>':''}</td>
       <td><button class="chk${p.iscritto?' on':''}" onclick="tField('${p.id}','iscritto',${!p.iscritto})" title="Segna come iscritto">${p.iscritto?'✓':''}</button></td>
-      <td><button class="chk${p.contattato?' on':''}" style="${p.contattato?'background:var(--green);border-color:var(--green);color:#0f0f0f;':''}" onclick="tField('${p.id}','contattato',${!p.contattato})" title="Segna come contattato">${p.contattato?'✓':''}</button></td>
       <td><div class="act-btns">${p.uid===cUser.uid?`<button class="act-btn" onclick="editProspect('${p.id}')">Modifica</button><button class="act-btn" onclick="shareProspect('${p.id}')">Condividi</button><button class="act-btn del" onclick="delProspect('${p.id}','${x(p.name)}')">Elimina</button>`:'Condiviso con te'}</div></td>
     </tr>`;
   }).join('');
@@ -3180,15 +3176,16 @@ const I18N_ES = {
   'FU 1+':'FU 1+',
   'FU 2+':'FU 2+',
   'FU 3+':'FU 3+',
-  'Nome / Note':'Nombre / Notas',
+  'Nome':'Nombre',
   'Giorni':'Días',
   'Presentazione':'Presentación',
   'Follow-up 1→4':'Seguimiento 1→4',
   'Pagamento':'Pago',
   'Stato':'Estado',
-  'Paese / Reg.':'País / Región',
+  'Paese':'País',
   'Iscritto':'Registrado',
-  'Contattato':'Contactado',
+  'Conoscitiva':'Conversación inicial',
+  'Conoscitive':'Conversaciones iniciales',
   'Provincia':'Provincia',
   'Provincia / Regione':'Provincia / Región',
   'Telefono':'Teléfono',
