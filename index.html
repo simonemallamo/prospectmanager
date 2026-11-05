@@ -688,6 +688,19 @@ td{padding:9px 13px;vertical-align:middle;}
       <div class="modal-err" id="s-sponsor-err"></div>
       <button class="btn-primary" style="margin-top:6px;" onclick="requestSponsorChange()">Invia richiesta sponsor →</button>
     </div>
+    <div id="s-list-access" style="margin-top:1rem;padding-top:1rem;border-top:.5px solid var(--border);">
+      <div style="font-size:13px;font-weight:500;margin-bottom:5px;">Accesso alla lista contatti</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:.75rem;line-height:1.6;">Puoi chiedere a un altro membro di consultare la sua lista nomi. L’accesso viene attivato solo se il proprietario accetta e può essere revocato in qualsiasi momento.</div>
+      <div class="fg"><label>Il tuo nome</label><input type="text" id="la-name" autocomplete="name"></div>
+      <div class="fg"><label>Il tuo cognome</label><input type="text" id="la-surname" autocomplete="family-name"></div>
+      <div class="fg"><label>Il tuo codice ID Firebase</label><input type="text" id="la-uid" readonly></div>
+      <div class="fg"><label>Il tuo ID JIFU</label><input type="text" id="la-jifu"></div>
+      <div class="fg"><label>Identifica il destinatario tramite</label><select id="la-target-type"><option value="email">Email</option><option value="uid">Codice ID Firebase</option><option value="jifu">ID JIFU</option></select></div>
+      <div class="fg"><label>Email o codice del destinatario</label><input type="text" id="la-target" placeholder="Email, UID Firebase o ID JIFU"></div>
+      <div class="modal-err" id="la-error"></div>
+      <button class="btn-primary" style="margin-top:6px;" onclick="sendListAccessRequest()">Invia richiesta →</button>
+      <div id="la-requests" style="margin-top:12px;font-size:12px;color:var(--text2);">Caricamento richieste…</div>
+    </div>
     <div id="s-already-leader" class="hidden" style="text-align:center;padding:.75rem 0;font-size:13px;color:var(--green);">✅ Sei già Team Leader</div>
     <div id="s-invite" class="hidden">
       <div class="invite-box">
@@ -1227,6 +1240,7 @@ function loadProspects() {
   const ownQuery = query(collection(db, 'prospects'), where('uid','==', cUser.uid));
   const sharedQuery = query(collection(db, 'prospects'), where('sharedWith','array-contains', cUser.uid));
   let ownDocs = new Map(), sharedDocs = new Map();
+  let accessUnsubs = new Map();
   const refresh = () => {
     const all = new Map();
     [...ownDocs.values(), ...sharedDocs.values()].forEach(p=>all.set(p.id,p));
@@ -1243,7 +1257,30 @@ function loadProspects() {
   };
   const ownUnsub = onSnapshot(ownQuery, snap => { ownDocs=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}])); refresh(); });
   const sharedUnsub = onSnapshot(sharedQuery, snap => { sharedDocs=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}])); refresh(); });
-  unsub = () => { ownUnsub(); sharedUnsub(); };
+  const accessUnsub = onSnapshot(query(collection(db,'list_access_requests'),where('requesterUid','==',cUser.uid)), snap => {
+    const owners = new Set(snap.docs.map(d=>d.data()).filter(r=>r.status==='approved'&&r.recipientUid).map(r=>r.recipientUid));
+    for(const [owner,stop] of accessUnsubs) if(!owners.has(owner)){
+      stop();accessUnsubs.delete(owner);
+      const prefix=`list:${owner}:`;
+      for(const key of [...sharedDocs.keys()]) if(key.startsWith(prefix)) sharedDocs.delete(key);
+    }
+    for(const owner of owners) if(!accessUnsubs.has(owner)){
+      const stop=onSnapshot(query(collection(db,'prospects'),where('uid','==',owner)), ownerSnap=>{
+        const prefix=`list:${owner}:`;
+        for(const key of [...sharedDocs.keys()]) if(key.startsWith(prefix)) sharedDocs.delete(key);
+        ownerSnap.docs.forEach(d=>sharedDocs.set(`${prefix}${d.id}`,{id:d.id,...d.data()}));
+        refresh();
+      },()=>{
+        const prefix=`list:${owner}:`;
+        for(const key of [...sharedDocs.keys()]) if(key.startsWith(prefix)) sharedDocs.delete(key);
+        refresh();
+        const stop=accessUnsubs.get(owner); if(stop)stop();
+        accessUnsubs.delete(owner);
+      });
+      accessUnsubs.set(owner,stop);
+    }
+  });
+  unsub = () => { ownUnsub(); sharedUnsub(); accessUnsub(); for(const stop of accessUnsubs.values())stop(); accessUnsubs.clear(); };
 }
 
 function renderStats() {
@@ -2921,6 +2958,10 @@ window.openSettings=async()=>{
   id('s-sponsor-err').style.display='none';
   id('s-sponsor-code-setting').value='';
   id('s-sponsor-status').textContent='Nessuna richiesta sponsor.';
+  id('la-name').value=cData?.name||'';
+  id('la-surname').value=cData?.surname||'';
+  id('la-uid').value=cUser?.uid||'';
+  id('la-jifu').value=cData?.jifuId||'';
   try {
     const requestSnap=await getDoc(doc(db,'account_requests',cUser.uid));
     if(requestSnap.exists()){
@@ -2940,7 +2981,69 @@ window.openSettings=async()=>{
   } catch(e) { console.warn('Could not refresh account requests:',e); }
   if(role==='leader') await genInviteLink();
   id('s-overlay').classList.remove('hidden');
+  await refreshListAccessRequests();
   await refreshMetaConnectionStatus();
+};
+window.sendListAccessRequest=async()=>{
+  const err=id('la-error'); err.style.display='none';
+  const name=(id('la-name').value||'').trim();
+  const surname=(id('la-surname').value||'').trim();
+  const jifuId=(id('la-jifu').value||'').trim();
+  const recipientType=id('la-target-type').value;
+  let recipientValue=(id('la-target').value||'').trim();
+  if(recipientType==='email') recipientValue=recipientValue.toLowerCase();
+  if(!name||!surname||!jifuId||!recipientValue){err.textContent='Completa i tuoi dati e inserisci l’identificativo del destinatario.';err.style.display='block';return;}
+  if(name!==cData?.name||surname!==cData?.surname||jifuId!==cData?.jifuId){err.textContent='Nome, cognome e ID JIFU devono corrispondere al profilo del tuo account.';err.style.display='block';return;}
+  if((recipientType==='uid'&&recipientValue===cUser.uid)||(recipientType==='email'&&recipientValue===String(cUser.email||'').toLowerCase())||(recipientType==='jifu'&&recipientValue===String(cData?.jifuId||''))){err.textContent='Non puoi chiedere l’accesso alla tua stessa lista.';err.style.display='block';return;}
+  try{
+    await addDoc(collection(db,'list_access_requests'),{
+      requesterUid:cUser.uid,requesterName:name,requesterSurname:surname,
+      requesterEmail:cUser.email||'',requesterJifuId:jifuId,
+      recipientType,recipientValue,status:'pending',createdAt:serverTimestamp(),updatedAt:serverTimestamp()
+    });
+    id('la-target').value=''; await refreshListAccessRequests();
+  }catch(e){err.textContent='Non è stato possibile inviare la richiesta: '+(e.message||'errore');err.style.display='block';}
+};
+window.refreshListAccessRequests=async()=>{
+  const host=id('la-requests'); if(!host||!cUser)return;
+  try{
+    const queries=[query(collection(db,'list_access_requests'),where('requesterUid','==',cUser.uid)),query(collection(db,'list_access_requests'),where('recipientUid','==',cUser.uid)),query(collection(db,'list_access_requests'),where('recipientType','==','uid'),where('recipientValue','==',cUser.uid))];
+    if(cUser.email)queries.push(query(collection(db,'list_access_requests'),where('recipientType','==','email'),where('recipientValue','==',cUser.email.toLowerCase())));
+    if(cData?.jifuId)queries.push(query(collection(db,'list_access_requests'),where('recipientType','==','jifu'),where('recipientValue','==',String(cData.jifuId))));
+    const snaps=await Promise.all(queries.map(q=>getDocs(q)));
+    const requests=new Map(); snaps.forEach(s=>s.docs.forEach(d=>requests.set(d.id,{id:d.id,...d.data()})));
+    const list=[...requests.values()].sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0));
+    if(!list.length){host.textContent='Nessuna richiesta di accesso alla lista.';return;}
+    host.innerHTML=list.map(r=>{
+      const incoming=r.recipientUid===cUser.uid || (r.recipientType==='uid'&&r.recipientValue===cUser.uid) || (r.recipientType==='email'&&r.recipientValue===String(cUser.email||'').toLowerCase()) || (r.recipientType==='jifu'&&r.recipientValue===String(cData?.jifuId||''));
+      const who=x(`${r.requesterName||''} ${r.requesterSurname||''}`.trim());
+      let state=r.status==='pending'?'In attesa':r.status==='approved'?'Accesso attivo':r.status==='rejected'?'Rifiutata':'Revocata';
+      let actions='';
+      if(incoming&&r.status==='pending') actions=`<button class="btn-save" style="margin:5px 4px 0 0;" onclick="decideListAccess('${r.id}','approved')">Accetta</button><button class="btn-cancel" style="margin-top:5px;" onclick="decideListAccess('${r.id}','rejected')">Rifiuta</button>`;
+      if(incoming&&r.status==='approved') actions=`<button class="btn-cancel" style="margin-top:5px;color:var(--red);" onclick="decideListAccess('${r.id}','revoked')">Revoca accesso</button>`;
+      const heading=incoming?`Richiesta da ${who}`:`Richiesta inviata (${x(r.recipientValue||'')})`;
+      return `<div style="padding:9px 0;border-top:.5px solid var(--border);"><b>${heading}</b><div style="font-size:11px;margin-top:3px;">${x(r.requesterEmail||'')} · JIFU: ${x(r.requesterJifuId||'')} · ${state}</div>${actions}</div>`;
+    }).join('');
+  }catch(e){host.textContent='Impossibile caricare le richieste: '+(e.message||'errore');}
+};
+window.decideListAccess=async(requestId,nextStatus)=>{
+  try{
+    const requestRef=doc(db,'list_access_requests',requestId);
+    const snap=await getDoc(requestRef); if(!snap.exists())return;
+    const data=snap.data();
+    const batch=writeBatch(db);
+    if(nextStatus==='approved'){
+      batch.update(requestRef,{status:'approved',recipientUid:cUser.uid,updatedAt:serverTimestamp()});
+      batch.set(doc(db,'list_access',cUser.uid,'members',data.requesterUid),{requestId,requesterUid:data.requesterUid,createdAt:serverTimestamp()});
+    }else if(nextStatus==='rejected'){
+      batch.update(requestRef,{status:'rejected',recipientUid:cUser.uid,updatedAt:serverTimestamp()});
+    }else if(nextStatus==='revoked'){
+      batch.update(requestRef,{status:'revoked',updatedAt:serverTimestamp()});
+      batch.delete(doc(db,'list_access',cUser.uid,'members',data.requesterUid));
+    }else return;
+    await batch.commit(); await refreshListAccessRequests();
+    if(nextStatus==='approved'||nextStatus==='revoked')loadProspects();
+  }catch(e){alert('Impossibile aggiornare la richiesta: '+(e.message||'errore'));}
 };
 window.connectMetaAds=async()=>{
   const btn=id('meta-connect-btn'), status=id('meta-connection-status'), err=id('meta-connection-error');
