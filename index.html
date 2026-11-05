@@ -1126,11 +1126,14 @@ window.authTab = t => {
 
 // ── SHOW AUTH / APP ──
 function showAuth() {
+  adminUnlocked = false;
+  id('tab-admin')?.classList.add('hidden');
+  id('al-overlay')?.classList.add('hidden');
   id('auth-screen').style.display = 'flex';
   id('app-screen').style.display  = 'none';
   checkInviteBanner();
 }
-function showApp() {
+async function showApp() {
   const requiredFields = ['name', 'surname', 'phone', 'jifuId'];
   const missingProfile = !cData || requiredFields.some(
     field => !String(cData[field] || '').trim()
@@ -1153,6 +1156,18 @@ function showApp() {
   id('auth-screen').style.display = 'none';
   id('app-screen').style.display = 'block';
 
+  const account = cUser;
+  id('tab-admin').classList.add('hidden');
+  adminUnlocked = false;
+  if (account) {
+    try {
+      const token = await account.getIdTokenResult(true);
+      if (cUser?.uid === account.uid && token.claims.admin === true) {
+        id('tab-admin').classList.remove('hidden');
+      }
+    } catch(e) {}
+  }
+
   const ini = [cData?.name, cData?.surname]
     .filter(Boolean)
     .map(w => w[0])
@@ -1166,7 +1181,6 @@ function showApp() {
 
   if (cData?.role === 'leader') id('tab-team').classList.remove('hidden');
   id('tab-tree').classList.remove('hidden');
-  id('tab-admin').classList.remove('hidden');
 
   loadProspects();
 }
@@ -3160,10 +3174,28 @@ function doSwitchTab(t){
     id('tab-'+v)?.classList.toggle('on',v===t);
   });
 }
-window.switchTab=t=>{
-  if(t==='admin'&&!adminUnlocked){
-    id('al-err').textContent=''; id('al-err').style.display='none';
-    id('al-overlay').classList.remove('hidden'); return;
+window.switchTab=async t=>{
+  if(t==='admin'){
+    const account=cUser;
+    let authorized=false;
+    if(account){
+      try{
+        const token=await account.getIdTokenResult(true);
+        authorized=cUser?.uid===account.uid && token.claims.admin===true;
+      }catch(e){}
+    }
+    if(!authorized){
+      adminUnlocked=false;
+      id('tab-admin').classList.add('hidden');
+      id('al-overlay').classList.add('hidden');
+      if(!id('view-admin').classList.contains('hidden')) doSwitchTab('lista');
+      return;
+    }
+    id('tab-admin').classList.remove('hidden');
+    if(!adminUnlocked){
+      id('al-err').textContent=''; id('al-err').style.display='none';
+      id('al-overlay').classList.remove('hidden'); return;
+    }
   }
   doSwitchTab(t);
   if(t==='team') loadTeamDashboard();
