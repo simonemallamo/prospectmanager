@@ -1,29 +1,197 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.email == 'mallamo.simone@gmail.com';
+    }
+
+    function ownsProspect() {
+      return signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    function hasListAccess(ownerUid) {
+      return signedIn() && exists(
+        /databases/$(database)/documents/list_access/$(ownerUid)/members/$(request.auth.uid)
+      );
+    }
+
+    function isListAccessRecipient(data) {
+      return signedIn() && (
+        data.get('recipientUid', '') == request.auth.uid ||
+        (data.recipientType == 'uid' && data.recipientValue == request.auth.uid) ||
+        (data.recipientType == 'email' && data.recipientValue == request.auth.token.email) ||
+        (data.recipientType == 'jifu' &&
+          data.recipientValue == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.jifuId)
+      );
+    }
+
+    function validSignupTree() {
+      return (
+        !('inviteId' in request.resource.data) &&
+        request.resource.data.uplineUid == null &&
+        request.resource.data.uplinePath == []
+      ) || (
+        request.resource.data.inviteId is string &&
+        exists(/databases/$(database)/documents/invites/$(request.resource.data.inviteId)) &&
+        request.resource.data.uplineUid == get(/databases/$(database)/documents/invites/$(request.resource.data.inviteId)).data.uid &&
+        request.resource.data.uplinePath == get(/databases/$(database)/documents/invites/$(request.resource.data.inviteId)).data.get('uplinePath', []).concat([
+          get(/databases/$(database)/documents/invites/$(request.resource.data.inviteId)).data.uid
+        ])
+      );
+    }
 
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null;
-      allow delete: if request.auth != null;
+      // User documents contain contact details and are private by default.
+      allow get: if isAdmin() || (signedIn() && request.auth.uid == userId);
+      allow list: if isAdmin() ||
+        (signedIn() && request.auth.uid in resource.data.uplinePath);
+      allow create: if isAdmin() || (
+        signedIn() && request.auth.uid == userId &&
+        request.resource.data.keys().hasOnly([
+          'name', 'surname', 'email', 'phone', 'jifuId', 'role', 'profileComplete',
+          'userNumber', 'uplineUid', 'uplinePath', 'createdAt', 'inviteId'
+        ]) &&
+        request.resource.data.email == request.auth.token.email &&
+        request.resource.data.role == 'member' &&
+        validSignupTree() &&
+        request.resource.data.name is string && request.resource.data.name.size() > 0 &&
+        request.resource.data.surname is string && request.resource.data.surname.size() > 0 &&
+        request.resource.data.phone is string && request.resource.data.phone.size() > 0 &&
+        request.resource.data.jifuId is string && request.resource.data.jifuId.size() > 0 &&
+        request.resource.data.profileComplete == true
+      );
+      allow update: if isAdmin() || (
+        signedIn() && request.auth.uid == userId &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'surname', 'email', 'phone', 'jifuId', 'profileComplete', 'updatedAt'
+        ]) &&
+        request.resource.data.email == request.auth.token.email &&
+        request.resource.data.name is string && request.resource.data.name.size() > 0 &&
+        request.resource.data.surname is string && request.resource.data.surname.size() > 0 &&
+        request.resource.data.phone is string && request.resource.data.phone.size() > 0 &&
+        request.resource.data.jifuId is string && request.resource.data.jifuId.size() > 0 &&
+        request.resource.data.profileComplete == true
+      );
+      allow delete: if isAdmin();
     }
 
     match /prospects/{prospectId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      // A full-list grant is created only after the owner accepts a request.
+      allow read: if isAdmin() || ownsProspect() ||
+        hasListAccess(resource.data.uid) ||
+        (signedIn() && resource.data.sharedWith is list &&
+         request.auth.uid in resource.data.sharedWith);
+      allow create: if signedIn() &&
+        request.resource.data.uid == request.auth.uid &&
+        (!('sharedWith' in request.resource.data) || request.resource.data.sharedWith.size() == 0);
+      allow update: if isAdmin() || (ownsProspect() &&
+        request.resource.data.uid == resource.data.uid);
+      allow delete: if isAdmin() || ownsProspect();
+    }
+
+    match /list_access_requests/{requestId} {
+      allow get, list: if isAdmin() || (signedIn() && (
+        resource.data.requesterUid == request.auth.uid || isListAccessRecipient(resource.data)
+      ));
+      allow create: if signedIn() &&
+        request.resource.data.keys().hasOnly([
+          'requesterUid', 'requesterName', 'requesterSurname', 'requesterEmail', 'requesterJifuId',
+          'recipientType', 'recipientValue', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        request.resource.data.requesterUid == request.auth.uid &&
+        request.resource.data.requesterName == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.name &&
+        request.resource.data.requesterSurname == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.surname &&
+        request.resource.data.requesterJifuId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.jifuId &&
+        request.resource.data.requesterEmail == request.auth.token.email &&
+        request.resource.data.recipientType in ['email', 'uid', 'jifu'] &&
+        request.resource.data.recipientValue is string &&
+        request.resource.data.recipientValue.size() > 0 && request.resource.data.recipientValue.size() <= 256 &&
+        !(request.resource.data.recipientType == 'uid' && request.resource.data.recipientValue == request.auth.uid) &&
+        !(request.resource.data.recipientType == 'email' && request.resource.data.recipientValue == request.auth.token.email) &&
+        !(request.resource.data.recipientType == 'jifu' && request.resource.data.recipientValue == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.jifuId) &&
+        request.resource.data.status == 'pending';
+      allow update: if signedIn() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'recipientUid', 'updatedAt']) &&
+        request.resource.data.requesterUid == resource.data.requesterUid &&
+        isListAccessRecipient(resource.data) && (
+          (resource.data.status == 'pending' && request.resource.data.status in ['approved', 'rejected'] &&
+            request.resource.data.recipientUid == request.auth.uid) ||
+          (resource.data.status == 'approved' && request.resource.data.status == 'revoked' &&
+            resource.data.recipientUid == request.auth.uid && request.resource.data.recipientUid == resource.data.recipientUid)
+        );
+      allow delete: if isAdmin();
+    }
+
+    match /list_access/{ownerUid}/members/{requesterUid} {
+      allow get, list: if isAdmin() || (signedIn() &&
+        (request.auth.uid == ownerUid || request.auth.uid == requesterUid));
+      allow create: if signedIn() && request.auth.uid == ownerUid &&
+        request.resource.data.keys().hasOnly(['requestId', 'requesterUid', 'createdAt']) &&
+        request.resource.data.requesterUid == requesterUid &&
+        getAfter(/databases/$(database)/documents/list_access_requests/$(request.resource.data.requestId)).data.status == 'approved' &&
+        getAfter(/databases/$(database)/documents/list_access_requests/$(request.resource.data.requestId)).data.recipientUid == ownerUid &&
+        getAfter(/databases/$(database)/documents/list_access_requests/$(request.resource.data.requestId)).data.requesterUid == requesterUid;
+      allow delete: if signedIn() && request.auth.uid == ownerUid &&
+        getAfter(/databases/$(database)/documents/list_access_requests/$(resource.data.requestId)).data.status == 'revoked' &&
+        getAfter(/databases/$(database)/documents/list_access_requests/$(resource.data.requestId)).data.recipientUid == ownerUid;
+      allow update: if false;
     }
 
     match /invites/{inviteId} {
-      allow read: if true;
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      // Invite links are looked up by their unguessable document ID; listing is private.
+      allow get: if true;
+      allow list: if isAdmin() ||
+        (signedIn() && resource.data.uid == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid &&
+        request.resource.data.keys().hasOnly(['uid', 'name', 'uplinePath', 'createdAt']) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'leader' &&
+        request.resource.data.uplinePath == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('uplinePath', []) &&
+        request.resource.data.name == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.name;
+      allow update: if isAdmin() ||
+        (signedIn() && resource.data.uid == request.auth.uid &&
+         request.resource.data.uid == resource.data.uid);
+      allow delete: if isAdmin() ||
+        (signedIn() && resource.data.uid == request.auth.uid);
+    }
+
+    match /account_requests/{userId} {
+      // Request details, including sponsor codes, are visible only to their owner and admins.
+      allow get: if isAdmin() || (signedIn() && request.auth.uid == userId);
+      allow list: if isAdmin();
+      allow create: if signedIn() && request.auth.uid == userId &&
+        request.resource.data.uid == userId &&
+        request.resource.data.keys().hasOnly([
+          'uid', 'leaderStatus', 'sponsorCode', 'sponsorStatus', 'createdAt', 'updatedAt'
+        ]) &&
+        (!('leaderStatus' in request.resource.data) || request.resource.data.leaderStatus == 'pending') &&
+        (!('sponsorStatus' in request.resource.data) || request.resource.data.sponsorStatus == 'pending') &&
+        (!('sponsorCode' in request.resource.data) ||
+          (request.resource.data.sponsorCode is string && request.resource.data.sponsorCode.size() > 0 && request.resource.data.sponsorCode.size() <= 128));
+      allow update: if isAdmin() || (
+        signedIn() && request.auth.uid == userId &&
+        request.resource.data.uid == userId &&
+        request.resource.data.keys().hasOnly([
+          'uid', 'leaderStatus', 'sponsorCode', 'sponsorStatus', 'createdAt', 'updatedAt'
+        ]) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'leaderStatus', 'sponsorCode', 'sponsorStatus', 'updatedAt'
+        ]) &&
+        (!('leaderStatus' in request.resource.data) || request.resource.data.leaderStatus == 'pending') &&
+        (!('sponsorStatus' in request.resource.data) || request.resource.data.sponsorStatus == 'pending') &&
+        (!('sponsorCode' in request.resource.data) ||
+          (request.resource.data.sponsorCode is string && request.resource.data.sponsorCode.size() > 0 && request.resource.data.sponsorCode.size() <= 128))
+      );
+      allow delete: if isAdmin();
     }
 
     match /deleted_users/{userId} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow get: if isAdmin() || (signedIn() && request.auth.uid == userId);
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
     }
   }
 }
