@@ -890,7 +890,8 @@ td{padding:13px 12px;}
             <th>Telefono</th>
             <th class="th-sort" id="th-prov" onclick="sortBy('prov')">Paese <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-days" onclick="sortBy('days')">Giorni <span class="sort-arrow">↕</span></th>
-            <th class="th-sort" id="th-contattato" onclick="sortBy('contattato')">Conoscitiva <span class="sort-arrow">↕</span></th>
+            <th class="th-sort" id="th-contacted" onclick="sortBy('contacted')">Contattato <span class="sort-arrow">↕</span></th>
+            <th class="th-sort" id="th-conoscitiva" onclick="sortBy('conoscitiva')">Conoscitiva <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-pres" onclick="sortBy('pres')">Presentazione <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-fu" onclick="sortBy('fu')">Follow-up 1→4 <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-pay" onclick="sortBy('pay')">Pagamento <span class="sort-arrow">↕</span></th>
@@ -1721,7 +1722,7 @@ function renderStats() {
   const pa = prospects.filter(p=>p.payment).length;
   const fu = prospects.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length;
   const iscr = prospects.filter(p=>p.iscritto).length;
-  const cont = prospects.filter(p=>p.contattato).length;
+  const cont = prospects.filter(p=>typeof p.conoscitiva==='boolean'?p.conoscitiva:!!p.contattato).length;
   id('my-stats').innerHTML =
     sc('Nuovi (7gg)',nw,'g')+sc('Totale',prospects.length,'ac')+
     sc('Conoscitive',cont,'b')+sc('Presentazioni',pr,'b')+sc('Attesa pag.',pa,'a')+sc('Iscritti',iscr,'g');
@@ -1754,7 +1755,8 @@ window.renderTable = () => {
       case 'prov':   va=(a.country||a.provincia||'').toLowerCase(); vb=(b.country||b.provincia||'').toLowerCase(); break;
       case 'fu': va=(a.followUps||[]).filter(Boolean).length; vb=(b.followUps||[]).filter(Boolean).length; break;
       case 'iscritto': va=a.iscritto?1:0; vb=b.iscritto?1:0; break;
-      case 'contattato': va=a.contattato?1:0; vb=b.contattato?1:0; break;
+      case 'contacted': va=a.contacted?1:0; vb=b.contacted?1:0; break;
+      case 'conoscitiva': va=(typeof a.conoscitiva==='boolean'?a.conoscitiva:!!a.contattato)?1:0; vb=(typeof b.conoscitiva==='boolean'?b.conoscitiva:!!b.contattato)?1:0; break;
       case 'pres':   va=a.presentation?1:0; vb=b.presentation?1:0; break;
       case 'pay':    va=a.payment?1:0; vb=b.payment?1:0; break;
       case 'provincia': va=(a.provincia||''); vb=(b.provincia||''); break;
@@ -1769,17 +1771,20 @@ window.renderTable = () => {
     return 0;
   });
   const tb = id('p-tbody');
-  if (!rows.length){tb.innerHTML=`<tr><td colspan="11"><div class="empty">📋 Nessun prospect. Aggiungine uno!</div></td></tr>`;return;}
+  if (!rows.length){tb.innerHTML=`<tr><td colspan="12"><div class="empty">📋 Nessun prospect. Aggiungine uno!</div></td></tr>`;return;}
   tb.innerHTML = rows.map(p=>{
     const d=days(p), dc=d<=3?'ok':d<=7?'warn':'bad';
     const fu=p.followUps||[false,false,false,false];
+    const contacted=!!p.contacted;
+    const conoscitiva=typeof p.conoscitiva==='boolean'?p.conoscitiva:!!p.contattato;
     return `<tr data-id="${p.id}">
       <td style="padding:9px 8px;"><input type="checkbox" class="row-check" value="${p.id}" onchange="updateBulkBar()" style="cursor:pointer;width:15px;height:15px;accent-color:var(--accent);"></td>
       <td><div class="nm">${x(p.name)}</div>${p.channel||p.note?`<div class="note">${x(p.channel||'')}${p.channel&&p.note?' · ':''}${x(p.note||'')}</div>`:''}</td>
       <td style="white-space:nowrap;font-size:12px;color:var(--text2);">${p.phone?x(p.phone):'—'}</td>
       <td style="white-space:nowrap;">${x(p.country||p.provincia||'—')}</td>
       <td><span class="dbadge ${dc}">${d}g</span></td>
-      <td><button class="chk${p.contattato?' on':''}" style="${p.contattato?'background:var(--green);border-color:var(--green);color:#0f0f0f;':''}" onclick="tField('${p.id}','contattato',${!p.contattato})" title="Segna come conoscitiva">${p.contattato?'✓':''}</button></td>
+      <td><button class="chk${contacted?' on':''}" onclick="tField('${p.id}','contacted',${!contacted})" title="Segna come contattato">${contacted?'✓':''}</button></td>
+      <td><button class="chk${conoscitiva?' on':''}" style="${conoscitiva?'background:var(--green);border-color:var(--green);color:#0f0f0f;':''}" onclick="tField('${p.id}','conoscitiva',${!conoscitiva})" title="Segna come conoscitiva">${conoscitiva?'✓':''}</button></td>
       <td><button class="chk${p.presentation?' on':''}" onclick="tField('${p.id}','presentation',${!p.presentation})">${p.presentation?'✓':''}</button></td>
       <td><div class="fu-row">${[0,1,2,3].map(i=>`<button class="chk fu${fu[i]?' on':''}" onclick="tFu('${p.id}',${i},${!fu[i]})">${fu[i]?'✓':(i+1)}</button>`).join('')}</div></td>
       <td><div class="pay-row" onclick="tField('${p.id}','payment',${!p.payment})"><div class="pay-dot${p.payment?' on':''}"></div><span class="pay-lbl${p.payment?' on':''}">${p.payment?'In attesa':'—'}</span></div></td>
@@ -1859,7 +1864,7 @@ window.saveProspect = async () => {
   if(!name){id('p-name').style.borderColor='var(--red)';return;}
   const data={name,channel:id('p-channel').value.trim(),phone:id('p-phone').value.trim(),country:id('p-country').value,provincia:id('p-provincia').value,note:id('p-note').value.trim(),uid:cUser.uid,userName:cData?.name||cUser.email};
   if(editingPid) { if(prospects.find(p=>p.id===editingPid)?.uid!==cUser.uid)return; await updateDoc(doc(db,'prospects',editingPid),data); }
-  else await addDoc(collection(db,'prospects'),{...data,presentation:false,followUps:[false,false,false,false],payment:false,createdAt:serverTimestamp(),lastCheckAt:null,_insertedAt:Date.now()});
+  else await addDoc(collection(db,'prospects'),{...data,contacted:false,conoscitiva:false,presentation:false,followUps:[false,false,false,false],payment:false,createdAt:serverTimestamp(),lastCheckAt:null,_insertedAt:Date.now()});
   closeProspectModal();
 };
 
@@ -1872,7 +1877,7 @@ window.sortBy = col => {
     sortDir = col === 'days' ? 'desc' : 'asc';
   }
   // Update header styles
-  ['name','days','prov','pres','pay','status'].forEach(k => {
+  ['name','days','prov','contacted','conoscitiva','pres','fu','pay','iscritto','status'].forEach(k => {
     const th = id('th-'+k);
     if (!th) return;
     th.classList.toggle('active', k === col);
@@ -2407,7 +2412,7 @@ window.confirmImport=async function(){
         country:'',provincia:'',uid:cUser.uid,
         userName:cData?cData.name||cUser.email:cUser.email,
         presentation:false,followUps:[false,false,false,false],
-        payment:false,iscritto:false,contattato:false,
+        payment:false,iscritto:false,contacted:false,conoscitiva:false,
         createdAt:serverTimestamp(),lastCheckAt:null,_insertedAt:Date.now()
       });
       lastImportIds.push(ref.id);
@@ -2618,7 +2623,7 @@ window.executeImport = async function() {
         uid:cUser.uid,
         userName:cData?cData.name||cUser.email:cUser.email,
         presentation:false, followUps:[false,false,false,false],
-        payment:false, iscritto:false, contattato:false,
+        payment:false, iscritto:false, contacted:false, conoscitiva:false,
         createdAt:serverTimestamp(), lastCheckAt:null,
         _insertedAt:Date.now(),
         _importBatch:batchId
@@ -3654,6 +3659,7 @@ const I18N_ES = {
   'Stato':'Estado',
   'Paese':'País',
   'Iscritto':'Registrado',
+  'Contattato':'Contactado',
   'Conoscitiva':'Conversación inicial',
   'Conoscitive':'Conversaciones iniciales',
   'Provincia':'Provincia',
