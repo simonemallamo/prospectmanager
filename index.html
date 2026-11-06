@@ -2058,6 +2058,9 @@ async function loadNetworkTree(){
     getDocs(query(collection(db,'users'),where('uplinePath','array-contains',cUser.uid))).then(s=>s.docs.map(d=>({id:d.id,...d.data()}))),
     getDocs(query(collection(db,'prospects'),where('sharedWith','array-contains',cUser.uid))).then(s=>s.docs.map(d=>({id:d.id,...d.data()})))
   ]);
+  // The descendants query does not return the signed-in user. Include the
+  // current profile so build() can render the tree from its root node.
+  if(cUser&&!us.some(u=>u.id===cUser.uid))us.unshift({id:cUser.uid,...(cData||{})});
   window._treeUs=us; window._treePs=ps;
   const myUid=cUser.uid;
   function gd(root,all){const r=new Set();const q=[root];let s=0;while(q.length&&s<500){const c=q.shift();all.filter(u=>u.uplineUid===c).forEach(ch=>{if(!r.has(ch.id)){r.add(ch.id);q.push(ch.id);}});s++;}return r;}
