@@ -15,7 +15,7 @@ async function saveLead(leadId,pageId){
     channel:'Facebook Ads',source:'Meta Lead Ads',sourceDetail:'leadgen',
     phone:val(f,['phone_number','phone','telefono','cellulare','mobile']),
     email:val(f,['email','e-mail']),country:val(f,['country','paese']),provincia:val(f,['province','provincia','state','region']),
-    uid:page.uid,presentation:false,followUps:[false,false,false,false],payment:false,iscritto:false,contattato:false,
+    uid:page.uid,presentation:false,followUps:[false,false,false,false],payment:false,iscritto:false,contacted:false,conoscitiva:false,
     metaLeadId:String(leadId),metaPageId:String(pageId),metaPageName:page.pageName||'',campaignId:lead.campaign_id||'',campaignName:lead.campaign_name||'',adSetId:lead.adset_id||'',adSetName:lead.adset_name||'',adId:lead.ad_id||'',adName:lead.ad_name||'',formId:lead.form_id||'',
     createdAt:FieldValue.serverTimestamp(),lastCheckAt:null,_insertedAt:Date.now()
   };

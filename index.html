@@ -447,6 +447,13 @@ h1,h2,h3,h4,.auth-title,.logo-text,.topbar-name,.sc-val,.tc-num-val,.team-chart-
 .topbar-mark svg{width:27px;height:27px;}
 .topbar-mark img,.logo-mark img{display:block;width:100%;height:100%;object-fit:contain;}
 .topbar-name,.logo-text{font-family:var(--pm-display);font-size:14px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap;color:var(--accent-hi);}
+.brand-lockup{display:inline-flex;align-items:center;gap:5px;color:var(--accent-hi);font-family:var(--pm-display);font-weight:700;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap;}
+.brand-lockup .brand-word{display:inline-block;line-height:1;}
+.brand-lockup .brand-mark{display:block;flex:0 0 auto;object-fit:contain;}
+.auth-brand{font-size:19px;}
+.auth-brand .brand-mark{width:38px;height:38px;}
+.topbar-logo{gap:5px;margin-right:6px;flex-shrink:0;}
+.topbar-logo .brand-mark{width:32px;height:32px;}
 .t-tab{height:42px;padding:0 14px;border:1px solid transparent;border-radius:12px;color:var(--text3);font-size:12px;font-weight:650;white-space:nowrap;position:relative;}
 .t-tab:hover{color:var(--text);background:var(--surface2);}
 .t-tab.on,.t-tab.leader.on{background:linear-gradient(135deg,rgba(211,173,67,.16),rgba(211,173,67,.07));border-color:var(--border);color:var(--accent-hi);box-shadow:inset 0 1px rgba(255,255,255,.045);}
@@ -609,7 +616,7 @@ td{padding:13px 12px;}
 @keyframes pm-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important;}}
 @media(max-width:1120px){.stats{grid-template-columns:repeat(3,minmax(0,1fr));}.topbar{gap:8px}.t-tab{padding:0 10px}.user-nm{display:none}}
-@media(max-width:760px){.topbar{height:auto;min-height:66px;padding:9px 12px;gap:6px;overflow-x:auto;flex-wrap:wrap}.topbar-logo{margin-right:auto}.topbar-name{font-size:13px}.topbar-right{margin-left:0;width:100%;justify-content:flex-end}.main{padding:22px 14px 34px}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.sc{min-height:102px;padding:14px}.sc-val{font-size:28px}.pipeline-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.toolbar{padding:10px}.toolbar .search{flex:1;min-width:130px}.toolbar .f-btn{flex:1 1 auto}.btn-add{margin-left:0}.team-charts{grid-template-columns:1fr!important}#binary-view{grid-template-columns:1fr!important}.leg-visual{grid-template-columns:120px 1fr;gap:10px}.leg-donut{width:116px;height:116px}.leg-donut::after{width:72px;height:72px}.team-chart-body{flex-wrap:wrap}.team-donut{width:120px;height:120px;flex-basis:120px}.team-donut::after{width:68px;height:68px}#legs-columns{grid-template-columns:1fr!important}.modal{padding:22px}}
+@media(max-width:760px){.topbar{height:auto;min-height:66px;padding:9px 12px;gap:6px;overflow-x:auto;flex-wrap:wrap}.topbar-logo{margin-right:auto}.topbar-name{font-size:13px}.brand-lockup{gap:3px}.auth-brand{font-size:16px}.auth-brand .brand-mark{width:34px;height:34px}.topbar-logo .brand-mark{width:28px;height:28px}.topbar-right{margin-left:0;width:100%;justify-content:flex-end}.main{padding:22px 14px 34px}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.sc{min-height:102px;padding:14px}.sc-val{font-size:28px}.pipeline-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.toolbar{padding:10px}.toolbar .search{flex:1;min-width:130px}.toolbar .f-btn{flex:1 1 auto}.btn-add{margin-left:0}.team-charts{grid-template-columns:1fr!important}#binary-view{grid-template-columns:1fr!important}.leg-visual{grid-template-columns:120px 1fr;gap:10px}.leg-donut{width:116px;height:116px}.leg-donut::after{width:72px;height:72px}.team-chart-body{flex-wrap:wrap}.team-donut{width:120px;height:120px;flex-basis:120px}.team-donut::after{width:68px;height:68px}#legs-columns{grid-template-columns:1fr!important}.modal{padding:22px}}
 @media(max-width:420px){.pipeline-head{align-items:flex-start}.pipeline-head>div{align-items:flex-start;flex-direction:column;gap:3px}.pipeline-stage{padding:11px}.pipeline-stage-name{font-size:9px}.leg-visual{grid-template-columns:1fr;justify-items:center}.leg-legend{width:100%}.auth-top{align-items:flex-start}.topbar-name{max-width:152px;overflow:hidden;text-overflow:ellipsis}}
 
 /* Team analytics refinement */
@@ -768,13 +775,10 @@ td{padding:13px 12px;}
 <div id="auth-screen">
   <div class="auth-card">
     <div class="auth-top">
-      <div class="auth-logo">
-        <div class="logo-mark">
-          <img src="prospect-manager-mark.svg" alt="" aria-hidden="true">
-        </div>
-        <div>
-          <div class="logo-text">PROSPECT MANAGER</div>
-        </div>
+      <div class="brand-lockup auth-brand" aria-label="Prospect Manager">
+        <span class="brand-word">PROSPECT</span>
+        <img class="brand-mark" src="prospect-manager-mark.svg" alt="" aria-hidden="true">
+        <span class="brand-word">MANAGER</span>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
         <div class="lang-switch auth-lang" aria-label="Lingua">
@@ -824,11 +828,10 @@ td{padding:13px 12px;}
 <!-- ══ APP ══ -->
 <div id="app-screen">
   <div class="topbar">
-    <div class="topbar-logo">
-      <div class="topbar-mark">
-        <img src="prospect-manager-mark.svg" alt="" aria-hidden="true">
-      </div>
-      <div class="topbar-name">PROSPECT MANAGER</div>
+    <div class="brand-lockup topbar-logo topbar-name" aria-label="Prospect Manager">
+      <span class="brand-word">PROSPECT</span>
+      <img class="brand-mark" src="prospect-manager-mark.svg" alt="" aria-hidden="true">
+      <span class="brand-word">MANAGER</span>
     </div>
     <button class="t-tab on" id="tab-lista" onclick="switchTab('lista')">Lista Prospect</button>
     <button class="t-tab leader hidden" id="tab-team" onclick="switchTab('team')">Dashboard Team</button>
@@ -887,7 +890,8 @@ td{padding:13px 12px;}
             <th>Telefono</th>
             <th class="th-sort" id="th-prov" onclick="sortBy('prov')">Paese <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-days" onclick="sortBy('days')">Giorni <span class="sort-arrow">↕</span></th>
-            <th class="th-sort" id="th-contattato" onclick="sortBy('contattato')">Conoscitiva <span class="sort-arrow">↕</span></th>
+            <th class="th-sort" id="th-contacted" onclick="sortBy('contacted')">Contattato <span class="sort-arrow">↕</span></th>
+            <th class="th-sort" id="th-conoscitiva" onclick="sortBy('conoscitiva')">Conoscitiva <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-pres" onclick="sortBy('pres')">Presentazione <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-fu" onclick="sortBy('fu')">Follow-up 1→4 <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-pay" onclick="sortBy('pay')">Pagamento <span class="sort-arrow">↕</span></th>
@@ -1723,7 +1727,7 @@ function renderStats() {
   const pa = prospects.filter(p=>p.payment).length;
   const fu = prospects.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length;
   const iscr = prospects.filter(p=>p.iscritto).length;
-  const cont = prospects.filter(p=>p.contattato).length;
+  const cont = prospects.filter(p=>typeof p.conoscitiva==='boolean'?p.conoscitiva:!!p.contattato).length;
   id('my-stats').innerHTML =
     sc('Nuovi (7gg)',nw,'g')+sc('Totale',prospects.length,'ac')+
     sc('Conoscitive',cont,'b')+sc('Presentazioni',pr,'b')+sc('Attesa pag.',pa,'a')+sc('Iscritti',iscr,'g');
@@ -1756,7 +1760,8 @@ window.renderTable = () => {
       case 'prov':   va=(a.country||a.provincia||'').toLowerCase(); vb=(b.country||b.provincia||'').toLowerCase(); break;
       case 'fu': va=(a.followUps||[]).filter(Boolean).length; vb=(b.followUps||[]).filter(Boolean).length; break;
       case 'iscritto': va=a.iscritto?1:0; vb=b.iscritto?1:0; break;
-      case 'contattato': va=a.contattato?1:0; vb=b.contattato?1:0; break;
+      case 'contacted': va=a.contacted?1:0; vb=b.contacted?1:0; break;
+      case 'conoscitiva': va=(typeof a.conoscitiva==='boolean'?a.conoscitiva:!!a.contattato)?1:0; vb=(typeof b.conoscitiva==='boolean'?b.conoscitiva:!!b.contattato)?1:0; break;
       case 'pres':   va=a.presentation?1:0; vb=b.presentation?1:0; break;
       case 'pay':    va=a.payment?1:0; vb=b.payment?1:0; break;
       case 'provincia': va=(a.provincia||''); vb=(b.provincia||''); break;
@@ -1771,17 +1776,20 @@ window.renderTable = () => {
     return 0;
   });
   const tb = id('p-tbody');
-  if (!rows.length){tb.innerHTML=`<tr><td colspan="11"><div class="empty">📋 Nessun prospect. Aggiungine uno!</div></td></tr>`;return;}
+  if (!rows.length){tb.innerHTML=`<tr><td colspan="12"><div class="empty">📋 Nessun prospect. Aggiungine uno!</div></td></tr>`;return;}
   tb.innerHTML = rows.map(p=>{
     const d=days(p), dc=d<=3?'ok':d<=7?'warn':'bad';
     const fu=p.followUps||[false,false,false,false];
+    const contacted=!!p.contacted;
+    const conoscitiva=typeof p.conoscitiva==='boolean'?p.conoscitiva:!!p.contattato;
     return `<tr data-id="${p.id}">
       <td style="padding:9px 8px;"><input type="checkbox" class="row-check" value="${p.id}" onchange="updateBulkBar()" style="cursor:pointer;width:15px;height:15px;accent-color:var(--accent);"></td>
       <td><div class="nm">${x(p.name)}</div>${p.channel||p.note?`<div class="note">${x(p.channel||'')}${p.channel&&p.note?' · ':''}${x(p.note||'')}</div>`:''}</td>
       <td style="white-space:nowrap;font-size:12px;color:var(--text2);">${p.phone?x(p.phone):'—'}</td>
       <td style="white-space:nowrap;">${x(p.country||p.provincia||'—')}</td>
       <td><span class="dbadge ${dc}">${d}g</span></td>
-      <td><button class="chk${p.contattato?' on':''}" style="${p.contattato?'background:var(--green);border-color:var(--green);color:#0f0f0f;':''}" onclick="tField('${p.id}','contattato',${!p.contattato})" title="Segna come conoscitiva">${p.contattato?'✓':''}</button></td>
+      <td><button class="chk${contacted?' on':''}" onclick="tField('${p.id}','contacted',${!contacted})" title="Segna come contattato">${contacted?'✓':''}</button></td>
+      <td><button class="chk${conoscitiva?' on':''}" style="${conoscitiva?'background:var(--green);border-color:var(--green);color:#0f0f0f;':''}" onclick="tField('${p.id}','conoscitiva',${!conoscitiva})" title="Segna come conoscitiva">${conoscitiva?'✓':''}</button></td>
       <td><button class="chk${p.presentation?' on':''}" onclick="tField('${p.id}','presentation',${!p.presentation})">${p.presentation?'✓':''}</button></td>
       <td><div class="fu-row">${[0,1,2,3].map(i=>`<button class="chk fu${fu[i]?' on':''}" onclick="tFu('${p.id}',${i},${!fu[i]})">${fu[i]?'✓':(i+1)}</button>`).join('')}</div></td>
       <td><div class="pay-row" onclick="tField('${p.id}','payment',${!p.payment})"><div class="pay-dot${p.payment?' on':''}"></div><span class="pay-lbl${p.payment?' on':''}">${p.payment?'In attesa':'—'}</span></div></td>
@@ -1861,7 +1869,7 @@ window.saveProspect = async () => {
   if(!name){id('p-name').style.borderColor='var(--red)';return;}
   const data={name,channel:id('p-channel').value.trim(),phone:id('p-phone').value.trim(),country:id('p-country').value,provincia:id('p-provincia').value,note:id('p-note').value.trim(),uid:cUser.uid,userName:cData?.name||cUser.email};
   if(editingPid) { if(prospects.find(p=>p.id===editingPid)?.uid!==cUser.uid)return; await updateDoc(doc(db,'prospects',editingPid),data); }
-  else await addDoc(collection(db,'prospects'),{...data,presentation:false,followUps:[false,false,false,false],payment:false,createdAt:serverTimestamp(),lastCheckAt:null,_insertedAt:Date.now()});
+  else await addDoc(collection(db,'prospects'),{...data,contacted:false,conoscitiva:false,presentation:false,followUps:[false,false,false,false],payment:false,createdAt:serverTimestamp(),lastCheckAt:null,_insertedAt:Date.now()});
   closeProspectModal();
 };
 
@@ -1874,7 +1882,7 @@ window.sortBy = col => {
     sortDir = col === 'days' ? 'desc' : 'asc';
   }
   // Update header styles
-  ['name','days','prov','pres','pay','status'].forEach(k => {
+  ['name','days','prov','contacted','conoscitiva','pres','fu','pay','iscritto','status'].forEach(k => {
     const th = id('th-'+k);
     if (!th) return;
     th.classList.toggle('active', k === col);
@@ -2063,6 +2071,9 @@ async function loadNetworkTree(){
     getDocs(query(collection(db,'users'),where('uplinePath','array-contains',cUser.uid))).then(s=>s.docs.map(d=>({id:d.id,...d.data()}))),
     getDocs(query(collection(db,'prospects'),where('sharedWith','array-contains',cUser.uid))).then(s=>s.docs.map(d=>({id:d.id,...d.data()})))
   ]);
+  // The descendants query does not return the signed-in user. Include the
+  // current profile so build() can render the tree from its root node.
+  if(cUser&&!us.some(u=>u.id===cUser.uid))us.unshift({id:cUser.uid,...(cData||{})});
   window._treeUs=us; window._treePs=ps;
   const myUid=cUser.uid;
   function gd(root,all){const r=new Set();const q=[root];let s=0;while(q.length&&s<500){const c=q.shift();all.filter(u=>u.uplineUid===c).forEach(ch=>{if(!r.has(ch.id)){r.add(ch.id);q.push(ch.id);}});s++;}return r;}
@@ -2406,7 +2417,7 @@ window.confirmImport=async function(){
         country:'',provincia:'',uid:cUser.uid,
         userName:cData?cData.name||cUser.email:cUser.email,
         presentation:false,followUps:[false,false,false,false],
-        payment:false,iscritto:false,contattato:false,
+        payment:false,iscritto:false,contacted:false,conoscitiva:false,
         createdAt:serverTimestamp(),lastCheckAt:null,_insertedAt:Date.now()
       });
       lastImportIds.push(ref.id);
@@ -2617,7 +2628,7 @@ window.executeImport = async function() {
         uid:cUser.uid,
         userName:cData?cData.name||cUser.email:cUser.email,
         presentation:false, followUps:[false,false,false,false],
-        payment:false, iscritto:false, contattato:false,
+        payment:false, iscritto:false, contacted:false, conoscitiva:false,
         createdAt:serverTimestamp(), lastCheckAt:null,
         _insertedAt:Date.now(),
         _importBatch:batchId
@@ -3652,6 +3663,7 @@ const I18N_ES = {
   'Stato':'Estado',
   'Paese':'País',
   'Iscritto':'Registrado',
+  'Contattato':'Contactado',
   'Conoscitiva':'Conversación inicial',
   'Conoscitive':'Conversaciones iniciales',
   'Provincia':'Provincia',
