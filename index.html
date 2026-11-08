@@ -1435,7 +1435,7 @@ onAuthStateChanged(auth, async user => {
         }
         await signOut(auth);
         showAuth();
-        showErr('Account non trovato. Contatta Simone indicando la tua email.');
+        showErr('Account non trovato. UID Firebase dell’accesso: ' + user.uid + '. Contatta Simone indicando questo codice e la tua email.');
         return;
       }
     } catch(e) {}
