@@ -1439,8 +1439,9 @@ onAuthStateChanged(auth, async user => {
         return;
       }
     } catch(e) {}
-    // No doc anywhere — create a basic profile so they can access the app
-    cData = { email: user.email, role: 'member' };
+    // No profile document exists yet. Keep cData empty so the required-profile
+    // save path creates a complete Firestore user document with valid tree fields.
+    cData = null;
     showApp();
   } else {
     cUser = null; cData = null;
@@ -1579,7 +1580,14 @@ window.saveRequiredProfile = async () => {
 
   } catch (e) {
     console.error('Errore salvataggio profilo:', e);
-    err.textContent = 'Impossibile salvare. Riprova.';
+    const code = typeof e?.code === 'string' ? e.code : 'unknown';
+    if (code === 'permission-denied') {
+      err.textContent = 'Salvataggio rifiutato dai permessi del database (permission-denied).';
+    } else if (code === 'unavailable' || code === 'network-request-failed') {
+      err.textContent = 'Connessione al database non disponibile. Controlla la connessione e riprova.';
+    } else {
+      err.textContent = `Impossibile salvare (codice: ${code}). Riprova.`;
+    }
     err.style.display = 'block';
 
   } finally {
