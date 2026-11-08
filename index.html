@@ -3170,10 +3170,7 @@ function runDiagnostics() {
     }).join('<br>');
     issues.push(
       '<strong style="color:var(--red)">Email duplicate in Firestore ('+dupEmails.length+'):</strong><br>'+rows+
-      '<br><div style="margin-top:8px;">'+
-      '<button onclick="autoFixDuplicates()" style="padding:6px 14px;background:var(--red);border:none;border-radius:6px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">'+
-      '&#128295; Risolvi automaticamente</button>'+
-      ' <span style="font-size:11px;color:var(--text3);">Mantiene il profilo piu completo</span></div>'
+      '<br><div style="margin-top:8px;font-size:11px;color:var(--amber);">Risoluzione automatica sospesa: prima occorre verificare l’UID Firebase Auth attivo e preservare i collegamenti a prospect e struttura.</div>'
     );
   }
 
@@ -3189,7 +3186,7 @@ function runDiagnostics() {
 
   if(issues.length > 0) {
     diag.innerHTML = issues.join('<br><br>')+
-      '<br><br><span style="font-size:11px;color:var(--text3);">La pulizia automatica rimuove i documenti Firestore duplicati. Gli account Firebase Auth vanno eliminati da Firebase Console.</span>';
+      '<br><br><span style="font-size:11px;color:var(--text3);">Prima di modificare un account duplicato, verificare l’UID Firebase Auth e gli eventuali riferimenti ai dati. La verifica non modifica gli account.</span>';
     diag.style.display = 'block';
   } else {
     diag.innerHTML = '<span style="color:var(--green);">&#10003; Nessun problema rilevato.</span>';
@@ -3199,41 +3196,7 @@ function runDiagnostics() {
 }
 
 window.autoFixDuplicates = async function() {
-  var emailMap = {};
-  allUsers.forEach(function(u){
-    var em = (u.email||'').toLowerCase().trim();
-    if(!em) return;
-    if(!emailMap[em]) emailMap[em] = [];
-    emailMap[em].push(u);
-  });
-  var dupGroups = Object.entries(emailMap).filter(function(e){return e[1].length>1;});
-  if(!dupGroups.length){alert('Nessun duplicato trovato.');return;}
-  var totalDups = dupGroups.reduce(function(acc,e){return acc+e[1].length-1;},0);
-  if(!confirm('Verranno rimossi '+totalDups+' profili duplicati da Firestore. Continuare?')) return;
-  var deleted = 0;
-  for(var gi=0;gi<dupGroups.length;gi++){
-    var users = dupGroups[gi][1];
-    var scored = users.map(function(u){return {u:u,score:
-      (u.role==='leader'?1000:0)+
-      (u.userNumber?500:0)+
-      (u.uplineUid?100:0)+
-      ((u.uplinePath||[]).length*10)+
-      (u.role==='member'?50:0)
-    };});
-    scored.sort(function(a,b){return b.score-a.score;});
-    var toRemove = scored.slice(1).map(function(s){return s.u;});
-    for(var ri=0;ri<toRemove.length;ri++){
-      var dup = toRemove[ri];
-      try{
-        await deleteDoc(doc(db,'users',dup.id));
-        await setDoc(doc(db,'deleted_users',dup.id),{deletedAt:serverTimestamp(),deletedBy:cUser.uid,email:dup.email||'',name:dup.name||'',reason:'auto-fix'});
-        allUsers = allUsers.filter(function(u){return u.id!==dup.id;});
-        deleted++;
-      }catch(e){console.warn('Could not delete',dup.id,e);}
-    }
-  }
-  renderAdminTable();renderTree();runDiagnostics();
-  alert('Rimossi '+deleted+' duplicati Firestore. Vai su Firebase Console > Authentication > Users per eliminare gli account Auth orfani.');
+  alert('La risoluzione automatica è stata sospesa per sicurezza. Verificare l’UID Firebase Auth attivo e i collegamenti ai dati prima di modificare account duplicati. Nessun dato è stato modificato.');
 };
 
 window.setAdminFilter=(btn,f)=>{
