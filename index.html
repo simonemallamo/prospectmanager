@@ -920,42 +920,6 @@ td{padding:13px 12px;}
       </div>
       <div id="binary-view" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem;"></div>
 
-      <!-- Member detail card -->
-      <div id="member-detail" class="md-card">
-        <div class="md-card-head">
-          <div id="md-av" class="md-av"></div>
-          <div style="flex:1;min-width:0;">
-            <div id="md-name" style="font-weight:700;font-size:16px;letter-spacing:-.3px;"></div>
-            <div id="md-meta" style="font-size:11px;color:var(--text3);margin-top:3px;"></div>
-          </div>
-          <button class="md-close-btn" onclick="closeMemberDetail()">✕ Chiudi</button>
-        </div>
-        <div class="md-sections">
-          <div class="md-section">
-            <div class="md-section-title">Ultimi 7 giorni</div>
-            <div class="md-nums">
-              <div class="md-num"><div class="md-num-val" id="md-wk-new" style="color:var(--green);">0</div><div class="md-num-lbl">Nuovi</div></div>
-              <div class="md-num"><div class="md-num-val" id="md-wk-pres" style="color:var(--blue);">0</div><div class="md-num-lbl">Presentaz.</div></div>
-              <div class="md-num"><div class="md-num-val" id="md-wk-pay" style="color:var(--amber);">0</div><div class="md-num-lbl">Attesa pag.</div></div>
-            </div>
-            <div id="md-wk-chart" class="md-insight-chart" aria-label="Grafico attività ultimi 7 giorni"></div>
-          </div>
-          <div class="md-section">
-            <div class="md-section-title">Totale</div>
-            <div class="md-nums">
-              <div class="md-num"><div class="md-num-val" id="md-tot-pros" style="color:var(--gold);">0</div><div class="md-num-lbl">Prospect</div></div>
-              <div class="md-num"><div class="md-num-val" id="md-tot-pres" style="color:var(--blue);">0</div><div class="md-num-lbl">Presentaz.</div></div>
-              <div class="md-num"><div class="md-num-val" id="md-tot-fu" style="color:var(--green);">0</div><div class="md-num-lbl">FU completi</div></div>
-            </div>
-            <div id="md-tot-chart" class="md-insight-chart" aria-label="Grafico risultati totali"></div>
-          </div>
-        </div>
-        <div class="md-list-section">
-          <div class="md-section-title" style="margin-bottom:.5rem;">Prospect aggiunti questa settimana</div>
-          <div id="md-list"></div>
-        </div>
-      </div>
-
       <!-- Members grid split by leg — two columns -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;" id="legs-columns">
         <!-- Left leg column -->
@@ -1973,91 +1937,6 @@ window.handleDrop = async function(draggedUid, targetUid, fromGrid, toGrid) {
   }
 };
 
-window.openMemberDetail = function(uid) {
-  var allUs = window._cachedUs || [];
-  var allPs = window._cachedPs || [];
-  var wk = window._cachedWk || (Date.now()-7*86400000);
-  var m = allUs.find(function(u){return u.id===uid;});
-  if(!m) return;
-  var mp   = allPs.filter(function(p){return p.uid===uid;});
-  var mpWk = mp.filter(function(p){
-    var t = p.createdAt&&p.createdAt.toMillis ? p.createdAt.toMillis() : (p._insertedAt||0);
-    return t >= wk;
-  });
-  var ini = (m.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
-  var colors = [
-    {bg:'rgba(201,168,76,.18)',c:'var(--accent)'},
-    {bg:'rgba(74,156,240,.18)',c:'var(--blue)'},
-    {bg:'rgba(74,240,154,.18)',c:'var(--green)'},
-    {bg:'rgba(180,74,240,.18)',c:'#b44af0'},
-    {bg:'rgba(240,90,74,.18)',c:'var(--red)'},
-  ];
-  var col = colors[uid.charCodeAt(0)%colors.length];
-  var avEl = id('md-av');
-  avEl.textContent = ini;
-  avEl.style.background = col.bg;
-  avEl.style.color = col.c;
-  id('md-name').textContent = m.name||'—';
-  id('md-meta').textContent =
-    (m.role==='leader'?'Team Leader':'Membro')+
-    (m.userNumber?' · #'+m.userNumber:'')+
-    (m.leg?' · '+(m.leg==='right'?'Destra':'Sinistra'):'');
-  id('md-wk-new').textContent   = mpWk.length;
-  id('md-wk-pres').textContent  = mpWk.filter(function(p){return p.presentation;}).length;
-  id('md-wk-pay').textContent   = mpWk.filter(function(p){return p.payment;}).length;
-  id('md-tot-pros').textContent = mp.length;
-  var totalPres=mp.filter(function(p){return p.presentation;}).length;
-  var totalFu=mp.filter(function(p){return (p.followUps||[]).filter(Boolean).length===4;}).length;
-  id('md-tot-pres').textContent = totalPres;
-  id('md-tot-fu').textContent   = totalFu;
-  function renderInsightChart(targetId,rows,scale,showRate){
-    var target=id(targetId); if(!target) return;
-    target.innerHTML=rows.map(function(row){
-      var pct=scale?Math.max(0,Math.min(100,Math.round(row.value/scale*100))):0;
-      return '<div class="md-chart-row"><div class="md-chart-label"><span>'+row.label+'</span><strong>'+row.value+(showRate?'<small>'+pct+'%</small>':'')+'</strong></div><div class="md-chart-track"><span style="width:'+pct+'%;--chart-color:'+row.color+'"></span></div></div>';
-    }).join('');
-  }
-  renderInsightChart('md-wk-chart',[
-    {label:'Nuovi',value:mpWk.length,color:'var(--green)'},
-    {label:'Presentazioni',value:mpWk.filter(function(p){return p.presentation;}).length,color:'var(--blue)'},
-    {label:'In attesa',value:mpWk.filter(function(p){return p.payment;}).length,color:'var(--amber)'}
-  ],Math.max(1,mpWk.length,mpWk.filter(function(p){return p.presentation;}).length,mpWk.filter(function(p){return p.payment;}).length),false);
-  renderInsightChart('md-tot-chart',[
-    {label:'Prospect',value:mp.length,color:'var(--accent)'},
-    {label:'Presentazioni',value:totalPres,color:'var(--blue)'},
-    {label:'Follow-up completi',value:totalFu,color:'var(--green)'}
-  ],Math.max(1,mp.length),true);
-  var listEl = id('md-list');
-  if(!mpWk.length){
-    listEl.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:.5rem 0;">Nessun prospect aggiunto questa settimana.</div>';
-  } else {
-    listEl.innerHTML = mpWk.slice(0,10).map(function(p){
-      var t = p._insertedAt||(p.createdAt&&p.createdAt.toMillis?p.createdAt.toMillis():0);
-      var days = Math.floor((Date.now()-t)/86400000);
-      var badges = [
-        p.presentation?'<span style="font-size:10px;padding:1px 5px;border-radius:4px;background:rgba(74,156,240,.15);color:var(--blue);">pres.</span>':'',
-        p.payment?'<span style="font-size:10px;padding:1px 5px;border-radius:4px;background:rgba(240,180,74,.15);color:var(--amber);">pag.</span>':'',
-        p.iscritto?'<span style="font-size:10px;padding:1px 5px;border-radius:4px;background:rgba(201,168,76,.15);color:var(--gold);">iscritto</span>':'',
-      ].filter(Boolean).join(' ');
-      return '<div class="md-prospect-row">'+
-        '<span style="font-weight:500;color:var(--text);">'+x(p.name||'—')+'</span>'+
-        '<span style="display:flex;gap:4px;align-items:center;">'+
-          badges+
-          '<span style="font-size:11px;color:var(--text3);">'+(days===0?'oggi':days+'g fa')+'</span>'+
-        '</span>'+
-      '</div>';
-    }).join('')+(mpWk.length>10?'<div style="font-size:11px;color:var(--text3);padding:.5rem 0;text-align:center;">+ altri '+(mpWk.length-10)+'</div>':'');
-  }
-  // Scroll to card and open it
-  var card = id('member-detail');
-  card.classList.add('open');
-  card.scrollIntoView({behavior:'smooth', block:'start'});
-};
-
-window.closeMemberDetail = function() {
-  id('member-detail').classList.remove('open');
-};
-
 window.toggleHideMember = function(uid) {
   if(hiddenMembers.has(uid)) hiddenMembers.delete(uid);
   else hiddenMembers.add(uid);
@@ -2752,26 +2631,47 @@ async function loadTeamDashboard() {
   if(id('binary-view')) id('binary-view').innerHTML=loader();
   let ps = [], us = [];
   try {
-    const reads = await Promise.all([
-      ['prospect personali', () => getDocs(query(collection(db,'prospects'),where('uid','==',cUser.uid)))],
-      ['prospect condivisi', () => getDocs(query(collection(db,'prospects'),where('sharedWith','array-contains',cUser.uid)))],
-      ['profili della rete', () => getDocs(query(collection(db,'users'),where('uplinePath','array-contains',cUser.uid))) ]
-    ].map(async ([label, load]) => {
-      try { return {label, snap: await load()}; }
-      catch (error) { console.error('Team Dashboard read denied ('+label+'):', error); return {label, error}; }
-    }));
-    const failedReads = reads.filter(r=>r.error);
-    if(failedReads.length) throw Object.assign(new Error('Letture non autorizzate: '+failedReads.map(r=>r.label).join(', ')),{code:'permission-denied'});
-    const [ownPsSnap, sharedPsSnap, usSnap] = reads.map(r=>r.snap);
-    const mergedProspects=new Map();
-    [...ownPsSnap.docs,...sharedPsSnap.docs].forEach(d=>mergedProspects.set(d.id,{id:d.id,...d.data()}));
-    ps = [...mergedProspects.values()];
+    const [usSnap, token] = await Promise.all([
+      getDocs(query(collection(db,'users'),where('uplinePath','array-contains',cUser.uid))),
+      cUser.getIdToken()
+    ]);
     us = usSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const response = await fetch('https://rymanager.netlify.app/.netlify/functions/team-dashboard-stats', {
+      headers: { Authorization: 'Bearer '+token }
+    });
+    const aggregate = await response.json();
+    if(!response.ok) throw Object.assign(new Error(aggregate.error||'Statistiche aggregate non disponibili'),{code:response.status===403?'permission-denied':'unavailable'});
+    // The endpoint returns counts only. These temporary anonymous rows keep the existing
+    // chart calculations working; no prospect document or identifying field is sent here.
+    ps = Object.entries(aggregate.byUid||{}).flatMap(([uid,s])=>{
+      const count=Math.max(0,Math.min(Number(s.total)||0,10000));
+      const rows=[];
+      for(const stage of ['new','active','done','payment']){
+        const n=Math.max(0,Math.min(count,Number(s.stages?.[stage])||0));
+        for(let i=0;i<n;i++) rows.push({uid,_aggregateStage:stage,createdAt:{toMillis:()=>0},presentation:false,payment:stage==='payment',followUps:stage==='done'?[true,true,true,true]:[false,false,false,false]});
+      }
+      const range=(start,n,fn)=>{for(let i=Math.max(0,start);i<Math.min(rows.length,start+Math.max(0,Number(n)||0));i++)fn(rows[i]);};
+      range(0,s.new7,r=>{r.createdAt={toMillis:()=>Date.now()};});
+      let recentPres=Math.min(Number(s.presentations7)||0,Number(s.new7)||0);
+      range(0,recentPres,r=>{r.presentation=true;});
+      range(Number(s.new7)||0,Math.max(0,(Number(s.presentations)||0)-recentPres),r=>{r.presentation=true;});
+      let recentPayment=Math.min(Number(s.payment7)||0,Number(s.new7)||0);
+      range(0,recentPayment,r=>{r.payment=true;});
+      range(Number(s.new7)||0,Math.max(0,(Number(s.payment)||0)-recentPayment),r=>{r.payment=true;});
+      let offset=0;
+      for(const stage of ['new','active','done','payment']){
+        const n=Math.max(0,Math.min(count,Number(s.stages?.[stage])||0));
+        range(offset,s.stageMetrics?.[stage]?.presentations,r=>{r.presentation=true;});
+        range(offset,s.stageMetrics?.[stage]?.fu4,r=>{r.followUps=[true,true,true,true];});
+        offset+=n;
+      }
+      return rows;
+    });
   } catch (e) {
     console.error('Team Dashboard load error:', e);
     const msg = e?.code === 'permission-denied'
-      ? 'Permessi Firebase insufficienti per: ' + (e?.message || 'Dashboard Team')
-      : ('Errore caricamento Dashboard Team: ' + (e?.message || e));
+      ? (e?.message || 'Accesso alla Dashboard Team non autorizzato')
+      : ('Statistiche team non disponibili: ' + (e?.message || e));
     ['team-grid-left','team-grid-right','binary-view'].forEach(function(k){
       const el=id(k);
       if(el) el.innerHTML='<div style="padding:1.5rem;color:var(--red);background:var(--red-dim);border:.5px solid var(--red);border-radius:10px;font-size:13px;">⚠️ '+x(msg)+'</div>';
@@ -2896,6 +2796,7 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
       : {new:'Nuovi',active:'Attivi',done:'FU completi',payment:'Attesa pagamento',prospects:'Prospect',new7:'Nuovi ultimi 7 giorni',pres:'Presentazioni'};
     const allLegProspects = members.flatMap(m=>ps.filter(p=>p.uid===m.id));
     const stageOf = p => {
+      if(p._aggregateStage) return p._aggregateStage;
       const n=(p.followUps||[]).filter(Boolean).length;
       if(p.payment) return 'payment';
       if(n===4) return 'done';
@@ -2982,7 +2883,7 @@ window.renderTeamDashboard = function(usArg, psArg, showArg, wkArg) {
     const _mLeg = getLegFor(m, cUser.uid);
     const legTag=_mLeg?`<span class="tc-leg-badge ${_mLeg}">${_mLeg==='right'?'DESTRA':'SINISTRA'}</span>`:'';
     const el=document.createElement('div'); el.className='tc';
-    el.innerHTML=`<div class="tc-head" style="cursor:pointer;" onclick="openMemberDetail('${m.id}')"><div class="tc-av" style="background:${c.bg};color:${c.c}">${ini}</div><div><div class="tc-name">${roleIcon}${x(m.name)}${legTag}</div><div class="tc-role">${mp.length} prospect · <span style="color:${levelColor}">${levelLabel}</span></div></div>${mpWk.length?`<div class="wk-tag">+${mpWk.length} sett.</div>`:''}</div><div class="tc-nums"><div class="tc-num"><div class="tc-num-val" style="color:${c.c}">${mp.filter(p=>p.presentation).length}</div><div class="tc-num-lbl">Presentazioni</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="tc-num-lbl">Attesa pag.</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--green)">${mp.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length}</div><div class="tc-num-lbl">FU completi</div></div></div><div style="margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:var(--text3);">Gamba:</span><button onclick="event.stopPropagation();setLeg('${m.id}','right',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='right'?'var(--accent)':'var(--border2)'};background:${m.leg==='right'?'var(--accent-dim)':'transparent'};color:${m.leg==='right'?'var(--accent)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👉 Destra</button><button onclick="event.stopPropagation();setLeg('${m.id}','left',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='left'?'var(--blue)':'var(--border2)'};background:${m.leg==='left'?'var(--blue-dim)':'transparent'};color:${m.leg==='left'?'var(--blue)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👈 Sinistra</button>${m.leg?`<button onclick="event.stopPropagation();setLeg('${m.id}','',this)" style="padding:3px 8px;border-radius:20px;border:.5px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">✕</button>`:''}<span class="tc-drag-handle" draggable="false" title="Trascina per riordinare">⠿</span><div class="tc-move-btns"><button class="tc-move-btn" onclick="event.stopPropagation();moveMember('${m.id}','up')" title="Sposta su">↑</button><button class="tc-move-btn" onclick="event.stopPropagation();moveMember('${m.id}','down')" title="Sposta giù">↓</button></div><button onclick="event.stopPropagation();toggleHideMember('${m.id}')" style="padding:3px 10px;border-radius:20px;border:.5px solid var(--border2);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">🙈 Nascondi</button></div>`;
+    el.innerHTML=`<div class="tc-head"><div class="tc-av" style="background:${c.bg};color:${c.c}">${ini}</div><div><div class="tc-name">${roleIcon}${x(m.name)}${legTag}</div><div class="tc-role">${mp.length} prospect · <span style="color:${levelColor}">${levelLabel}</span></div></div>${mpWk.length?`<div class="wk-tag">+${mpWk.length} sett.</div>`:''}</div><div class="tc-nums"><div class="tc-num"><div class="tc-num-val" style="color:${c.c}">${mp.filter(p=>p.presentation).length}</div><div class="tc-num-lbl">Presentazioni</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--amber)">${mp.filter(p=>p.payment).length}</div><div class="tc-num-lbl">Attesa pag.</div></div><div class="tc-num"><div class="tc-num-val" style="color:var(--green)">${mp.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length}</div><div class="tc-num-lbl">FU completi</div></div></div><div style="margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:var(--text3);">Gamba:</span><button onclick="event.stopPropagation();setLeg('${m.id}','right',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='right'?'var(--accent)':'var(--border2)'};background:${m.leg==='right'?'var(--accent-dim)':'transparent'};color:${m.leg==='right'?'var(--accent)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👉 Destra</button><button onclick="event.stopPropagation();setLeg('${m.id}','left',this)" style="padding:3px 10px;border-radius:20px;border:.5px solid ${m.leg==='left'?'var(--blue)':'var(--border2)'};background:${m.leg==='left'?'var(--blue-dim)':'transparent'};color:${m.leg==='left'?'var(--blue)':'var(--text2)'};font-size:11px;cursor:pointer;font-family:var(--font);">👈 Sinistra</button>${m.leg?`<button onclick="event.stopPropagation();setLeg('${m.id}','',this)" style="padding:3px 8px;border-radius:20px;border:.5px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">✕</button>`:''}<span class="tc-drag-handle" draggable="false" title="Trascina per riordinare">⠿</span><div class="tc-move-btns"><button class="tc-move-btn" onclick="event.stopPropagation();moveMember('${m.id}','up')" title="Sposta su">↑</button><button class="tc-move-btn" onclick="event.stopPropagation();moveMember('${m.id}','down')" title="Sposta giù">↓</button></div><button onclick="event.stopPropagation();toggleHideMember('${m.id}')" style="padding:3px 10px;border-radius:20px;border:.5px solid var(--border2);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--font);">🙈 Nascondi</button></div>`;
       el.innerHTML=el.innerHTML.replace(/[👑👉👈🙈⚠️★]/gu,'').replace(/\s{2,}/g,' ');
       const teamActions=el.querySelector('.tc-head + .tc-nums + div');
       if(teamActions){
