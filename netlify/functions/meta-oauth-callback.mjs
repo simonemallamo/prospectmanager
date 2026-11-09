@@ -1,9 +1,18 @@
 import { db, FieldValue, adminAuth, isMetaIntegrationOwner } from './_firebase-admin.mjs';
-const gv=()=>process.env.META_GRAPH_VERSION||'v24.0';
+const gv=()=>process.env.META_GRAPH_VERSION||'v27.0';
 async function graph(path, params={}) {
   const u=new URL(`https://graph.facebook.com/${gv()}/${path}`);
   for(const [k,v] of Object.entries(params)) if(v!=null) u.searchParams.set(k,String(v));
   const r=await fetch(u); const d=await r.json();
+  if(!r.ok || d.error) throw new Error(d?.error?.message||`Graph API error (${r.status})`);
+  return d;
+}
+async function graphPost(path, params={}) {
+  const u=new URL(`https://graph.facebook.com/${gv()}/${path}`);
+  const body=new URLSearchParams();
+  for(const [k,v] of Object.entries(params)) if(v!=null) body.set(k,String(v));
+  const r=await fetch(u,{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body});
+  const d=await r.json();
   if(!r.ok || d.error) throw new Error(d?.error?.message||`Graph API error (${r.status})`);
   return d;
 }
@@ -26,13 +35,17 @@ export default async function handler(request) {
     const tr=await fetch(tokenUrl), td=await tr.json();
     if(!tr.ok||td.error||!td.access_token) throw new Error(td?.error?.message||'Could not exchange Meta authorization code');
     const pages=await graph('me/accounts',{access_token:td.access_token,fields:'id,name,access_token,tasks'});
+    const configuredPageId=String(process.env.META_PAGE_ID||'105505198156981');
+    const page=(pages.data||[]).find(p=>String(p.id)===configuredPageId);
+    if(!page?.access_token) throw new Error('La pagina Facebook autorizzata non è disponibile per questo account.');
+    await graphPost(`${configuredPageId}/subscribed_apps`,{access_token:page.access_token,subscribed_fields:'leadgen'});
     const uid=s.uid;
-    await db.collection('meta_connections').doc(uid).set({uid,connected:true,connectedAt:FieldValue.serverTimestamp(),pages:(pages.data||[]).map(p=>({id:p.id,name:p.name||'',tasks:p.tasks||[]}))},{merge:true});
+    await db.collection('meta_connections').doc(uid).set({uid,connected:true,connectedAt:FieldValue.serverTimestamp(),pages:[{id:page.id,name:page.name||'',tasks:page.tasks||[]}]},{merge:true});
     const batch=db.batch();
-    for(const p of pages.data||[]) if(p.id&&p.access_token) batch.set(db.collection('meta_pages').doc(String(p.id)),{uid,pageId:String(p.id),pageName:p.name||'',pageAccessToken:p.access_token,updatedAt:FieldValue.serverTimestamp()},{merge:true});
+    batch.set(db.collection('meta_pages').doc(String(page.id)),{uid,pageId:String(page.id),pageName:page.name||'',pageAccessToken:page.access_token,updatedAt:FieldValue.serverTimestamp()},{merge:true});
     batch.delete(stateRef); await batch.commit();
     const appUrl=(process.env.FRONTEND_URL||'https://pm.retiredyoung.it/').replace(/\/$/,'');
-    return Response.redirect(`${appUrl}/?meta=connected&pages=${encodeURIComponent((pages.data||[]).length)}`,302);
+    return Response.redirect(`${appUrl}/?meta=connected&pages=1`,302);
   } catch(e){console.error('meta-oauth-callback:',e);return new Response(`Meta connection failed: ${e.message||'unknown error'}`,{status:500});}
 }
 export const config={path:'/.netlify/functions/meta-oauth-callback'};

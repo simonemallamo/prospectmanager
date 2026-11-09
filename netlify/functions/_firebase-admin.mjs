@@ -18,7 +18,7 @@ export async function verifyBearer(request) {
 }
 export function isMetaIntegrationOwner(decodedToken) {
   return decodedToken?.email_verified === true &&
-    String(decodedToken?.email || '').toLowerCase() === 'mallamo.simone@gmail.com';
+    String(decodedToken?.email || '').toLowerCase() === 'veglia.alessia@gmail.com';
 }
 export function json(data, status=200) {
   return new Response(JSON.stringify(data), {status, headers:{'content-type':'application/json; charset=utf-8'}});

@@ -3261,7 +3261,7 @@ async function refreshMetaConnectionStatus(){
   const status=id('meta-connection-status'), err=id('meta-connection-error'), btn=id('meta-connect-btn');
   if(!status || !cUser) return;
   const panel=id('meta-integration');
-  const isMetaOwner=(cUser.email||'').toLowerCase()==='mallamo.simone@gmail.com';
+  const isMetaOwner=(cUser.email||'').toLowerCase()==='veglia.alessia@gmail.com';
   if(panel) panel.style.display=isMetaOwner?'':'none';
   if(!isMetaOwner) return;
   status.textContent='Verifica collegamento Meta…';
