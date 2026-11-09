@@ -1,4 +1,4 @@
-import { db, FieldValue } from './_firebase-admin.mjs';
+import { db, FieldValue, adminAuth, isMetaIntegrationOwner } from './_firebase-admin.mjs';
 const gv=()=>process.env.META_GRAPH_VERSION||'v24.0';
 async function graph(path, params={}) {
   const u=new URL(`https://graph.facebook.com/${gv()}/${path}`);
@@ -17,6 +17,8 @@ export default async function handler(request) {
     if(!snap.exists) return new Response('Invalid or expired OAuth state',{status:400});
     const s=snap.data();
     if(!s.uid || !s.expiresAt || s.expiresAt.toDate().getTime()<Date.now()){await stateRef.delete();return new Response('Expired OAuth state',{status:400});}
+    const identity=await adminAuth.getUser(s.uid);
+    if(!identity.emailVerified || !isMetaIntegrationOwner({email:identity.email,email_verified:identity.emailVerified})) return new Response('Meta integration is restricted to the authorized owner account.',{status:403});
     const appId=process.env.META_APP_ID, appSecret=process.env.META_APP_SECRET, redirectUri=process.env.META_REDIRECT_URI;
     if(!appId||!appSecret||!redirectUri) throw new Error('Missing META_APP_ID, META_APP_SECRET or META_REDIRECT_URI');
     const tokenUrl=new URL(`https://graph.facebook.com/${gv()}/oauth/access_token`);

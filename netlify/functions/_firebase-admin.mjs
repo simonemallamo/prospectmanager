@@ -16,6 +16,10 @@ export async function verifyBearer(request) {
   if (!h.startsWith('Bearer ')) throw new Error('Missing Bearer token');
   return adminAuth.verifyIdToken(h.slice(7));
 }
+export function isMetaIntegrationOwner(decodedToken) {
+  return decodedToken?.email_verified === true &&
+    String(decodedToken?.email || '').toLowerCase() === 'mallamo.simone@gmail.com';
+}
 export function json(data, status=200) {
   return new Response(JSON.stringify(data), {status, headers:{'content-type':'application/json; charset=utf-8'}});
 }

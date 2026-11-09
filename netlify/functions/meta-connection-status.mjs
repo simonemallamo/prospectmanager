@@ -1,4 +1,4 @@
-import { db, verifyBearer } from './_firebase-admin.mjs';
+import { db, verifyBearer, isMetaIntegrationOwner } from './_firebase-admin.mjs';
 
 const allowedOrigins = new Set(['https://simonemallamo.github.io', 'https://pm.retiredyoung.it']);
 const corsHeaders = origin => ({
@@ -15,7 +15,9 @@ export default async function handler(request) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(origin) });
   if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405, origin);
   try {
-    const { uid } = await verifyBearer(request);
+    const identity = await verifyBearer(request);
+    if (!isMetaIntegrationOwner(identity)) return json({ error: 'Meta Ads è disponibile solo per l’account proprietario autorizzato.' }, 403, origin);
+    const { uid } = identity;
     const snap = await db.collection('meta_connections').doc(uid).get();
     if (!snap.exists || snap.data()?.connected !== true) return json({ connected: false, pageCount: 0 },200,origin);
     const data = snap.data();

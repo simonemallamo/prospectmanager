@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { db, verifyBearer, json } from './_firebase-admin.mjs';
+import { db, verifyBearer, json, isMetaIntegrationOwner } from './_firebase-admin.mjs';
 
 const allowedOrigins = new Set(['https://simonemallamo.github.io', 'https://pm.retiredyoung.it']);
 const corsHeaders = origin => ({
@@ -17,7 +17,9 @@ export default async function handler(request) {
   if (request.method === 'OPTIONS') return new Response(null, {status:204, headers:corsHeaders(origin)});
   if (request.method !== 'POST') return corsJson({error:'Method not allowed'},405,origin);
   try {
-    const { uid } = await verifyBearer(request);
+    const identity = await verifyBearer(request);
+    if (!isMetaIntegrationOwner(identity)) return corsJson({error:'Meta Ads è disponibile solo per l’account proprietario autorizzato.'},403,origin);
+    const { uid } = identity;
     const appId = process.env.META_APP_ID;
     const configId = process.env.META_BUSINESS_LOGIN_CONFIG_ID;
     const redirectUri = process.env.META_REDIRECT_URI;
