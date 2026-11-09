@@ -44,6 +44,15 @@ service cloud.firestore {
       );
     }
 
+    function isLeaderLegUpdate() {
+      return signedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'leader' &&
+        request.auth.uid in resource.data.get('uplinePath', []) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['legMap']) &&
+        request.resource.data.get('legMap', {}).diff(resource.data.get('legMap', {})).affectedKeys().hasOnly([request.auth.uid]) &&
+        request.resource.data.get('legMap', {}).get(request.auth.uid, null) in ['left', 'right', null];
+    }
+
     match /users/{userId} {
       // User documents contain contact details and are private by default.
       allow get: if isAdmin() || (signedIn() && request.auth.uid == userId);
@@ -64,7 +73,7 @@ service cloud.firestore {
         request.resource.data.jifuId is string && request.resource.data.jifuId.size() > 0 &&
         request.resource.data.profileComplete == true
       );
-      allow update: if isAdmin() || (
+      allow update: if isAdmin() || isLeaderLegUpdate() || (
         signedIn() && request.auth.uid == userId &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'name', 'surname', 'email', 'phone', 'jifuId', 'profileComplete', 'updatedAt'
