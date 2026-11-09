@@ -18,7 +18,7 @@ Impostare:
 - `META_REDIRECT_URI` = `https://rymanager.netlify.app/.netlify/functions/meta-oauth-callback`
 - `META_WEBHOOK_VERIFY_TOKEN` = stringa casuale scelta da te
 - `META_GRAPH_VERSION` = versione Graph API attiva/supportata dalla tua app
-- `FRONTEND_URL` = `https://simonemallamo.github.io/prospectmanager/` (destinazione dopo il callback OAuth; il callback Meta resta su Netlify)
+- `FRONTEND_URL` = `https://pm.retiredyoung.it/` (destinazione dopo il callback OAuth; il callback Meta resta su Netlify)
 - `FIREBASE_SERVICE_ACCOUNT_JSON_B64` = service-account JSON Firebase codificato Base64
 
 Le Functions leggono le variabili con `process.env`. Dopo aver cambiato una variabile, fare un nuovo deploy.
@@ -30,6 +30,8 @@ NON mettere il JSON nel repository o nel frontend. Convertire il file JSON in Ba
 ## Meta
 Redirect URI:
 `https://rymanager.netlify.app/.netlify/functions/meta-oauth-callback`
+
+La Meta App continua a usare questo callback Netlify come redirect URI; dopo l'autorizzazione, l'utente torna a `FRONTEND_URL`.
 
 Webhook:
 `https://rymanager.netlify.app/.netlify/functions/meta-webhook`

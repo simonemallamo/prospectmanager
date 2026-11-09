@@ -1,14 +1,15 @@
 import { db, verifyBearer } from './_firebase-admin.mjs';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://simonemallamo.github.io',
+const allowedOrigins = new Set(['https://simonemallamo.github.io', 'https://pm.retiredyoung.it']);
+const corsHeaders = origin => ({
+  'Access-Control-Allow-Origin': allowedOrigins.has(origin) ? origin : 'https://pm.retiredyoung.it',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Authorization, Content-Type',
   'Vary': 'Origin',
   'Cache-Control': 'no-store'
-};
-const json = (data, status=200) => new Response(JSON.stringify(data), {
-  status, headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' }
+});
+const json = (data, status=200, origin='') => new Response(JSON.stringify(data), {
+  status, headers: { ...corsHeaders(origin), 'Content-Type': 'application/json; charset=utf-8' }
 });
 const chunk = (items, size) => Array.from({length: Math.ceil(items.length / size)}, (_, i) => items.slice(i * size, (i + 1) * size));
 
@@ -35,12 +36,13 @@ function addProspect(m, p, weekStart) {
 }
 
 export default async function handler(request) {
-  if (request.method === 'OPTIONS') return new Response(null, {status:204, headers:corsHeaders});
-  if (request.method !== 'GET') return json({error:'Method not allowed'},405);
+  const origin = request.headers.get('origin') || '';
+  if (request.method === 'OPTIONS') return new Response(null, {status:204, headers:corsHeaders(origin)});
+  if (request.method !== 'GET') return json({error:'Method not allowed'},405,origin);
   try {
     const {uid} = await verifyBearer(request);
     const requester = await db.collection('users').doc(uid).get();
-    if (!requester.exists || requester.data()?.role !== 'leader') return json({error:'Leader access required'},403);
+    if (!requester.exists || requester.data()?.role !== 'leader') return json({error:'Leader access required'},403,origin);
 
     // Only IDs are used to aggregate. Prospect documents and contact fields never leave this function.
     const descendants = await db.collection('users').where('uplinePath','array-contains',uid).get();
@@ -74,10 +76,10 @@ export default async function handler(request) {
         totals.stageMetrics[key].fu4 += value.stageMetrics[key].fu4;
       }
     }
-    return json({byUid, totals});
+    return json({byUid, totals},200,origin);
   } catch (error) {
     console.error('team-dashboard-stats:', error?.message || 'request failed');
-    return json({error:'Unable to load team statistics'},401);
+    return json({error:'Unable to load team statistics'},401,origin);
   }
 }
 export const config = { path: '/.netlify/functions/team-dashboard-stats' };
