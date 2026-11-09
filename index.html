@@ -2752,11 +2752,17 @@ async function loadTeamDashboard() {
   if(id('binary-view')) id('binary-view').innerHTML=loader();
   let ps = [], us = [];
   try {
-    const [ownPsSnap, sharedPsSnap, usSnap] = await Promise.all([
-      getDocs(query(collection(db,'prospects'),where('uid','==',cUser.uid))),
-      getDocs(query(collection(db,'prospects'),where('sharedWith','array-contains',cUser.uid))),
-      getDocs(query(collection(db,'users'),where('uplinePath','array-contains',cUser.uid)))
-    ]);
+    const reads = await Promise.all([
+      ['prospect personali', () => getDocs(query(collection(db,'prospects'),where('uid','==',cUser.uid)))],
+      ['prospect condivisi', () => getDocs(query(collection(db,'prospects'),where('sharedWith','array-contains',cUser.uid)))],
+      ['profili della rete', () => getDocs(query(collection(db,'users'),where('uplinePath','array-contains',cUser.uid))) ]
+    ].map(async ([label, load]) => {
+      try { return {label, snap: await load()}; }
+      catch (error) { console.error('Team Dashboard read denied ('+label+'):', error); return {label, error}; }
+    }));
+    const failedReads = reads.filter(r=>r.error);
+    if(failedReads.length) throw Object.assign(new Error('Letture non autorizzate: '+failedReads.map(r=>r.label).join(', ')),{code:'permission-denied'});
+    const [ownPsSnap, sharedPsSnap, usSnap] = reads.map(r=>r.snap);
     const mergedProspects=new Map();
     [...ownPsSnap.docs,...sharedPsSnap.docs].forEach(d=>mergedProspects.set(d.id,{id:d.id,...d.data()}));
     ps = [...mergedProspects.values()];
@@ -2764,7 +2770,7 @@ async function loadTeamDashboard() {
   } catch (e) {
     console.error('Team Dashboard load error:', e);
     const msg = e?.code === 'permission-denied'
-      ? 'Permessi Firebase insufficienti per caricare la Dashboard Team.'
+      ? 'Permessi Firebase insufficienti per: ' + (e?.message || 'Dashboard Team')
       : ('Errore caricamento Dashboard Team: ' + (e?.message || e));
     ['team-grid-left','team-grid-right','binary-view'].forEach(function(k){
       const el=id(k);
