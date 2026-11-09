@@ -3282,13 +3282,11 @@ async function refreshMetaConnectionStatus(){
     err.textContent='Impossibile verificare lo stato: '+(e.message||'errore di rete'); err.style.display='block';
   }
 }
-window.openSettings=async()=>{
-  // Step 1: Re-fetch fresh data by UID
-  try {
-    const freshSnap = await getDoc(doc(db,'users',cUser.uid));
-    if(freshSnap.exists()) cData = freshSnap.data();
-  } catch(e) { console.warn('Could not refresh user data:', e); }
-
+window.openSettings=()=>{
+  if(!cUser) return;
+  // Settings must render from the profile already loaded at login. Do not hold
+  // the modal behind Firestore reads or other network requests.
+  const currentUid=cUser.uid;
   const role=cData?.role||'member';
   id('s-name').textContent=cData?.name||'—';
   id('s-email').textContent=cUser?.email||'—';
@@ -3309,9 +3307,14 @@ window.openSettings=async()=>{
   id('la-surname').value=cData?.surname||'';
   id('la-uid').value=cUser?.uid||'';
   id('la-jifu').value=cData?.jifuId||'';
-  try {
-    const requestSnap=await getDoc(doc(db,'account_requests',cUser.uid));
-    if(requestSnap.exists()){
+  id('s-overlay').classList.remove('hidden');
+
+  // Populate optional data in the background; a slow or unavailable service
+  // must never delay opening the settings menu.
+  void (async()=>{
+    try {
+      const requestSnap=await getDoc(doc(db,'account_requests',currentUid));
+      if(cUser?.uid!==currentUid || !requestSnap.exists()) return;
       const request=requestSnap.data();
       if(request.sponsorCode){
         id('s-sponsor-code-setting').value=request.sponsorCode;
@@ -3324,12 +3327,11 @@ window.openSettings=async()=>{
         id('s-upgrade-err').textContent='Richiesta Leader non approvata. Contatta l’amministratore.';
         id('s-upgrade-err').style.display='block';
       }
-    }
-  } catch(e) { console.warn('Could not refresh account requests:',e); }
-  if(role==='leader') await genInviteLink();
-  id('s-overlay').classList.remove('hidden');
-  await refreshListAccessRequests();
-  await refreshMetaConnectionStatus();
+    } catch(e) { console.warn('Could not refresh account requests:',e); }
+  })();
+  if(role==='leader') void genInviteLink().catch(e=>console.warn('Could not refresh invite link:',e));
+  void refreshListAccessRequests();
+  void refreshMetaConnectionStatus();
 };
 window.sendListAccessRequest=async()=>{
   const err=id('la-error'); err.style.display='none';
