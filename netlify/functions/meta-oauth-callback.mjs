@@ -36,9 +36,40 @@ export default async function handler(request) {
     for(const [k,v] of Object.entries({client_id:appId,client_secret:appSecret,redirect_uri:redirectUri,code})) tokenUrl.searchParams.set(k,v);
     const tr=await fetch(tokenUrl), td=await tr.json();
     if(!tr.ok||td.error||!td.access_token) throw new Error(td?.error?.message||'Could not exchange Meta authorization code');
-    const pages=await graph('me/accounts',{access_token:td.access_token,fields:'id,name,access_token,tasks'});
-    const page=(pages.data||[]).find(p=>String(p.id)===configuredPageId);
-    if(!page?.access_token) throw new Error('La pagina Facebook autorizzata non è disponibile per questo account.');
+    const availablePages=[];
+    let after='',pageRequests=0;
+    do {
+      const pageBatch=await graph('me/accounts',{access_token:td.access_token,fields:'id,name,access_token,tasks',limit:100,after:after||undefined});
+      availablePages.push(...(pageBatch.data||[]));
+      after=pageBatch.paging?.cursors?.after||'';
+      pageRequests++;
+      if(!(pageBatch.paging?.next)||pageRequests>=10) after='';
+    } while(after);
+    const page=availablePages.find(p=>String(p.id)===configuredPageId);
+    if(!page?.access_token){
+      const permissionData=await graph('me/permissions',{access_token:td.access_token});
+      const requiredPermissions=['pages_show_list','pages_read_engagement','pages_manage_metadata','leads_retrieval'];
+      const grantedPermissions=(permissionData.data||[])
+        .filter(item=>item.status==='granted')
+        .map(item=>item.permission);
+      const missingPermissions=requiredPermissions.filter(permission=>!grantedPermissions.includes(permission));
+      // Diagnostics intentionally exclude access tokens, lead data and OAuth codes.
+      console.error('Meta Page lookup failed',{
+        appKey:metaConfig.key,
+        configuredPageReturned:Boolean(page),
+        configuredPageTokenReturned:Boolean(page?.access_token),
+        accessiblePageCount:availablePages.length,
+        grantedPermissions,
+        missingPermissions
+      });
+      if(missingPermissions.length){
+        throw new Error(`Meta non ha concesso i permessi necessari (${missingPermissions.join(', ')}). Riprova il collegamento e approva l’accesso richiesto.`);
+      }
+      if(page){
+        throw new Error('Meta ha restituito la Pagina ma non il relativo token di accesso. Verifica che il tuo profilo abbia accesso completo alla Pagina e ripeti l’autorizzazione.');
+      }
+      throw new Error('Meta non ha restituito la Pagina Facebook configurata tra quelle accessibili a questo account. Verifica i permessi della Pagina e ripeti l’autorizzazione.');
+    }
     const uid=s.uid;
     const pageRef=db.collection('meta_pages').doc(String(page.id)),existingPage=await pageRef.get();
     if(existingPage.exists&&existingPage.data()?.uid&&existingPage.data().uid!==uid) throw new Error('Questa Pagina Facebook è già collegata a un altro profilo Prospect Manager.');
