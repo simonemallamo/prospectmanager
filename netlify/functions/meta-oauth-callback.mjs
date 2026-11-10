@@ -51,7 +51,7 @@ export default async function handler(request) {
     // configured for this integration; never broaden the permission request.
     if(!page?.access_token){
       try{
-        const configuredPage=await graph(configuredPageId,{access_token:td.access_token,fields:'id,name,access_token,tasks'});
+        const configuredPage=await graph(configuredPageId,{access_token:td.access_token,fields:'id,name,access_token'});
         if(String(configuredPage?.id)===configuredPageId&&configuredPage.access_token)page=configuredPage;
       }catch(error){
         console.warn('Meta configured Page direct lookup failed',{appKey:metaConfig.key,error:error?.message||'Graph API error'});
