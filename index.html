@@ -1790,7 +1790,7 @@ async function setProspectSharing(pid,recipient,action){
 }
 window.shareProspect = async pid => {
   const p=prospects.find(x=>x.id===pid); if(!p || p.uid!==cUser.uid)return;
-  const recipient=prompt('Inserisci l’email o l’ID JIFU della persona.');
+  const recipient=prompt('Inserisci l’email, l’ID JIFU o il codice ID Firebase della persona.');
   if(!recipient)return;
   if(!confirm('Confermi di condividere questo prospect? La condivisione resterà attiva finché non la revochi.'))return;
   try{
@@ -1800,7 +1800,7 @@ window.shareProspect = async pid => {
 };
 window.revokeProspectShare=async pid=>{
   const p=prospects.find(x=>x.id===pid); if(!p||p.uid!==cUser.uid)return;
-  const recipient=prompt('Inserisci l’email o l’ID JIFU della persona a cui revocare l’accesso.');
+  const recipient=prompt('Inserisci l’email, l’ID JIFU o il codice ID Firebase della persona a cui revocare l’accesso.');
   if(!recipient||!confirm('Confermi di revocare la condivisione di questo prospect?'))return;
   try{await setProspectSharing(pid,recipient,'revoke');alert('Condivisione revocata.');}
   catch(error){alert(error.message||'Impossibile revocare la condivisione.');}

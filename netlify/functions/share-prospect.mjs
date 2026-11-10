@@ -40,6 +40,16 @@ async function findRecipient(raw){
       throw error;
     }
   }else{
+    // Resolve exact Firebase Auth UIDs before treating other non-email input
+    // as a JIFU ID. This supports users whose UID differs from a legacy profile
+    // document and avoids silently looking up the UID as a JIFU code.
+    try{
+      const authUser=await adminAuth.getUser(value);
+      if(authUser.disabled)return{error:'L’account destinatario è disattivato.'};
+      return{uid:authUser.uid,aliasUids:[authUser.uid]};
+    }catch(error){
+      if(error?.code!=='auth/user-not-found')throw error;
+    }
     const variants=[...new Set([value,value.toLowerCase(),value.toUpperCase()])];
     const snaps=await Promise.all(variants.map(v=>users.where('jifuId','==',v).limit(5).get()));
     const matches=new Map();
