@@ -73,7 +73,9 @@ export default async function handler(request){
     const identity=await verifyBearer(request);
     const body=await request.json();
     const prospectId=String(body?.prospectId||'').trim();
+    const action=String(body?.action||'');
     if(!prospectId||prospectId.length>200)return json({error:'Prospect non valido.'},400,origin);
+    if(!['share','revoke'].includes(action))return json({error:'Azione di condivisione non valida.'},400,origin);
     const recipient=await findRecipient(body?.recipient);
     if(recipient.error)return json({error:recipient.error},404,origin);
     if(recipient.uid===identity.uid)return json({error:'Non puoi condividere un prospect con il tuo stesso account.'},400,origin);
@@ -87,21 +89,10 @@ export default async function handler(request){
     const sharedWith=Array.isArray(prospect.sharedWith)?[...prospect.sharedWith]:[];
     const aliases=new Set(recipient.aliasUids||[]);
     aliases.add(recipient.uid);
-    const activeAlreadyShared=sharedWith.includes(recipient.uid);
-    const staleAliasAlreadyShared=sharedWith.some(uid=>uid!==recipient.uid&&aliases.has(uid));
-    let shared;
-    if(activeAlreadyShared&&staleAliasAlreadyShared){
-      for(let i=sharedWith.length-1;i>=0;i--)if(sharedWith[i]!==recipient.uid&&aliases.has(sharedWith[i]))sharedWith.splice(i,1);
-      shared=true;
-    }else if(activeAlreadyShared){
-      for(let i=sharedWith.length-1;i>=0;i--)if(aliases.has(sharedWith[i]))sharedWith.splice(i,1);
-      shared=false;
-    }else{
-      for(let i=sharedWith.length-1;i>=0;i--)if(aliases.has(sharedWith[i]))sharedWith.splice(i,1);
-      sharedWith.push(recipient.uid);
-      shared=true;
-    }
-    await prospectRef.update({sharedWith,lastCheckAt:FieldValue.serverTimestamp()});
+    const normalizedShared=sharedWith.filter(uid=>!aliases.has(uid));
+    const shared=action==='share';
+    if(shared)normalizedShared.push(recipient.uid);
+    await prospectRef.update({sharedWith:normalizedShared,lastCheckAt:FieldValue.serverTimestamp()});
     return json({shared},200,origin);
   }catch(error){
     const status=error?.message==='Missing Bearer token'?401:400;

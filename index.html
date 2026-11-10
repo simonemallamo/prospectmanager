@@ -1765,7 +1765,7 @@ window.renderTable = () => {
       <td><div class="fu-row">${[0,1,2,3].map(i=>`<button class="chk fu${fu[i]?' on':''}" onclick="tFu('${p.id}',${i},${!fu[i]})">${fu[i]?'✓':(i+1)}</button>`).join('')}</div></td>
       <td><div class="pay-row" onclick="tField('${p.id}','payment',${!p.payment})"><div class="pay-dot${p.payment?' on':''}"></div><span class="pay-lbl${p.payment?' on':''}">${p.payment?'In attesa':'—'}</span></div></td>
       <td><button class="chk${p.iscritto?' on':''}" onclick="tField('${p.id}','iscritto',${!p.iscritto})" title="Segna come iscritto">${p.iscritto?'✓':''}</button></td>
-      <td><div class="act-btns">${p.uid===cUser.uid?`<button class="act-btn" onclick="editProspect('${p.id}')">Modifica</button><button class="act-btn" onclick="shareProspect('${p.id}')">Condividi</button><button class="act-btn del" onclick="delProspect('${p.id}','${x(p.name)}')">Elimina</button>`:'Condiviso con te'}</div></td>
+      <td><div class="act-btns">${p.uid===cUser.uid?`<button class="act-btn" onclick="editProspect('${p.id}')">Modifica</button><button class="act-btn" onclick="shareProspect('${p.id}')">Condividi</button>${Array.isArray(p.sharedWith)&&p.sharedWith.length?`<button class="act-btn" onclick="revokeProspectShare('${p.id}')">Revoca</button>`:''}<button class="act-btn del" onclick="delProspect('${p.id}','${x(p.name)}')">Elimina</button>`:'Condiviso con te'}</div></td>
     </tr>`;
   }).join('');
 };
@@ -1778,21 +1778,32 @@ window.tFu = async (id_,i,v) => {
   await updateDoc(doc(db,'prospects',id_),{followUps:fu,lastCheckAt:serverTimestamp()});
 };
 window.delProspect = async (id_,name) => { const p=prospects.find(x=>x.id===id_); if(p?.uid===cUser.uid && confirm(`Eliminare ${name}?`)) await deleteDoc(doc(db,'prospects',id_)); };
+async function setProspectSharing(pid,recipient,action){
+  const response=await fetch('https://rymanager.netlify.app/.netlify/functions/share-prospect',{
+    method:'POST',
+    headers:{'Authorization':`Bearer ${await cUser.getIdToken()}`,'Content-Type':'application/json'},
+    body:JSON.stringify({prospectId:pid,recipient:recipient.trim(),action})
+  });
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.error||'Impossibile aggiornare la condivisione.');
+  return result;
+}
 window.shareProspect = async pid => {
   const p=prospects.find(x=>x.id===pid); if(!p || p.uid!==cUser.uid)return;
-  const recipient=prompt('Inserisci l’email o l’ID JIFU della persona. Per revocare la condivisione, inserisci di nuovo lo stesso dato.');
+  const recipient=prompt('Inserisci l’email o l’ID JIFU della persona.');
   if(!recipient)return;
-  if(!confirm('Confermi di condividere questo prospect con la persona indicata? Se è già condiviso, la condivisione verrà revocata.'))return;
+  if(!confirm('Confermi di condividere questo prospect? La condivisione resterà attiva finché non la revochi.'))return;
   try{
-    const response=await fetch('https://rymanager.netlify.app/.netlify/functions/share-prospect',{
-      method:'POST',
-      headers:{'Authorization':`Bearer ${await cUser.getIdToken()}`,'Content-Type':'application/json'},
-      body:JSON.stringify({prospectId:pid,recipient:recipient.trim()})
-    });
-    const result=await response.json().catch(()=>({}));
-    if(!response.ok)throw new Error(result.error||'Impossibile aggiornare la condivisione.');
-    alert(result.shared?'Prospect condiviso. Sarà visibile nella lista del destinatario.':'Condivisione revocata.');
+    await setProspectSharing(pid,recipient,'share');
+    alert('Prospect condiviso. Sarà visibile nella lista del destinatario.');
   }catch(error){alert(error.message||'Impossibile aggiornare la condivisione.');}
+};
+window.revokeProspectShare=async pid=>{
+  const p=prospects.find(x=>x.id===pid); if(!p||p.uid!==cUser.uid)return;
+  const recipient=prompt('Inserisci l’email o l’ID JIFU della persona a cui revocare l’accesso.');
+  if(!recipient||!confirm('Confermi di revocare la condivisione di questo prospect?'))return;
+  try{await setProspectSharing(pid,recipient,'revoke');alert('Condivisione revocata.');}
+  catch(error){alert(error.message||'Impossibile revocare la condivisione.');}
 };
 window.editProspect = pid => {
   const p=prospects.find(x=>x.id===pid); if(!p) return;
