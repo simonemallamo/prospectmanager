@@ -1,4 +1,4 @@
-import { db, FieldValue, verifyBearer } from './_firebase-admin.mjs';
+import { db, FieldValue, adminAuth, verifyBearer } from './_firebase-admin.mjs';
 
 const allowedOrigins=new Set([
   'https://simonemallamo.github.io',
@@ -21,21 +21,48 @@ async function findRecipient(raw){
   if(!value)return{error:'Inserisci un’email o un ID JIFU.'};
   const users=db.collection('users');
   const isEmail=value.includes('@');
-  let queries;
+  let profileMatches=[];
   if(isEmail){
     const normalized=value.toLowerCase();
-    queries=[users.where('email','==',normalized).limit(3)];
-    if(value!==normalized)queries.push(users.where('email','==',value).limit(3));
+    try{
+      const authUser=await adminAuth.getUserByEmail(normalized);
+      if(authUser.disabled)return{error:'L’account destinatario è disattivato.'};
+      const activeProfile=await users.doc(authUser.uid).get();
+      if(!activeProfile.exists)return{error:'L’email è registrata, ma il profilo Prospect Manager attivo non è completo.'};
+      const activeEmail=String(activeProfile.data()?.email||'').trim().toLowerCase();
+      if(activeEmail&&activeEmail!==normalized)return{error:'Il profilo attivo non corrisponde a questa email.'};
+      const aliases=await users.where('email','==',normalized).get();
+      profileMatches=aliases.docs;
+      if(!profileMatches.some(doc=>doc.id===authUser.uid))profileMatches.push(activeProfile);
+      return{uid:authUser.uid,aliasUids:profileMatches.map(doc=>doc.id)};
+    }catch(error){
+      if(error?.code==='auth/user-not-found')return{error:'Nessun account trovato con questa email.'};
+      throw error;
+    }
   }else{
     const variants=[...new Set([value,value.toLowerCase(),value.toUpperCase()])];
-    queries=variants.map(v=>users.where('jifuId','==',v).limit(3));
+    const snaps=await Promise.all(variants.map(v=>users.where('jifuId','==',v).limit(5).get()));
+    const matches=new Map();
+    for(const snap of snaps)for(const doc of snap.docs)matches.set(doc.id,doc);
+    if(matches.size===0)return{error:'Nessun account trovato con questo ID JIFU.'};
+    const profileEmails=[...new Set([...matches.values()].map(doc=>String(doc.data()?.email||'').trim().toLowerCase()).filter(Boolean))];
+    if(profileEmails.length!==1)return{error:'Questo ID JIFU corrisponde a profili ambigui. Contatta l’amministratore per correggerli.'};
+    try{
+      const authUser=await adminAuth.getUserByEmail(profileEmails[0]);
+      if(authUser.disabled)return{error:'L’account destinatario è disattivato.'};
+      const activeProfile=await users.doc(authUser.uid).get();
+      if(!activeProfile.exists)return{error:'Il profilo JIFU trovato non corrisponde a un profilo Prospect Manager attivo.'};
+      const activeJifu=String(activeProfile.data()?.jifuId||'').trim().toLowerCase();
+      if(activeJifu!==value.toLowerCase())return{error:'L’ID JIFU non corrisponde al profilo Prospect Manager attivo.'};
+      const aliases=await users.where('email','==',profileEmails[0]).get();
+      profileMatches=aliases.docs;
+      if(!profileMatches.some(doc=>doc.id===authUser.uid))profileMatches.push(activeProfile);
+      return{uid:authUser.uid,aliasUids:profileMatches.map(doc=>doc.id)};
+    }catch(error){
+      if(error?.code==='auth/user-not-found')return{error:'L’account Firebase associato a questo ID JIFU non è attivo.'};
+      throw error;
+    }
   }
-  const snaps=await Promise.all(queries.map(q=>q.get()));
-  const matches=new Map();
-  for(const snap of snaps)for(const doc of snap.docs)matches.set(doc.id,doc);
-  if(matches.size===0)return{error:isEmail?'Nessun account trovato con questa email.':'Nessun account trovato con questo ID JIFU.'};
-  if(matches.size>1)return{error:isEmail?'Questa email corrisponde a più account. Usa l’ID JIFU della persona.':'Questo ID JIFU corrisponde a più account: contatta l’amministratore per correggere il profilo.'};
-  return{uid:[...matches.keys()][0]};
 }
 
 export default async function handler(request){
@@ -58,9 +85,22 @@ export default async function handler(request){
     if(prospect.uid!==identity.uid)return json({error:'Puoi condividere solo i prospect che appartengono al tuo account.'},403,origin);
 
     const sharedWith=Array.isArray(prospect.sharedWith)?[...prospect.sharedWith]:[];
-    const index=sharedWith.indexOf(recipient.uid);
-    const shared=index<0;
-    if(shared)sharedWith.push(recipient.uid);else sharedWith.splice(index,1);
+    const aliases=new Set(recipient.aliasUids||[]);
+    aliases.add(recipient.uid);
+    const activeAlreadyShared=sharedWith.includes(recipient.uid);
+    const staleAliasAlreadyShared=sharedWith.some(uid=>uid!==recipient.uid&&aliases.has(uid));
+    let shared;
+    if(activeAlreadyShared&&staleAliasAlreadyShared){
+      for(let i=sharedWith.length-1;i>=0;i--)if(sharedWith[i]!==recipient.uid&&aliases.has(sharedWith[i]))sharedWith.splice(i,1);
+      shared=true;
+    }else if(activeAlreadyShared){
+      for(let i=sharedWith.length-1;i>=0;i--)if(aliases.has(sharedWith[i]))sharedWith.splice(i,1);
+      shared=false;
+    }else{
+      for(let i=sharedWith.length-1;i>=0;i--)if(aliases.has(sharedWith[i]))sharedWith.splice(i,1);
+      sharedWith.push(recipient.uid);
+      shared=true;
+    }
     await prospectRef.update({sharedWith,lastCheckAt:FieldValue.serverTimestamp()});
     return json({shared},200,origin);
   }catch(error){
