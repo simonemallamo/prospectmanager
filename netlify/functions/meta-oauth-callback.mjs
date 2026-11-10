@@ -45,7 +45,18 @@ export default async function handler(request) {
       pageRequests++;
       if(!(pageBatch.paging?.next)||pageRequests>=10) after='';
     } while(after);
-    const page=availablePages.find(p=>String(p.id)===configuredPageId);
+    let page=availablePages.find(p=>String(p.id)===configuredPageId);
+    // Some Business Login grants can access the assigned Page by ID even when
+    // the user's /me/accounts edge does not enumerate it. Query only the Page
+    // configured for this integration; never broaden the permission request.
+    if(!page?.access_token){
+      try{
+        const configuredPage=await graph(configuredPageId,{access_token:td.access_token,fields:'id,name,access_token,tasks'});
+        if(String(configuredPage?.id)===configuredPageId&&configuredPage.access_token)page=configuredPage;
+      }catch(error){
+        console.warn('Meta configured Page direct lookup failed',{appKey:metaConfig.key,error:error?.message||'Graph API error'});
+      }
+    }
     if(!page?.access_token){
       const permissionData=await graph('me/permissions',{access_token:td.access_token});
       const requiredPermissions=['pages_show_list','pages_read_engagement','pages_manage_metadata','leads_retrieval'];
