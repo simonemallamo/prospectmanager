@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { db, verifyBearer, json, isMetaIntegrationOwner } from './_firebase-admin.mjs';
+import { db, verifyBearer, json, getMetaIntegrationConfig, isMetaIntegrationEmail, isMetaIntegrationOwner } from './_firebase-admin.mjs';
 
 const allowedOrigins = new Set(['https://simonemallamo.github.io', 'https://pm.retiredyoung.it']);
 const corsHeaders = origin => ({
@@ -18,14 +18,16 @@ export default async function handler(request) {
   if (request.method !== 'POST') return corsJson({error:'Method not allowed'},405,origin);
   try {
     const identity = await verifyBearer(request);
-    if (!isMetaIntegrationOwner(identity)) return corsJson({error:'Meta Ads è disponibile solo per l’account proprietario autorizzato.'},403,origin);
+    if(!isMetaIntegrationEmail(identity))return corsJson({error:'Meta Ads non è abilitato per questo account.'},403,origin);
+    if(!isMetaIntegrationOwner(identity))return corsJson({error:'Verifica prima l’indirizzo email del tuo account Prospect Manager.',code:'EMAIL_NOT_VERIFIED'},403,origin);
     const { uid } = identity;
-    const appId = process.env.META_APP_ID;
-    const configId = process.env.META_BUSINESS_LOGIN_CONFIG_ID;
+    const metaConfig=getMetaIntegrationConfig(identity);
+    const appId = metaConfig?.appId;
+    const configId = metaConfig?.configId;
     const redirectUri = process.env.META_REDIRECT_URI;
-    if (!appId || !configId || !redirectUri) return corsJson({error:'Missing Meta configuration'},500,origin);
+    if (!appId || !configId || !redirectUri) return corsJson({error:'La configurazione Meta per questo account non è ancora completa.'},500,origin);
     const state = crypto.randomBytes(32).toString('hex');
-    await db.collection('meta_oauth_states').doc(state).set({uid, createdAt:new Date(), expiresAt:new Date(Date.now()+10*60*1000)});
+    await db.collection('meta_oauth_states').doc(state).set({uid,ownerEmail:metaConfig.email,createdAt:new Date(),expiresAt:new Date(Date.now()+10*60*1000)});
     const params = new URLSearchParams({client_id:appId, redirect_uri:redirectUri, state, config_id:configId, response_type:'code'});
     const authUrl = `https://www.facebook.com/dialog/oauth?${params}`;
     return corsJson({authUrl},200,origin);

@@ -1,4 +1,4 @@
-import { db, FieldValue, adminAuth, isMetaIntegrationOwner } from './_firebase-admin.mjs';
+import { db, FieldValue, adminAuth, getMetaIntegrationConfig, isMetaIntegrationOwner } from './_firebase-admin.mjs';
 const gv=()=>process.env.META_GRAPH_VERSION||'v27.0';
 async function graph(path, params={}) {
   const u=new URL(`https://graph.facebook.com/${gv()}/${path}`);
@@ -27,22 +27,25 @@ export default async function handler(request) {
     const s=snap.data();
     if(!s.uid || !s.expiresAt || s.expiresAt.toDate().getTime()<Date.now()){await stateRef.delete();return new Response('Expired OAuth state',{status:400});}
     const identity=await adminAuth.getUser(s.uid);
-    if(!identity.emailVerified || !isMetaIntegrationOwner({email:identity.email,email_verified:identity.emailVerified})) return new Response('Meta integration is restricted to the authorized owner account.',{status:403});
-    const appId=process.env.META_APP_ID, appSecret=process.env.META_APP_SECRET, redirectUri=process.env.META_REDIRECT_URI;
-    if(!appId||!appSecret||!redirectUri) throw new Error('Missing META_APP_ID, META_APP_SECRET or META_REDIRECT_URI');
+    if(!identity.emailVerified || !isMetaIntegrationOwner({email:identity.email,email_verified:identity.emailVerified}) || s.ownerEmail!==String(identity.email||'').trim().toLowerCase()) return new Response('Meta integration is restricted to the authorized account.',{status:403});
+    const metaConfig=getMetaIntegrationConfig(identity.email);
+    const {appId,appSecret,pageId:configuredPageId}=metaConfig||{};
+    const redirectUri=process.env.META_REDIRECT_URI;
+    if(!appId||!appSecret||!configuredPageId||!redirectUri) throw new Error('Meta configuration is incomplete for this account.');
     const tokenUrl=new URL(`https://graph.facebook.com/${gv()}/oauth/access_token`);
     for(const [k,v] of Object.entries({client_id:appId,client_secret:appSecret,redirect_uri:redirectUri,code})) tokenUrl.searchParams.set(k,v);
     const tr=await fetch(tokenUrl), td=await tr.json();
     if(!tr.ok||td.error||!td.access_token) throw new Error(td?.error?.message||'Could not exchange Meta authorization code');
     const pages=await graph('me/accounts',{access_token:td.access_token,fields:'id,name,access_token,tasks'});
-    const configuredPageId=String(process.env.META_PAGE_ID||'105505198156981');
     const page=(pages.data||[]).find(p=>String(p.id)===configuredPageId);
     if(!page?.access_token) throw new Error('La pagina Facebook autorizzata non è disponibile per questo account.');
-    await graphPost(`${configuredPageId}/subscribed_apps`,{access_token:page.access_token,subscribed_fields:'leadgen'});
     const uid=s.uid;
-    await db.collection('meta_connections').doc(uid).set({uid,connected:true,connectedAt:FieldValue.serverTimestamp(),pages:[{id:page.id,name:page.name||'',tasks:page.tasks||[]}]},{merge:true});
+    const pageRef=db.collection('meta_pages').doc(String(page.id)),existingPage=await pageRef.get();
+    if(existingPage.exists&&existingPage.data()?.uid&&existingPage.data().uid!==uid) throw new Error('Questa Pagina Facebook è già collegata a un altro profilo Prospect Manager.');
+    await graphPost(`${configuredPageId}/subscribed_apps`,{access_token:page.access_token,subscribed_fields:'leadgen'});
+    await db.collection('meta_connections').doc(uid).set({uid,ownerEmail:metaConfig.email,appKey:metaConfig.key,connected:true,connectedAt:FieldValue.serverTimestamp(),pages:[{id:page.id,name:page.name||'',tasks:page.tasks||[]}]},{merge:true});
     const batch=db.batch();
-    batch.set(db.collection('meta_pages').doc(String(page.id)),{uid,pageId:String(page.id),pageName:page.name||'',pageAccessToken:page.access_token,updatedAt:FieldValue.serverTimestamp()},{merge:true});
+    batch.set(pageRef,{uid,ownerEmail:metaConfig.email,appKey:metaConfig.key,pageId:String(page.id),pageName:page.name||'',pageAccessToken:page.access_token,updatedAt:FieldValue.serverTimestamp()},{merge:true});
     batch.delete(stateRef); await batch.commit();
     const appUrl=(process.env.FRONTEND_URL||'https://pm.retiredyoung.it/').replace(/\/$/,'');
     return Response.redirect(`${appUrl}/?meta=connected&pages=1`,302);

@@ -1111,10 +1111,14 @@ td{padding:13px 12px;}
     <!-- Meta Ads integration -->
     <div id="meta-integration" style="display:none;margin-top:1rem;padding:1rem;border:1px solid var(--border2);border-radius:10px;background:var(--surface2);">
       <div style="font-size:14px;font-weight:600;margin-bottom:5px;">🔗 Integrazione Meta Ads</div>
-      <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:12px;">Collega la tua Pagina Facebook per ricevere i lead pubblicitari direttamente in RY Manager.</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:12px;">Collega il tuo account Meta: i lead delle tue campagne arriveranno automaticamente nel tuo Prospect Manager.</div>
       <div id="meta-connection-status" role="status" style="font-size:12px;color:var(--text2);margin-bottom:10px;">Stato: non verificato</div>
       <div id="meta-connection-error" style="display:none;font-size:12px;color:var(--red);margin-bottom:10px;"></div>
       <button id="meta-connect-btn" class="btn-primary" style="width:100%;" onclick="connectMetaAds()">Collega account Meta →</button>
+      <div id="meta-email-verification-actions" style="display:none;gap:8px;flex-wrap:wrap;margin-top:8px;">
+        <button id="meta-send-verification-btn" class="btn-cancel" onclick="sendMetaVerification()">Invia email di verifica</button>
+        <button id="meta-refresh-verification-btn" class="btn-cancel" onclick="refreshMetaVerification()">Ho verificato, ricontrolla</button>
+      </div>
       <div style="font-size:10px;color:var(--text3);margin-top:8px;">L'autorizzazione avviene su Facebook. Non inserire password o token in RY Manager.</div>
     </div>
     <div style="margin-top:.75rem;padding-top:.75rem;border-top:.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
@@ -1275,7 +1279,7 @@ td{padding:13px 12px;}
 <!-- ══ FIREBASE ══ -->
 <script type="module">
 import { initializeApp }        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendEmailVerification }
                                  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc,
          onSnapshot, query, where, serverTimestamp, getDocs, writeBatch }
@@ -3259,20 +3263,43 @@ window.deleteUser=async()=>{
 // ── SETTINGS ──
 async function refreshMetaConnectionStatus(){
   const status=id('meta-connection-status'), err=id('meta-connection-error'), btn=id('meta-connect-btn');
+  const verificationActions=id('meta-email-verification-actions');
   if(!status || !cUser) return;
   const panel=id('meta-integration');
-  const isMetaOwner=(cUser.email||'').toLowerCase()==='veglia.alessia@gmail.com';
+  const isMetaOwner=['mallamo.simone@gmail.com','veglia.alessia@gmail.com'].includes((cUser.email||'').toLowerCase());
   if(panel) panel.style.display=isMetaOwner?'':'none';
   if(!isMetaOwner) return;
   status.textContent='Verifica collegamento Meta…';
   err.style.display='none'; err.textContent='';
+  if(!cUser.emailVerified){
+    status.textContent='Verifica richiesta per l’email dell’account';
+    status.style.color='var(--text2)';
+    err.textContent='Per proteggere il collegamento Meta, prima conferma l’indirizzo email del tuo account Prospect Manager.';
+    err.style.display='block';
+    verificationActions.style.display='flex';
+    btn.disabled=true; btn.textContent='Verifica prima la tua email';
+    return;
+  }
+  verificationActions.style.display='none';
+  btn.disabled=false;
   try {
     const token=await cUser.getIdToken();
     const response=await fetch('https://rymanager.netlify.app/.netlify/functions/meta-connection-status', {
       method:'GET', headers:{'Authorization':'Bearer '+token}
     });
     const data=await response.json().catch(()=>({}));
+    if(data.code==='EMAIL_NOT_VERIFIED'){
+      status.textContent='Verifica richiesta per l’email dell’account';
+      err.textContent=data.error||'Conferma l’indirizzo email del tuo account Prospect Manager.';
+      err.style.display='block'; verificationActions.style.display='flex';
+      btn.disabled=true; btn.textContent='Verifica prima la tua email'; return;
+    }
     if(!response.ok) throw new Error(data.error||'Impossibile verificare il collegamento Meta.');
+    if(data.configured===false){
+      status.textContent='Configurazione Meta in attesa'; status.style.color='var(--text2)';
+      err.textContent='L’app Meta di questo account non è ancora configurata nel Prospect Manager.'; err.style.display='block';
+      btn.disabled=true; return;
+    }
     if(data.connected){
       status.textContent='✅ Business Manager collegato · '+data.pageCount+' pagine autorizzate';
       status.style.color='var(--green)';
@@ -3286,6 +3313,38 @@ async function refreshMetaConnectionStatus(){
     err.textContent='Impossibile verificare lo stato: '+(e.message||'errore di rete'); err.style.display='block';
   }
 }
+window.sendMetaVerification=async()=>{
+  const status=id('meta-connection-status'),err=id('meta-connection-error'),btn=id('meta-send-verification-btn');
+  if(!cUser)return;
+  err.style.display='none'; btn.disabled=true;
+  try{
+    await sendEmailVerification(cUser);
+    status.textContent='Email di verifica inviata a '+(cUser.email||'il tuo indirizzo email');
+    status.style.color='var(--green)';
+    err.textContent='Apri il messaggio di Firebase, conferma il link e poi premi “Ho verificato, ricontrolla”.';
+    err.style.display='block';
+  }catch(e){
+    err.textContent='Non sono riuscito a inviare l’email: '+(e.message||'riprova tra poco.');
+    err.style.display='block';
+  }finally{btn.disabled=false;}
+};
+window.refreshMetaVerification=async()=>{
+  const status=id('meta-connection-status'),err=id('meta-connection-error');
+  if(!cUser)return;
+  try{
+    await cUser.reload();
+    if(!cUser.emailVerified){
+      status.textContent='Email ancora da verificare';
+      err.textContent='Apri il link di verifica ricevuto via email, poi riprova.';
+      err.style.display='block'; return;
+    }
+    await cUser.getIdToken(true);
+    await refreshMetaConnectionStatus();
+  }catch(e){
+    err.textContent='Impossibile aggiornare la verifica: '+(e.message||'riprova.');
+    err.style.display='block';
+  }
+};
 window.openSettings=()=>{
   if(!cUser) return;
   // Settings must render from the profile already loaded at login. Do not hold
@@ -3402,6 +3461,7 @@ window.connectMetaAds=async()=>{
   const btn=id('meta-connect-btn'), status=id('meta-connection-status'), err=id('meta-connection-error');
   err.style.display='none'; err.textContent='';
   if(!cUser){err.textContent='Sessione scaduta. Accedi nuovamente.';err.style.display='block';return;}
+  if(!cUser.emailVerified){err.textContent='Prima verifica l’indirizzo email del tuo account Prospect Manager.';err.style.display='block';return;}
   btn.disabled=true; btn.textContent='Connessione in corso…'; status.textContent='Preparazione del collegamento Meta…';
   try{
     const token=await cUser.getIdToken(true);
@@ -3411,6 +3471,12 @@ window.connectMetaAds=async()=>{
       body:JSON.stringify({})
     });
     const data=await response.json().catch(()=>({}));
+    if(data.code==='EMAIL_NOT_VERIFIED'){
+      status.textContent='Verifica richiesta per l’email dell’account';
+      err.textContent=data.error||'Conferma l’indirizzo email del tuo account Prospect Manager.';
+      err.style.display='block'; id('meta-email-verification-actions').style.display='flex';
+      btn.disabled=true; btn.textContent='Verifica prima la tua email'; return;
+    }
     if(!response.ok) throw new Error(data.error||'Impossibile avviare il collegamento Meta.');
     if(!data.authUrl) throw new Error('La funzione OAuth non ha restituito l’URL di autorizzazione. Aggiornare meta-oauth-start.');
     window.location.href=data.authUrl;

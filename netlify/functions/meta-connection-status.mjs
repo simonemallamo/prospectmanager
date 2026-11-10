@@ -1,4 +1,4 @@
-import { db, verifyBearer, isMetaIntegrationOwner } from './_firebase-admin.mjs';
+import { db, verifyBearer, getMetaIntegrationConfig, isMetaIntegrationEmail, isMetaIntegrationOwner } from './_firebase-admin.mjs';
 
 const allowedOrigins = new Set(['https://simonemallamo.github.io', 'https://pm.retiredyoung.it']);
 const corsHeaders = origin => ({
@@ -16,7 +16,11 @@ export default async function handler(request) {
   if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405, origin);
   try {
     const identity = await verifyBearer(request);
-    if (!isMetaIntegrationOwner(identity)) return json({ error: 'Meta Ads è disponibile solo per l’account proprietario autorizzato.' }, 403, origin);
+    if(!isMetaIntegrationEmail(identity))return json({error:'Meta Ads non è abilitato per questo account.'},403,origin);
+    if(!isMetaIntegrationOwner(identity))return json({error:'Verifica prima l’indirizzo email del tuo account Prospect Manager.',code:'EMAIL_NOT_VERIFIED'},403,origin);
+    const metaConfig=getMetaIntegrationConfig(identity);
+    const configured=Boolean(metaConfig?.appId&&metaConfig?.appSecret&&metaConfig?.configId&&metaConfig?.pageId);
+    if(!configured)return json({connected:false,configured:false,pageCount:0},200,origin);
     const { uid } = identity;
     const snap = await db.collection('meta_connections').doc(uid).get();
     if (!snap.exists || snap.data()?.connected !== true) return json({ connected: false, pageCount: 0 },200,origin);

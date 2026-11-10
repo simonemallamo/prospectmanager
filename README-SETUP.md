@@ -11,13 +11,26 @@ Questi file sono aggiuntivi: non sostituiscono `index.html` e non toccano la V2 
 - `package.json`
 
 ## Netlify Environment Variables
-Impostare:
-- `META_APP_ID` = App ID della Meta App RY Manager
-- `META_APP_SECRET` = App Secret
-- `META_BUSINESS_LOGIN_CONFIG_ID` = Business Login Configuration ID
+Ogni account collega la propria Meta App e la propria Pagina. Non condividere App Secret tra i due account.
+
+Per Simone (`mallamo.simone@gmail.com`) impostare:
+- `META_APP_ID_SIMONE` = App ID della sua app
+- `META_APP_SECRET_SIMONE` = App Secret, contrassegnato come segreto Netlify
+- `META_BUSINESS_LOGIN_CONFIG_ID_SIMONE` = Business Login Configuration ID
+- `META_PAGE_ID_SIMONE` = ID della Pagina Facebook autorizzata
+- `META_CAMPAIGN_NAME_SIMONE` = facoltativo; vuoto importa tutti i lead delle pagine collegate
+
+Per Alessia (`veglia.alessia@gmail.com`) il codice accetta i nomi dedicati `META_APP_ID_ALESSIA`, `META_APP_SECRET_ALESSIA`, `META_BUSINESS_LOGIN_CONFIG_ID_ALESSIA`, `META_PAGE_ID_ALESSIA`, oppure le variabili legacy:
+- `META_APP_ID` = `4396741380543813`
+- `META_APP_SECRET` = App Secret, contrassegnato come segreto Netlify
+- `META_BUSINESS_LOGIN_CONFIG_ID` = `1154907010348786`
+- `META_PAGE_ID` = `105505198156981`
+- `META_CAMPAIGN_NAME_ALESSIA` (o `META_CAMPAIGN_NAME`) = `UGC moduli`
+
+Comuni ai due account:
 - `META_REDIRECT_URI` = `https://rymanager.netlify.app/.netlify/functions/meta-oauth-callback`
 - `META_WEBHOOK_VERIFY_TOKEN` = stringa casuale scelta da te
-- `META_GRAPH_VERSION` = versione Graph API attiva/supportata dalla tua app
+- `META_GRAPH_VERSION` = `v27.0` (allineata alla versione dei webhook configurata)
 - `FRONTEND_URL` = `https://pm.retiredyoung.it/` (destinazione dopo il callback OAuth; il callback Meta resta su Netlify)
 - `FIREBASE_SERVICE_ACCOUNT_JSON_B64` = service-account JSON Firebase codificato Base64
 
@@ -31,7 +44,7 @@ NON mettere il JSON nel repository o nel frontend. Convertire il file JSON in Ba
 Redirect URI:
 `https://rymanager.netlify.app/.netlify/functions/meta-oauth-callback`
 
-La Meta App continua a usare questo callback Netlify come redirect URI; dopo l'autorizzazione, l'utente torna a `FRONTEND_URL`.
+Entrambe le Meta App usano questo callback Netlify come redirect URI; dopo l'autorizzazione, l'utente torna a `FRONTEND_URL`.
 
 Webhook:
 `https://rymanager.netlify.app/.netlify/functions/meta-webhook`
@@ -48,7 +61,7 @@ Il valore di `META_WEBHOOK_VERIFY_TOKEN` deve coincidere con il Verify Token usa
 - `meta_leads/{leadId}`
 - `prospects/{prospectId}`
 
-`meta_pages/{pageId}` associa una Page Meta al corretto UID RY Manager. Questo evita di legare i lead al Business Manager di Simone.
+`meta_pages/{pageId}` associa una Page Meta al corretto UID Prospect Manager e all’account proprietario dell’app che ha firmato il webhook. Ogni lead viene salvato nell’account Firebase che ha autorizzato quella pagina.
 
 ## Importante
 Questo è il backend di integrazione. Prima di produzione bisogna testare OAuth, Page discovery, webhook verification, test lead, mapping Page→UID e deduplicazione.

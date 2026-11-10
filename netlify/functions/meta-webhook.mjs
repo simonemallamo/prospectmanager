@@ -1,11 +1,9 @@
 import crypto from 'node:crypto';
-import { db, FieldValue, json } from './_firebase-admin.mjs';
+import { db, FieldValue, json, adminAuth, getMetaIntegrationConfig, getConfiguredMetaIntegrationConfigs } from './_firebase-admin.mjs';
 const gv=()=>process.env.META_GRAPH_VERSION||'v27.0';
 async function graph(path, params={}) { const u=new URL(`https://graph.facebook.com/${gv()}/${path}`); for(const[k,v]of Object.entries(params))if(v!=null)u.searchParams.set(k,String(v)); const r=await fetch(u);const d=await r.json();if(!r.ok||d.error)throw new Error(d?.error?.message||`Graph API error (${r.status})`);return d; }
 const clean=v=>typeof v==='string'?v.trim():'';
-const allowedCampaignName='ugc moduli';
-function validSignature(raw, signature){
-  const secret=process.env.META_APP_SECRET;
+function validSignature(raw, signature, secret){
   if(!secret||!signature?.startsWith('sha256='))return false;
   const actual=Buffer.from(signature.slice(7),'hex');
   const expected=crypto.createHmac('sha256',secret).update(raw,'utf8').digest();
@@ -13,12 +11,15 @@ function validSignature(raw, signature){
 }
 function fieldMap(fd=[]){const o={};for(const x of fd){const k=clean(x.name).toLowerCase();if(k)o[k]=clean(x.values?.[0]??'');}return o;}
 function val(f,names){for(const n of names){if(f[n.toLowerCase()])return f[n.toLowerCase()];}return '';}
-async function saveLead(leadId,pageId){
+async function saveLead(leadId,pageId,signedOwnerEmail){
   const ps=await db.collection('meta_pages').doc(String(pageId)).get(); if(!ps.exists)return{ignored:true,reason:'page_not_connected'};
   const page=ps.data(); if(!page.uid||!page.pageAccessToken)return{ignored:true,reason:'invalid_page_mapping'};
+  const pageOwnerEmail=String(page.ownerEmail||page.appOwnerEmail||'').trim().toLowerCase()||(await adminAuth.getUser(page.uid)).email?.toLowerCase();
+  if(!pageOwnerEmail||pageOwnerEmail!==signedOwnerEmail)return{ignored:true,reason:'app_page_owner_mismatch'};
   const lr=db.collection('meta_leads').doc(String(leadId)); if((await lr.get()).exists)return{duplicate:true};
   const lead=await graph(String(leadId),{access_token:page.pageAccessToken,fields:'id,created_time,field_data,ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,form_id'});
-  if(clean(lead.campaign_name).toLocaleLowerCase()!==allowedCampaignName)return{ignored:true,reason:'campaign_not_allowed'};
+  const ownerConfig=getMetaIntegrationConfig(pageOwnerEmail),allowedCampaign=clean(ownerConfig?.campaignName).toLocaleLowerCase();
+  if(allowedCampaign&&clean(lead.campaign_name).toLocaleLowerCase()!==allowedCampaign)return{ignored:true,reason:'campaign_not_allowed'};
   const f=fieldMap(lead.field_data||{});
   const prospect={
     name:val(f,['full_name','name','nome','nome completo'])||val(f,['email'])||val(f,['phone_number','phone','telefono','cellulare'])||`Meta Lead ${leadId}`,
@@ -40,9 +41,11 @@ export default async function handler(request){
   if(request.method!=='POST')return json({error:'Method not allowed'},405);
   try{
     const raw=await request.text();
-    if(!validSignature(raw,request.headers.get('x-hub-signature-256')))return json({error:'Invalid signature'},401);
+    const signature=request.headers.get('x-hub-signature-256');
+    const signedOwner=getConfiguredMetaIntegrationConfigs().find(config=>validSignature(raw,signature,config.appSecret));
+    if(!signedOwner)return json({error:'Invalid signature'},401);
     const body=JSON.parse(raw); if(body.object!=='page')return json({received:true,ignored:true}); const results=[];
-    for(const entry of body.entry||[])for(const change of entry.changes||[])if(change.field==='leadgen'){const leadId=change.value?.leadgen_id;if(!leadId||!entry.id)continue;try{results.push({pageId:entry.id,leadId,...await saveLead(leadId,entry.id)});}catch(e){console.error(e);results.push({pageId:entry.id,leadId,error:e.message});}}
+    for(const entry of body.entry||[])for(const change of entry.changes||[])if(change.field==='leadgen'){const leadId=change.value?.leadgen_id;if(!leadId||!entry.id)continue;try{results.push({pageId:entry.id,leadId,...await saveLead(leadId,entry.id,signedOwner.email)});}catch(e){console.error(e);results.push({pageId:entry.id,leadId,error:e.message});}}
     return json({received:true,results});
   }catch(e){console.error('meta-webhook:',e);return json({received:true,error:'processing_error'});}
 }
