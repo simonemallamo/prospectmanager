@@ -1780,14 +1780,19 @@ window.tFu = async (id_,i,v) => {
 window.delProspect = async (id_,name) => { const p=prospects.find(x=>x.id===id_); if(p?.uid===cUser.uid && confirm(`Eliminare ${name}?`)) await deleteDoc(doc(db,'prospects',id_)); };
 window.shareProspect = async pid => {
   const p=prospects.find(x=>x.id===pid); if(!p || p.uid!==cUser.uid)return;
-  const targetUid=prompt('Inserisci l’ID utente con cui condividere questo prospect. Puoi revocare l’accesso inserendo di nuovo lo stesso ID.');
-  if(!targetUid || targetUid===cUser.uid)return;
-  const sharedWith=Array.isArray(p.sharedWith)?[...p.sharedWith]:[];
-  const i=sharedWith.indexOf(targetUid.trim());
-  const action=i<0?'condividere':'revocare la condivisione di';
-  if(!confirm(`Confermi di ${action} questo prospect?`))return;
-  if(i<0)sharedWith.push(targetUid.trim()); else sharedWith.splice(i,1);
-  await updateDoc(doc(db,'prospects',pid),{sharedWith});
+  const recipient=prompt('Inserisci l’email o l’ID JIFU della persona. Per revocare la condivisione, inserisci di nuovo lo stesso dato.');
+  if(!recipient)return;
+  if(!confirm('Confermi di condividere questo prospect con la persona indicata? Se è già condiviso, la condivisione verrà revocata.'))return;
+  try{
+    const response=await fetch('https://rymanager.netlify.app/.netlify/functions/share-prospect',{
+      method:'POST',
+      headers:{'Authorization':`Bearer ${await cUser.getIdToken()}`,'Content-Type':'application/json'},
+      body:JSON.stringify({prospectId:pid,recipient:recipient.trim()})
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||'Impossibile aggiornare la condivisione.');
+    alert(result.shared?'Prospect condiviso. Sarà visibile nella lista del destinatario.':'Condivisione revocata.');
+  }catch(error){alert(error.message||'Impossibile aggiornare la condivisione.');}
 };
 window.editProspect = pid => {
   const p=prospects.find(x=>x.id===pid); if(!p) return;
