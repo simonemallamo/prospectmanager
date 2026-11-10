@@ -82,8 +82,42 @@ export default async function handler(request){
   try{
     const identity=await verifyBearer(request);
     const body=await request.json();
-    const prospectId=String(body?.prospectId||'').trim();
     const action=String(body?.action||'');
+    // Read only prospects explicitly shared with the authenticated account.
+    // This endpoint is also a fallback for clients whose Firestore listener is
+    // rejected by browser-side rules; the Admin query remains scoped by UID.
+    if(action==='list-shared'){
+      const snap=await db.collection('prospects')
+        .where('sharedWith','array-contains',identity.uid)
+        .get();
+      const toMillis=value=>typeof value?.toMillis==='function'?value.toMillis():null;
+      const prospects=snap.docs.map(doc=>{
+        const p=doc.data()||{};
+        return {
+          id:doc.id,
+          uid:typeof p.uid==='string'?p.uid:'',
+          userName:typeof p.userName==='string'?p.userName:'',
+          name:typeof p.name==='string'?p.name:'',
+          phone:typeof p.phone==='string'?p.phone:'',
+          country:typeof p.country==='string'?p.country:'',
+          provincia:typeof p.provincia==='string'?p.provincia:'',
+          contacted:p.contacted===true,
+          contattato:p.contattato===true,
+          conoscitiva:p.conoscitiva===true,
+          presentation:p.presentation===true,
+          followUps:Array.isArray(p.followUps)?p.followUps.slice(0,4).map(Boolean):[false,false,false,false],
+          payment:p.payment===true,
+          iscritto:p.iscritto===true,
+          note:typeof p.note==='string'?p.note:'',
+          channel:typeof p.channel==='string'?p.channel:'',
+          _insertedAt:Number(p._insertedAt)||0,
+          createdAtMillis:toMillis(p.createdAt),
+          lastCheckAtMillis:toMillis(p.lastCheckAt)
+        };
+      });
+      return json({prospects},200,origin);
+    }
+    const prospectId=String(body?.prospectId||'').trim();
     if(!prospectId||prospectId.length>200)return json({error:'Prospect non valido.'},400,origin);
     if(!['share','revoke'].includes(action))return json({error:'Azione di condivisione non valida.'},400,origin);
     const recipient=await findRecipient(body?.recipient);

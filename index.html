@@ -1643,12 +1643,22 @@ async function checkInviteBanner() {
 }
 
 // ── PROSPECTS ──
+function startSharedProspectFallback(fetchShared) {
+  fetchShared();
+  if (!window._sharedProspectFallbackTimer) {
+    window._sharedProspectFallbackTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') fetchShared();
+    }, 20000);
+  }
+}
+
 function loadProspects() {
   if (unsub) unsub();
   const ownQuery = query(collection(db, 'prospects'), where('uid','==', cUser.uid));
   const sharedQuery = query(collection(db, 'prospects'), where('sharedWith','array-contains', cUser.uid));
   let ownDocs = new Map(), sharedDocs = new Map();
   let accessUnsubs = new Map();
+  let sharedListenerAvailable = false, fallbackInFlight = false;
   const refresh = () => {
     const all = new Map();
     [...ownDocs.values(), ...sharedDocs.values()].forEach(p=>all.set(p.id,p));
@@ -1663,8 +1673,41 @@ function loadProspects() {
     }
     renderStats(); renderTable();
   };
-  const ownUnsub = onSnapshot(ownQuery, snap => { ownDocs=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}])); refresh(); });
-  const sharedUnsub = onSnapshot(sharedQuery, snap => { sharedDocs=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}])); refresh(); });
+  const fetchSharedFallback = async () => {
+    if (sharedListenerAvailable || fallbackInFlight) return;
+    fallbackInFlight = true;
+    try {
+      const response = await fetch('https://rymanager.netlify.app/.netlify/functions/share-prospect', {
+        method: 'POST',
+        headers: {'Authorization':`Bearer ${await cUser.getIdToken()}`,'Content-Type':'application/json'},
+        body: JSON.stringify({action:'list-shared'})
+      });
+      const data = await response.json().catch(()=>({}));
+      if (!response.ok) throw new Error(data.error||'Errore nel caricamento dei prospect condivisi.');
+      const timestamp = ms => Number.isFinite(ms) && ms > 0 ? {toMillis:()=>ms} : null;
+      sharedDocs = new Map((data.prospects||[]).map(p=>[p.id,{
+        ...p,
+        createdAt:timestamp(p.createdAtMillis),
+        lastCheckAt:timestamp(p.lastCheckAtMillis)
+      }]));
+      refresh();
+    } catch(e) {
+      console.error('Caricamento prospect condivisi non riuscito:',e);
+    } finally {
+      fallbackInFlight = false;
+    }
+  };
+  const listenerError = (source) => error => {
+    console.error(`Lettura Firestore non riuscita (${source}):`,error);
+    if (source === 'prospect condivisi') sharedListenerAvailable = false;
+    if (error?.code === 'permission-denied') startSharedProspectFallback(fetchSharedFallback);
+  };
+  const ownUnsub = onSnapshot(ownQuery, snap => { ownDocs=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}])); refresh(); }, listenerError('prospect personali'));
+  const sharedUnsub = onSnapshot(sharedQuery, snap => {
+    sharedListenerAvailable = true;
+    if (window._sharedProspectFallbackTimer) { clearInterval(window._sharedProspectFallbackTimer); window._sharedProspectFallbackTimer=null; }
+    sharedDocs=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}])); refresh();
+  }, listenerError('prospect condivisi'));
   const accessUnsub = onSnapshot(query(collection(db,'list_access_requests'),where('requesterUid','==',cUser.uid)), snap => {
     const owners = new Set(snap.docs.map(d=>d.data()).filter(r=>r.status==='approved'&&r.recipientUid).map(r=>r.recipientUid));
     for(const [owner,stop] of accessUnsubs) if(!owners.has(owner)){
@@ -1687,8 +1730,12 @@ function loadProspects() {
       });
       accessUnsubs.set(owner,stop);
     }
-  });
-  unsub = () => { ownUnsub(); sharedUnsub(); accessUnsub(); for(const stop of accessUnsubs.values())stop(); accessUnsubs.clear(); };
+  }, listenerError('richieste di condivisione'));
+  unsub = () => {
+    ownUnsub(); sharedUnsub(); accessUnsub();
+    for(const stop of accessUnsubs.values())stop(); accessUnsubs.clear();
+    if (window._sharedProspectFallbackTimer) { clearInterval(window._sharedProspectFallbackTimer); window._sharedProspectFallbackTimer=null; }
+  };
 }
 
 function renderStats() {
