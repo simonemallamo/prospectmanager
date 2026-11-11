@@ -50,7 +50,7 @@ export default async function handler(request){
     const userToken=page.userAccessToken||'';
     if(config.adAccountId&&!userToken)return reply({error:'Il collegamento Meta è precedente alla correzione e non contiene il token utente per l’account pubblicitario. Premi “Ricollega account Meta” e autorizza di nuovo.',needsReconnect:true},409);
     const target=lower(config.campaignName),cutoff=Date.now()-30*24*60*60*1000,nameCache=new Map();
-    const fieldKeys=new Set(),formCache=new Map();
+    const fieldKeys=new Set(),formCache=new Map(),adFormIds=new Set();let sampleLeadId='';
     const stats={imported:0,repaired:0,withoutContact:0,fieldSources:{},duplicates:0,filtered:0,scanned:0,formsScanned:0,outsideLookback:0,adsScanned:0,adsMatched:[],adLeadsScanned:0,lookbackDays:30};
     const errors=[];
     const recordError=(phase,error)=>{const detail={phase,...describeGraphError(error)};errors.push(detail);console.error('meta-lead-sync graph error',detail);};
@@ -94,7 +94,7 @@ export default async function handler(request){
             if(![names.ad_name,names.adset_name,names.campaign_name].some(name=>lower(name)===target))continue;
             stats.adsMatched.push({id:ad.id,name:ad.name||'',status:ad.effective_status||''});
             nameCache.set(ad.id,names);
-            try{await readLeads(ad.id,'ad',async lead=>{stats.adLeadsScanned++;await handleLead({...lead,ad_id:lead.ad_id||ad.id});});}
+            try{await readLeads(ad.id,'ad',async lead=>{stats.adLeadsScanned++;if(lead.form_id)adFormIds.add(String(lead.form_id));if(!sampleLeadId&&lead.id)sampleLeadId=String(lead.id);await handleLead({...lead,ad_id:lead.ad_id||ad.id});});}
             catch(error){recordError(`leads of ad ${ad.id}`,error);}
           }
           adsUrl=adsData.paging?.next||'';
@@ -114,7 +114,19 @@ export default async function handler(request){
         formsUrl=formData.paging?.next||'';
       }
     }catch(error){recordError('page lead forms',error);}
-    const summary={...stats,adsMatched:stats.adsMatched.length,matchedAds:stats.adsMatched,fieldKeys:[...fieldKeys],errors};
+    // Diagnostics without personal data: question keys/types of the forms used
+    // by the matched ad, and which extra fields Meta returns on one lead.
+    const formDiagnostics=[];
+    for(const formId of [...adFormIds].slice(0,3)){
+      try{const form=await graph(formId,{token:page.pageAccessToken,tokenKind:'page',params:{fields:'id,name,status,questions{key,type}'}});formDiagnostics.push({id:formId,name:form.name||'',status:form.status||'',questions:(form.questions||[]).map(q=>`${q.key}:${q.type}`)});}
+      catch(error){formDiagnostics.push({id:formId,error:graphErrorSummary(error)});}
+    }
+    let sampleLeadFields=null;
+    if(sampleLeadId){
+      try{const extra=await graph(sampleLeadId,{token:page.pageAccessToken,tokenKind:'page',params:{fields:'id,form_id,platform,is_organic,custom_disclaimer_responses,field_data'}});sampleLeadFields={keys:Object.keys(extra),fieldDataKeys:(extra.field_data||[]).map(f=>f.name),disclaimerKeys:(extra.custom_disclaimer_responses||[]).map(r=>r.checkbox_key||'?')};}
+      catch(error){sampleLeadFields={error:graphErrorSummary(error)};}
+    }
+    const summary={...stats,formDiagnostics,sampleLeadFields,adsMatched:stats.adsMatched.length,matchedAds:stats.adsMatched,fieldKeys:[...fieldKeys],errors};
     console.info('meta-lead-sync outcome',{...summary,errors:errors.length});
     if(errors.length){
       const reconnect=errors.some(item=>item.code===190||item.code===102);
