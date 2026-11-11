@@ -476,6 +476,7 @@ h1,h2,h3,h4,.auth-title,.logo-text,.topbar-name,.sc-val,.tc-num-val,.team-chart-
 .main>div[id^="view-"]:not(.hidden){animation:pm-view-in .46s cubic-bezier(.2,.8,.2,1) both;}
 #view-lista{display:flex;flex-direction:column;gap:22px;}
 .stats{grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin:0;}
+@media(min-width:1121px){#my-stats{grid-template-columns:repeat(7,minmax(0,1fr));}}
 .sc{min-height:120px;padding:19px 20px 17px;border:1px solid var(--border);border-radius:17px;background:linear-gradient(145deg,rgba(255,255,255,.035),transparent 60%),var(--surface);box-shadow:inset 0 1px rgba(255,255,255,.035);transition:transform .24s ease,border-color .24s ease,box-shadow .24s ease;}
 [data-theme="light"] .sc{background:linear-gradient(145deg,rgba(255,255,255,.76),transparent 66%),var(--surface);}
 .sc::before{inset:auto 18px 0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.38;}
@@ -896,6 +897,7 @@ td{padding:13px 12px;}
             <th class="th-sort" id="th-fu" onclick="sortBy('fu')">Follow-up 1→4 <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-pay" onclick="sortBy('pay')">Pagamento <span class="sort-arrow">↕</span></th>
             <th class="th-sort" id="th-iscritto" onclick="sortBy('iscritto')">Iscritto <span class="sort-arrow">↕</span></th>
+            <th class="th-sort" id="th-noninteressato" onclick="sortBy('noninteressato')">Non interessato <span class="sort-arrow">↕</span></th>
             <th></th>
           </tr></thead>
           <tbody id="p-tbody"></tbody>
@@ -1747,10 +1749,11 @@ function renderStats() {
   const pa = prospects.filter(p=>p.payment).length;
   const fu = prospects.filter(p=>(p.followUps||[]).filter(Boolean).length===4).length;
   const iscr = prospects.filter(p=>p.iscritto).length;
+  const noInt = prospects.filter(p=>p.nonInteressato).length;
   const cont = prospects.filter(p=>typeof p.conoscitiva==='boolean'?p.conoscitiva:!!p.contattato).length;
   id('my-stats').innerHTML =
     sc('Nuovi (7gg)',nw,'g')+sc('Totale',prospects.length,'ac')+
-    sc('Conoscitive',cont,'b')+sc('Presentazioni',pr,'b')+sc('Attesa pag.',pa,'a')+sc('Iscritti',iscr,'g');
+    sc('Conoscitive',cont,'b')+sc('Presentazioni',pr,'b')+sc('Attesa pag.',pa,'a')+sc('Iscritti',iscr,'g')+sc('Non interessati',noInt,'r');
   const stages=[
     {key:'nuovo',label:'Nuovo',color:'var(--green)'},
     {key:'attivo',label:'Attivo',color:'var(--blue)'},
@@ -1780,6 +1783,7 @@ window.renderTable = () => {
       case 'prov':   va=(a.country||a.provincia||'').toLowerCase(); vb=(b.country||b.provincia||'').toLowerCase(); break;
       case 'fu': va=(a.followUps||[]).filter(Boolean).length; vb=(b.followUps||[]).filter(Boolean).length; break;
       case 'iscritto': va=a.iscritto?1:0; vb=b.iscritto?1:0; break;
+      case 'noninteressato': va=a.nonInteressato?1:0; vb=b.nonInteressato?1:0; break;
       case 'contacted': va=a.contacted?1:0; vb=b.contacted?1:0; break;
       case 'conoscitiva': va=(typeof a.conoscitiva==='boolean'?a.conoscitiva:!!a.contattato)?1:0; vb=(typeof b.conoscitiva==='boolean'?b.conoscitiva:!!b.contattato)?1:0; break;
       case 'pres':   va=a.presentation?1:0; vb=b.presentation?1:0; break;
@@ -1796,13 +1800,13 @@ window.renderTable = () => {
     return 0;
   });
   const tb = id('p-tbody');
-  if (!rows.length){tb.innerHTML=`<tr><td colspan="12"><div class="empty">📋 Nessun prospect. Aggiungine uno!</div></td></tr>`;return;}
+  if (!rows.length){tb.innerHTML=`<tr><td colspan="13"><div class="empty">📋 Nessun prospect. Aggiungine uno!</div></td></tr>`;return;}
   tb.innerHTML = rows.map(p=>{
     const d=days(p), dc=d<=3?'ok':d<=7?'warn':'bad';
     const fu=p.followUps||[false,false,false,false];
     const contacted=!!p.contacted;
     const conoscitiva=typeof p.conoscitiva==='boolean'?p.conoscitiva:!!p.contattato;
-    return `<tr data-id="${p.id}">
+    return `<tr data-id="${p.id}"${p.nonInteressato?' class="row-not-interested" style="opacity:.5;"':''}>
       <td style="padding:9px 8px;"><input type="checkbox" class="row-check" value="${p.id}" onchange="updateBulkBar()" style="cursor:pointer;width:15px;height:15px;accent-color:var(--accent);"></td>
       <td><div class="nm">${x(p.name)}</div>${p.channel||p.note?`<div class="note">${x(p.channel||'')}${p.channel&&p.note?' · ':''}${x(p.note||'')}</div>`:''}${metaLeadSummary(p)?`<div class="note" style="color:var(--accent);">${x(metaLeadSummary(p))}</div>`:''}</td>
       <td style="white-space:nowrap;font-size:12px;color:var(--text2);">${p.phone?x(p.phone):'—'}</td>
@@ -1814,6 +1818,7 @@ window.renderTable = () => {
       <td><div class="fu-row">${[0,1,2,3].map(i=>`<button class="chk fu${fu[i]?' on':''}" onclick="tFu('${p.id}',${i},${!fu[i]})">${fu[i]?'✓':(i+1)}</button>`).join('')}</div></td>
       <td><div class="pay-row" onclick="tField('${p.id}','payment',${!p.payment})"><div class="pay-dot${p.payment?' on':''}"></div><span class="pay-lbl${p.payment?' on':''}">${p.payment?'In attesa':'—'}</span></div></td>
       <td><button class="chk${p.iscritto?' on':''}" onclick="tField('${p.id}','iscritto',${!p.iscritto})" title="Segna come iscritto">${p.iscritto?'✓':''}</button></td>
+      <td><button class="chk${p.nonInteressato?' on':''}" style="${p.nonInteressato?'background:var(--red);border-color:var(--red);color:#fff;':''}" onclick="tField('${p.id}','nonInteressato',${!p.nonInteressato})" title="Segna come non interessato">${p.nonInteressato?'✕':''}</button></td>
       <td><div class="act-btns">${p.uid===cUser.uid?`<button class="act-btn" onclick="editProspect('${p.id}')">Modifica</button><button class="act-btn" onclick="shareProspect('${p.id}')">Condividi</button>${Array.isArray(p.sharedWith)&&p.sharedWith.length?`<button class="act-btn" onclick="revokeProspectShare('${p.id}')">Revoca</button>`:''}<button class="act-btn del" onclick="delProspect('${p.id}','${x(p.name)}')">Elimina</button>`:'Condiviso con te'}</div></td>
     </tr>`;
   }).join('');
@@ -1926,7 +1931,7 @@ window.saveProspect = async () => {
   if(!name){id('p-name').style.borderColor='var(--red)';return;}
   const data={name,channel:id('p-channel').value.trim(),phone:id('p-phone').value.trim(),country:id('p-country').value,provincia:id('p-provincia').value,note:id('p-note').value.trim(),uid:cUser.uid,userName:cData?.name||cUser.email};
   if(editingPid) { if(prospects.find(p=>p.id===editingPid)?.uid!==cUser.uid)return; await updateDoc(doc(db,'prospects',editingPid),data); }
-  else await addDoc(collection(db,'prospects'),{...data,contacted:false,conoscitiva:false,presentation:false,followUps:[false,false,false,false],payment:false,createdAt:serverTimestamp(),lastCheckAt:null,_insertedAt:Date.now()});
+  else await addDoc(collection(db,'prospects'),{...data,contacted:false,conoscitiva:false,nonInteressato:false,presentation:false,followUps:[false,false,false,false],payment:false,createdAt:serverTimestamp(),lastCheckAt:null,_insertedAt:Date.now()});
   closeProspectModal();
 };
 
@@ -1939,7 +1944,7 @@ window.sortBy = col => {
     sortDir = col === 'days' ? 'desc' : 'asc';
   }
   // Update header styles
-  ['name','days','prov','contacted','conoscitiva','pres','fu','pay','iscritto','status'].forEach(k => {
+  ['name','days','prov','contacted','conoscitiva','pres','fu','pay','iscritto','noninteressato','status'].forEach(k => {
     const th = id('th-'+k);
     if (!th) return;
     th.classList.toggle('active', k === col);
@@ -2389,7 +2394,7 @@ window.confirmImport=async function(){
         country:'',provincia:'',uid:cUser.uid,
         userName:cData?cData.name||cUser.email:cUser.email,
         presentation:false,followUps:[false,false,false,false],
-        payment:false,iscritto:false,contacted:false,conoscitiva:false,
+        payment:false,iscritto:false,nonInteressato:false,contacted:false,conoscitiva:false,
         createdAt:serverTimestamp(),lastCheckAt:null,_insertedAt:Date.now()
       });
       lastImportIds.push(ref.id);
@@ -2600,7 +2605,7 @@ window.executeImport = async function() {
         uid:cUser.uid,
         userName:cData?cData.name||cUser.email:cUser.email,
         presentation:false, followUps:[false,false,false,false],
-        payment:false, iscritto:false, contacted:false, conoscitiva:false,
+        payment:false, iscritto:false, nonInteressato:false, contacted:false, conoscitiva:false,
         createdAt:serverTimestamp(), lastCheckAt:null,
         _insertedAt:Date.now(),
         _importBatch:batchId
@@ -3711,6 +3716,8 @@ const I18N_ES = {
   'Stato':'Estado',
   'Paese':'País',
   'Iscritto':'Registrado',
+  'Non interessato':'No interesado',
+  'Non interessati':'No interesados',
   'Contattato':'Contactado',
   'Conoscitiva':'Conversación inicial',
   'Conoscitive':'Conversaciones iniciales',
