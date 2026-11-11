@@ -1,38 +1,36 @@
 import crypto from 'node:crypto';
-import { db, FieldValue, json, adminAuth, getMetaIntegrationConfig, getConfiguredMetaIntegrationConfigs } from './_firebase-admin.mjs';
-const gv=()=>process.env.META_GRAPH_VERSION||'v27.0';
-async function graph(path, params={}) { const u=new URL(`https://graph.facebook.com/${gv()}/${path}`); for(const[k,v]of Object.entries(params))if(v!=null)u.searchParams.set(k,String(v)); const r=await fetch(u);const d=await r.json();if(!r.ok||d.error)throw new Error(d?.error?.message||`Graph API error (${r.status})`);return d; }
-const clean=v=>typeof v==='string'?v.trim():'';
+import { db, json, adminAuth, getMetaIntegrationConfig, getConfiguredMetaIntegrationConfigs } from './_firebase-admin.mjs';
+import { graph, describeGraphError } from './_meta-graph.mjs';
+import { LEAD_FIELDS, lower, saveLead, withAdNames } from './_meta-leads.mjs';
 function validSignature(raw, signature, secret){
   if(!secret||!signature?.startsWith('sha256='))return false;
   const actual=Buffer.from(signature.slice(7),'hex');
   const expected=crypto.createHmac('sha256',secret).update(raw,'utf8').digest();
   return actual.length===expected.length&&crypto.timingSafeEqual(actual,expected);
 }
-function fieldMap(fd=[]){const o={};for(const x of fd){const k=clean(x.name).toLowerCase();if(k)o[k]=clean(x.values?.[0]??'');}return o;}
-function val(f,names){for(const n of names){if(f[n.toLowerCase()])return f[n.toLowerCase()];}return '';}
-async function saveLead(leadId,pageId,signedOwnerEmail){
+async function processLead(leadId,pageId,signedOwnerEmail){
   const ps=await db.collection('meta_pages').doc(String(pageId)).get(); if(!ps.exists)return{ignored:true,reason:'page_not_connected'};
   const page=ps.data(); if(!page.uid||!page.pageAccessToken)return{ignored:true,reason:'invalid_page_mapping'};
   const pageOwnerEmail=String(page.ownerEmail||page.appOwnerEmail||'').trim().toLowerCase()||(await adminAuth.getUser(page.uid)).email?.toLowerCase();
   if(!pageOwnerEmail||pageOwnerEmail!==signedOwnerEmail)return{ignored:true,reason:'app_page_owner_mismatch'};
-  const lr=db.collection('meta_leads').doc(String(leadId)); if((await lr.get()).exists)return{duplicate:true};
-  const lead=await graph(String(leadId),{access_token:page.pageAccessToken,fields:'id,created_time,field_data,ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,form_id'});
-  const ownerConfig=getMetaIntegrationConfig(pageOwnerEmail),allowedName=clean(ownerConfig?.campaignName).toLocaleLowerCase();
-  // The configured Meta label may be either the campaign name or the ad name.
-  // Simone's configured value is the ad "UGC simone" inside campaign "UGC Ads".
-  if(allowedName&&![lead.campaign_name,lead.ad_name].some(value=>clean(value).toLocaleLowerCase()===allowedName))return{ignored:true,reason:'campaign_or_ad_not_allowed'};
-  const f=fieldMap(lead.field_data||{});
-  const prospect={
-    name:val(f,['full_name','name','nome','nome completo'])||val(f,['email'])||val(f,['phone_number','phone','telefono','cellulare'])||`Meta Lead ${leadId}`,
-    channel:'Facebook Ads',source:'Meta Lead Ads',sourceDetail:'leadgen',
-    phone:val(f,['phone_number','phone','telefono','cellulare','mobile']),
-    email:val(f,['email','e-mail']),country:val(f,['country','paese']),provincia:val(f,['province','provincia','state','region']),
-    uid:page.uid,presentation:false,followUps:[false,false,false,false],payment:false,iscritto:false,contattato:false,
-    metaLeadId:String(leadId),metaPageId:String(pageId),metaPageName:page.pageName||'',campaignId:lead.campaign_id||'',campaignName:lead.campaign_name||'',adSetId:lead.adset_id||'',adSetName:lead.adset_name||'',adId:lead.ad_id||'',adName:lead.ad_name||'',formId:lead.form_id||'',
-    createdAt:FieldValue.serverTimestamp(),lastCheckAt:null,_insertedAt:Date.now()
-  };
-  const pr=db.collection('prospects').doc(); const b=db.batch(); b.set(pr,prospect); b.set(lr,{leadId:String(leadId),prospectId:pr.id,uid:page.uid,pageId:String(pageId),receivedAt:FieldValue.serverTimestamp()}); await b.commit(); return{created:true,prospectId:pr.id,uid:page.uid};
+  if((await db.collection('meta_leads').doc(String(leadId)).get()).exists)return{duplicate:true};
+  // Single lead lookup: Page token (leads_retrieval + pages_manage_ads).
+  let lead;
+  try{lead=await graph(String(leadId),{token:page.pageAccessToken,tokenKind:'page',params:{fields:LEAD_FIELDS}});}
+  catch(error){
+    if(!page.userAccessToken)throw error;
+    console.warn('meta-webhook page token rejected for lead, retrying with user token',describeGraphError(error));
+    lead=await graph(String(leadId),{token:page.userAccessToken,tokenKind:'user',params:{fields:LEAD_FIELDS}});
+  }
+  const ownerConfig=getMetaIntegrationConfig(pageOwnerEmail),target=lower(ownerConfig?.campaignName);
+  // The configured label may be the campaign, ad set or ad name. Simone's
+  // value is the ad "UGC simone" inside campaign "UGC Ads"; names missing from
+  // the Page-token response are resolved from the ad with the user token.
+  const enriched=await withAdNames(lead,{userToken:page.userAccessToken||''});
+  const result=await saveLead({...enriched,id:lead.id||String(leadId)},{...page,pageId:String(pageId)},target);
+  if(result==='imported')return{created:true,uid:page.uid};
+  if(result==='duplicate')return{duplicate:true};
+  return{ignored:true,reason:result==='filtered'?'campaign_or_ad_not_allowed':'ignored'};
 }
 export default async function handler(request){
   if(request.method==='GET'){
@@ -45,9 +43,9 @@ export default async function handler(request){
     const raw=await request.text();
     const signature=request.headers.get('x-hub-signature-256');
     const signedOwner=getConfiguredMetaIntegrationConfigs().find(config=>validSignature(raw,signature,config.appSecret));
-    if(!signedOwner)return json({error:'Invalid signature'},401);
+    if(!signedOwner){console.warn('meta-webhook rejected: invalid signature',{hasSignature:Boolean(signature)});return json({error:'Invalid signature'},401);}
     const body=JSON.parse(raw); if(body.object!=='page')return json({received:true,ignored:true}); const results=[];
-    for(const entry of body.entry||[])for(const change of entry.changes||[])if(change.field==='leadgen'){const leadId=change.value?.leadgen_id;if(!leadId||!entry.id)continue;try{results.push({pageId:entry.id,leadId,...await saveLead(leadId,entry.id,signedOwner.email)});}catch(e){console.warn('meta-webhook lead processing failed',{integration:signedOwner.key,errorType:e?.name||'Error'});results.push({error:true});}}
+    for(const entry of body.entry||[])for(const change of entry.changes||[])if(change.field==='leadgen'){const leadId=change.value?.leadgen_id;if(!leadId||!entry.id)continue;try{results.push({pageId:entry.id,leadId,...await processLead(leadId,entry.id,signedOwner.email)});}catch(e){console.warn('meta-webhook lead processing failed',{integration:signedOwner.key,pageId:String(entry.id),...describeGraphError(e)});results.push({error:true});}}
     const outcome={integration:signedOwner.key,events:results.length,imported:0,duplicates:0,ignored:{},errors:0};
     for(const result of results){
       if(result.created)outcome.imported++;
@@ -59,7 +57,7 @@ export default async function handler(request){
     // Let Meta retry failed lead retrievals or Firestore writes. Returning 200
     // here used to acknowledge transient failures and silently lose the lead.
     if(outcome.errors)return json({received:false,retry:true},503);
-    return json({received:true,results});
-  }catch(e){console.warn('meta-webhook request processing failed',{errorType:e?.name||'Error'});return json({received:false,retry:true},503);}
+    return json({received:true,imported:outcome.imported,duplicates:outcome.duplicates,ignored:outcome.ignored});
+  }catch(e){console.warn('meta-webhook request processing failed',describeGraphError(e));return json({received:false,retry:true},503);}
 }
 export const config={path:'/.netlify/functions/meta-webhook'};

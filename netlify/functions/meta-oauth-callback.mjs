@@ -1,21 +1,7 @@
 import { db, FieldValue, adminAuth, getMetaIntegrationConfig, isMetaIntegrationOwner } from './_firebase-admin.mjs';
-const gv=()=>process.env.META_GRAPH_VERSION||'v27.0';
-async function graph(path, params={}) {
-  const u=new URL(`https://graph.facebook.com/${gv()}/${path}`);
-  for(const [k,v] of Object.entries(params)) if(v!=null) u.searchParams.set(k,String(v));
-  const r=await fetch(u); const d=await r.json();
-  if(!r.ok || d.error) throw new Error(d?.error?.message||`Graph API error (${r.status})`);
-  return d;
-}
-async function graphPost(path, params={}) {
-  const u=new URL(`https://graph.facebook.com/${gv()}/${path}`);
-  const body=new URLSearchParams();
-  for(const [k,v] of Object.entries(params)) if(v!=null) body.set(k,String(v));
-  const r=await fetch(u,{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body});
-  const d=await r.json();
-  if(!r.ok || d.error) throw new Error(d?.error?.message||`Graph API error (${r.status})`);
-  return d;
-}
+import { graph as metaGraph, graphVersion as gv, describeGraphError, graphErrorSummary } from './_meta-graph.mjs';
+const graph=(path,params={})=>{const {access_token,...rest}=params;return metaGraph(path,{token:access_token,tokenKind:'user',params:rest});};
+const graphPost=(path,params={},tokenKind='page')=>{const {access_token,...rest}=params;return metaGraph(path,{token:access_token,tokenKind,params:rest,method:'POST'});};
 export default async function handler(request) {
   if(request.method!=='GET') return new Response('Method not allowed',{status:405});
   const u=new URL(request.url), code=u.searchParams.get('code'), state=u.searchParams.get('state');
@@ -36,6 +22,16 @@ export default async function handler(request) {
     for(const [k,v] of Object.entries({client_id:appId,client_secret:appSecret,redirect_uri:redirectUri,code})) tokenUrl.searchParams.set(k,v);
     const tr=await fetch(tokenUrl), td=await tr.json();
     if(!tr.ok||td.error||!td.access_token) throw new Error(td?.error?.message||'Could not exchange Meta authorization code');
+    // Exchange for a long-lived user token. Page tokens derived from a
+    // short-lived user token expire after ~1 hour, which silently broke the
+    // webhook lead lookup; derived from a long-lived token they do not expire.
+    const longUrl=new URL(`https://graph.facebook.com/${gv()}/oauth/access_token`);
+    for(const [k,v] of Object.entries({grant_type:'fb_exchange_token',client_id:appId,client_secret:appSecret,fb_exchange_token:td.access_token})) longUrl.searchParams.set(k,v);
+    const lr=await fetch(longUrl), ld=await lr.json();
+    if(!lr.ok||ld.error||!ld.access_token) throw new Error(`Meta non ha rilasciato il token a lunga durata (codice ${ld?.error?.code??lr.status}): ${ld?.error?.message||'errore sconosciuto'}`);
+    td.access_token=ld.access_token;
+    const userTokenExpiresAt=ld.expires_in?new Date(Date.now()+Number(ld.expires_in)*1000):null;
+    const grantedPermissions=((await graph('me/permissions',{access_token:td.access_token})).data||[]).filter(item=>item.status==='granted').map(item=>item.permission);
     const availablePages=[];
     let after='',pageRequests=0;
     do {
@@ -58,11 +54,7 @@ export default async function handler(request) {
       }
     }
     if(!page?.access_token){
-      const permissionData=await graph('me/permissions',{access_token:td.access_token});
-      const requiredPermissions=['pages_show_list','pages_read_engagement','pages_manage_metadata','leads_retrieval'];
-      const grantedPermissions=(permissionData.data||[])
-        .filter(item=>item.status==='granted')
-        .map(item=>item.permission);
+      const requiredPermissions=['pages_show_list','pages_read_engagement','pages_manage_metadata','pages_manage_ads','leads_retrieval'];
       const missingPermissions=requiredPermissions.filter(permission=>!grantedPermissions.includes(permission));
       // Diagnostics intentionally exclude access tokens, lead data and OAuth codes.
       console.error('Meta Page lookup failed',{
@@ -100,13 +92,22 @@ export default async function handler(request) {
     const uid=s.uid;
     const pageRef=db.collection('meta_pages').doc(String(page.id)),existingPage=await pageRef.get();
     if(existingPage.exists&&existingPage.data()?.uid&&existingPage.data().uid!==uid) throw new Error('Questa Pagina Facebook è già collegata a un altro profilo Prospect Manager.');
+    const missingAdsPermissions=['ads_read','leads_retrieval','pages_manage_ads'].filter(permission=>!grantedPermissions.includes(permission));
+    if(configuredAdAccountId&&missingAdsPermissions.length) throw new Error(`Meta non ha concesso i permessi necessari (${missingAdsPermissions.join(', ')}). Riprova il collegamento e approva l’accesso richiesto.`);
     await graphPost(`${configuredPageId}/subscribed_apps`,{access_token:page.access_token,subscribed_fields:'leadgen'});
+    // Confirm the leadgen subscription really exists on the Page.
+    let webhookSubscribed=false;
+    try{
+      const subs=await graph(`${configuredPageId}/subscribed_apps`,{access_token:page.access_token});
+      webhookSubscribed=(subs.data||[]).some(app=>String(app.id)===String(appId)&&(app.subscribed_fields||[]).includes('leadgen'));
+    }catch(error){console.warn('Meta subscribed_apps check failed',describeGraphError(error));}
+    console.info('meta-oauth-callback connected',{appKey:metaConfig.key,pageId:String(page.id),adAccountLinked:Boolean(adAccount),webhookSubscribed,grantedPermissions,userTokenExpiresAt:userTokenExpiresAt?.toISOString?.()||'never'});
     await db.collection('meta_connections').doc(uid).set({uid,ownerEmail:metaConfig.email,appKey:metaConfig.key,connected:true,connectedAt:FieldValue.serverTimestamp(),pages:[{id:page.id,name:page.name||'',tasks:page.tasks||[]}],...(adAccount?{adAccounts:[{id:String(adAccount.account_id||adAccount.id).replace(/^act_/,''),name:adAccount.name||''}]}:{})},{merge:true});
     const batch=db.batch();
-    batch.set(pageRef,{uid,ownerEmail:metaConfig.email,appKey:metaConfig.key,pageId:String(page.id),pageName:page.name||'',pageAccessToken:page.access_token,...(adAccount?{adAccountId:String(adAccount.account_id||adAccount.id).replace(/^act_/,'')}:{}) ,updatedAt:FieldValue.serverTimestamp()},{merge:true});
+    batch.set(pageRef,{uid,ownerEmail:metaConfig.email,appKey:metaConfig.key,pageId:String(page.id),pageName:page.name||'',pageAccessToken:page.access_token,userAccessToken:td.access_token,userTokenExpiresAt,grantedPermissions,webhookSubscribed,...(adAccount?{adAccountId:String(adAccount.account_id||adAccount.id).replace(/^act_/,'')}:{}) ,updatedAt:FieldValue.serverTimestamp()},{merge:true});
     batch.delete(stateRef); await batch.commit();
     const appUrl=(process.env.FRONTEND_URL||'https://pm.retiredyoung.it/').replace(/\/$/,'');
     return Response.redirect(`${appUrl}/?meta=connected&pages=1`,302);
-  } catch(e){console.error('meta-oauth-callback:',e);return new Response(`Meta connection failed: ${e.message||'unknown error'}`,{status:500});}
+  } catch(e){console.error('meta-oauth-callback failed',describeGraphError(e));return new Response(`Meta connection failed: ${graphErrorSummary(e)||'unknown error'}`,{status:500});}
 }
 export const config={path:'/.netlify/functions/meta-oauth-callback'};

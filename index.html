@@ -3388,7 +3388,7 @@ window.syncMetaLeads=async()=>{
     const response=await fetch('https://rymanager.netlify.app/.netlify/functions/meta-lead-sync',{method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:'{}'});
     const data=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(data.error||'Impossibile recuperare i lead.');
-    status.textContent=`✅ Sincronizzazione completata · ${data.imported} importati · ${data.formsScanned??0} moduli · ${data.scanned??0} lead controllati · ${data.duplicates??0} già presenti · ${data.filtered??0} fuori campagna · ${data.outsideLookback??0} oltre ${data.lookbackDays??30} giorni`;
+    status.textContent=`✅ Sincronizzazione completata · ${data.imported} importati · ${data.adsMatched??0} inserzioni corrispondenti (${data.adLeadsScanned??0} lead) · ${data.formsScanned??0} moduli (${data.scanned??0} lead) · ${data.duplicates??0} già presenti · ${data.filtered??0} fuori campagna · ${data.outsideLookback??0} oltre ${data.lookbackDays??30} giorni`;
     status.style.color='var(--green)';
   }catch(error){err.textContent='Sincronizzazione non riuscita: '+(error.message||'riprova.');err.style.display='block';}
   finally{btn.disabled=false;btn.textContent='Recupera lead recenti →';}

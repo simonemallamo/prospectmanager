@@ -1,6 +1,7 @@
 import { db, FieldValue, verifyBearer, getMetaIntegrationConfig, isMetaIntegrationOwner } from './_firebase-admin.mjs';
+import { graph, describeGraphError, graphErrorSummary, isTokenError } from './_meta-graph.mjs';
+import { LEAD_FIELDS, lower, saveLead, withAdNames } from './_meta-leads.mjs';
 
-const GRAPH_VERSION=process.env.META_GRAPH_VERSION||'v27.0';
 const ALLOWED_ORIGINS=new Set(['https://simonemallamo.github.io','https://pm.retiredyoung.it']);
 const cors=origin=>({
   'Access-Control-Allow-Origin':ALLOWED_ORIGINS.has(origin)?origin:'https://pm.retiredyoung.it',
@@ -8,42 +9,6 @@ const cors=origin=>({
   'Access-Control-Allow-Headers':'Authorization, Content-Type',
   'Vary':'Origin'
 });
-const clean=value=>typeof value==='string'?value.trim():'';
-const lower=value=>clean(value).toLocaleLowerCase();
-function fieldMap(fields=[]){const result={};for(const field of fields){const key=lower(field.name);if(key)result[key]=clean(field.values?.[0]??'');}return result;}
-function value(fields,names){for(const name of names)if(fields[name])return fields[name];return '';}
-async function graph(path,params={}){
-  const url=/^https?:\/\//.test(path)?new URL(path):new URL(`https://graph.facebook.com/${GRAPH_VERSION}/${path}`);
-  for(const [key,item] of Object.entries(params))if(item!=null)url.searchParams.set(key,String(item));
-  const response=await fetch(url),data=await response.json();
-  if(!response.ok||data.error)throw new Error(data?.error?.message||`Meta Graph API error (${response.status})`);
-  return data;
-}
-async function saveLead(lead,page,allowedName){
-  const leadId=String(lead.id||'');
-  if(!leadId)return 'ignored';
-  const existing=await db.collection('meta_leads').doc(leadId).get();
-  if(existing.exists)return 'duplicate';
-  if(allowedName&&![lead.campaign_name,lead.ad_name].some(name=>lower(name)===allowedName))return 'filtered';
-  const fields=fieldMap(lead.field_data||{});
-  const prospect={
-    name:value(fields,['full_name','name','nome','nome completo'])||value(fields,['email'])||value(fields,['phone_number','phone','telefono','cellulare'])||`Meta Lead ${leadId}`,
-    channel:'Facebook Ads',source:'Meta Lead Ads',sourceDetail:'leadgen',
-    phone:value(fields,['phone_number','phone','telefono','cellulare','mobile']),
-    email:value(fields,['email','e-mail']),country:value(fields,['country','paese']),
-    provincia:value(fields,['province','provincia','state','region']),uid:page.uid,
-    presentation:false,followUps:[false,false,false,false],payment:false,iscritto:false,contattato:false,
-    metaLeadId:leadId,metaPageId:String(page.pageId),metaPageName:page.pageName||'',
-    campaignId:lead.campaign_id||'',campaignName:lead.campaign_name||'',adSetId:lead.adset_id||'',
-    adSetName:lead.adset_name||'',adId:lead.ad_id||'',adName:lead.ad_name||'',formId:lead.form_id||'',
-    createdAt:FieldValue.serverTimestamp(),lastCheckAt:null,_insertedAt:Date.now()
-  };
-  const prospectRef=db.collection('prospects').doc(),batch=db.batch();
-  batch.set(prospectRef,prospect);
-  batch.set(db.collection('meta_leads').doc(leadId),{leadId,prospectId:prospectRef.id,uid:page.uid,pageId:String(page.pageId),receivedAt:FieldValue.serverTimestamp()});
-  await batch.commit();
-  return 'imported';
-}
 export default async function handler(request){
   const origin=request.headers.get('origin')||'';
   const reply=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors(origin),'Content-Type':'application/json; charset=utf-8'}});
@@ -77,61 +42,82 @@ export default async function handler(request){
       page={...page,uid:identity.uid,ownerEmail:String(identity.email||'').trim().toLowerCase(),appKey:config.key};
     }
     if(!page.pageAccessToken)return reply({error:'Il collegamento della Pagina non contiene più un token valido. Ricollega il tuo account Meta.'},409);
-    const target=lower(config.campaignName),cutoff=Date.now()-30*24*60*60*1000;
-    let imported=0,duplicates=0,filtered=0,scanned=0,formsScanned=0,outsideLookback=0;
-    let formsUrl=`${config.pageId}/leadgen_forms`;
-    for(let formPage=0;formPage<5&&formsUrl;formPage++){
-      const formData=await graph(formsUrl,{access_token:page.pageAccessToken,fields:'id,name',limit:100});
-      for(const form of formData.data||[]){
-        formsScanned++;
-        let leadsUrl=`${form.id}/leads`;
-        for(let leadPage=0;leadPage<3&&leadsUrl;leadPage++){
-          const leadData=await graph(leadsUrl,{access_token:page.pageAccessToken,fields:'id,created_time,field_data,ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,form_id',limit:100});
-          for(const lead of leadData.data||[]){
-            scanned++;
-            if(lead.created_time&&Date.parse(lead.created_time)<cutoff){outsideLookback++;continue;}
-            const result=await saveLead({...lead,form_id:lead.form_id||form.id},page,target);
-            if(result==='imported')imported++;
-            else if(result==='duplicate')duplicates++;
-            else filtered++;
+    // Token split required by Meta:
+    //  - user token (ads_read): ad account and ad objects (act_<id>/ads, <ad_id>)
+    //  - Page token (leads_retrieval + pages_manage_ads): lead forms and leads
+    // Calling act_<id>/ads with the Page token is what returned
+    // "(#100) Unsupported get request": a Page token cannot load a personal ad account.
+    const userToken=page.userAccessToken||'';
+    if(config.adAccountId&&!userToken)return reply({error:'Il collegamento Meta è precedente alla correzione e non contiene il token utente per l’account pubblicitario. Premi “Ricollega account Meta” e autorizza di nuovo.',needsReconnect:true},409);
+    const target=lower(config.campaignName),cutoff=Date.now()-30*24*60*60*1000,nameCache=new Map();
+    const stats={imported:0,duplicates:0,filtered:0,scanned:0,formsScanned:0,outsideLookback:0,adsScanned:0,adsMatched:[],adLeadsScanned:0,lookbackDays:30};
+    const errors=[];
+    const recordError=(phase,error)=>{const detail={phase,...describeGraphError(error)};errors.push(detail);console.error('meta-lead-sync graph error',detail);};
+    const handleLead=async lead=>{
+      if(lead.created_time&&Date.parse(lead.created_time)<cutoff){stats.outsideLookback++;return;}
+      const result=await saveLead(await withAdNames(lead,{userToken,cache:nameCache}),page,target);
+      if(result==='imported')stats.imported++;else if(result==='duplicate')stats.duplicates++;else stats.filtered++;
+    };
+    const readLeads=async(objectId,label,onLead)=>{
+      // Page token first; fall back to the user token if Meta rejects it for this object.
+      let token=page.pageAccessToken,tokenKind='page',url=`${objectId}/leads`;
+      for(let p=0;p<10&&url;p++){
+        let data;
+        try{data=await graph(url,{token,tokenKind,params:{fields:LEAD_FIELDS,limit:100}});}
+        catch(error){
+          if(p===0&&tokenKind==='page'&&userToken&&!isTokenError(error)){
+            console.warn('meta-lead-sync page token rejected, retrying with user token',describeGraphError(error));
+            token=userToken;tokenKind='user';p--;continue;
           }
-          leadsUrl=leadData.paging?.next||'';
+          throw error;
         }
+        for(const lead of data.data||[])await onLead(lead);
+        url=data.paging?.next||'';
       }
-      formsUrl=formData.paging?.next||'';
-    }
-    let adsScanned=0,adsMatched=0,adLeadsScanned=0;
+    };
+    // 1. Ads in the personal ad account whose ad, ad set or campaign name matches.
     if(config.adAccountId){
-      let adsUrl=`act_${String(config.adAccountId).replace(/^act_/,'')}/ads`;
-      for(let adsPage=0;adsPage<10&&adsUrl;adsPage++){
-        const adsData=await graph(adsUrl,{access_token:page.pageAccessToken,fields:'id,name,adset{id,name},campaign{id,name}',limit:100});
-        for(const ad of adsData.data||[]){
-          adsScanned++;
-          const campaignName=clean(ad.campaign?.name),adName=clean(ad.name);
-          if(![campaignName,adName].some(name=>lower(name)===target))continue;
-          adsMatched++;
-          let adLeadsUrl=`${ad.id}/leads`;
-          for(let adLeadPage=0;adLeadPage<3&&adLeadsUrl;adLeadPage++){
-            const adLeadData=await graph(adLeadsUrl,{access_token:page.pageAccessToken,fields:'id,created_time,field_data,ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,form_id',limit:100});
-            for(const lead of adLeadData.data||[]){
-              adLeadsScanned++;
-              if(lead.created_time&&Date.parse(lead.created_time)<cutoff){outsideLookback++;continue;}
-              const result=await saveLead({...lead,ad_name:lead.ad_name||adName,adset_name:lead.adset_name||ad.adset?.name||'',campaign_name:lead.campaign_name||campaignName},page,target);
-              if(result==='imported')imported++;
-              else if(result==='duplicate')duplicates++;
-              else filtered++;
-            }
-            adLeadsUrl=adLeadData.paging?.next||'';
+      try{
+        let adsUrl=`act_${String(config.adAccountId).replace(/^act_/,'')}/ads`;
+        for(let p=0;p<10&&adsUrl;p++){
+          const adsData=await graph(adsUrl,{token:userToken,tokenKind:'user',params:{fields:'id,name,effective_status,adset{id,name},campaign{id,name}',limit:100}});
+          for(const ad of adsData.data||[]){
+            stats.adsScanned++;
+            const names={ad_name:ad.name||'',adset_id:ad.adset?.id||'',adset_name:ad.adset?.name||'',campaign_id:ad.campaign?.id||'',campaign_name:ad.campaign?.name||''};
+            if(![names.ad_name,names.adset_name,names.campaign_name].some(name=>lower(name)===target))continue;
+            stats.adsMatched.push({id:ad.id,name:ad.name||'',status:ad.effective_status||''});
+            nameCache.set(ad.id,names);
+            try{await readLeads(ad.id,'ad',async lead=>{stats.adLeadsScanned++;await handleLead({...lead,ad_id:lead.ad_id||ad.id});});}
+            catch(error){recordError(`leads of ad ${ad.id}`,error);}
           }
+          adsUrl=adsData.paging?.next||'';
         }
-        adsUrl=adsData.paging?.next||'';
-      }
+      }catch(error){recordError('ad account ads',error);}
     }
-    return reply({ok:true,imported,duplicates,filtered,scanned,formsScanned,adsScanned,adsMatched,adLeadsScanned,outsideLookback,lookbackDays:30});
+    // 2. Every lead form on the Page (catches leads not reachable from the ad edge).
+    try{
+      let formsUrl=`${config.pageId}/leadgen_forms`;
+      for(let p=0;p<5&&formsUrl;p++){
+        const formData=await graph(formsUrl,{token:page.pageAccessToken,tokenKind:'page',params:{fields:'id,name,status,leads_count',limit:100}});
+        for(const form of formData.data||[]){
+          stats.formsScanned++;
+          try{await readLeads(form.id,'form',async lead=>{stats.scanned++;await handleLead({...lead,form_id:lead.form_id||form.id});});}
+          catch(error){recordError(`leads of form ${form.id}`,error);}
+        }
+        formsUrl=formData.paging?.next||'';
+      }
+    }catch(error){recordError('page lead forms',error);}
+    const summary={...stats,adsMatched:stats.adsMatched.length,matchedAds:stats.adsMatched,errors};
+    console.info('meta-lead-sync outcome',{...summary,errors:errors.length});
+    if(errors.length){
+      const reconnect=errors.some(item=>item.code===190||item.code===102);
+      return reply({...summary,ok:false,needsReconnect:reconnect,error:`${errors.length} richieste Meta non riuscite. Prima: ${errors[0].phase} · ${errors[0].method||'GET'} ${errors[0].endpoint||''} (token ${errors[0].tokenKind||'?'}) → codice ${errors[0].code??'?'}${errors[0].subcode?'/'+errors[0].subcode:''}: ${errors[0].message}${reconnect?' · Ricollega l’account Meta.':''}`},502);
+    }
+    return reply({...summary,ok:true});
   }catch(error){
-    console.error('meta-lead-sync:',error?.message||'Meta lead sync failed');
+    console.error('meta-lead-sync failed',describeGraphError(error));
     const status=error?.message==='Missing Bearer token'?401:500;
-    return reply({error:error?.message||'Sincronizzazione non riuscita.'},status);
+    return reply({error:graphErrorSummary(error)||'Sincronizzazione non riuscita.'},status);
   }
 }
 export const config={path:'/.netlify/functions/meta-lead-sync'};
