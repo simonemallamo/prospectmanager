@@ -77,7 +77,7 @@ export default async function handler(request){
     }
     if(!page.pageAccessToken)return reply({error:'Il collegamento della Pagina non contiene più un token valido. Ricollega il tuo account Meta.'},409);
     const target=lower(config.campaignName),cutoff=Date.now()-30*24*60*60*1000;
-    let imported=0,duplicates=0,filtered=0,scanned=0,formsScanned=0;
+    let imported=0,duplicates=0,filtered=0,scanned=0,formsScanned=0,outsideLookback=0;
     let formsUrl=`${config.pageId}/leadgen_forms`;
     for(let formPage=0;formPage<5&&formsUrl;formPage++){
       const formData=await graph(formsUrl,{access_token:page.pageAccessToken,fields:'id,name',limit:100});
@@ -88,7 +88,7 @@ export default async function handler(request){
           const leadData=await graph(leadsUrl,{access_token:page.pageAccessToken,fields:'id,created_time,field_data,ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,form_id',limit:100});
           for(const lead of leadData.data||[]){
             scanned++;
-            if(lead.created_time&&Date.parse(lead.created_time)<cutoff)continue;
+            if(lead.created_time&&Date.parse(lead.created_time)<cutoff){outsideLookback++;continue;}
             const result=await saveLead({...lead,form_id:lead.form_id||form.id},page,target);
             if(result==='imported')imported++;
             else if(result==='duplicate')duplicates++;
@@ -99,7 +99,7 @@ export default async function handler(request){
       }
       formsUrl=formData.paging?.next||'';
     }
-    return reply({ok:true,imported,duplicates,filtered,scanned,formsScanned,lookbackDays:30});
+    return reply({ok:true,imported,duplicates,filtered,scanned,formsScanned,outsideLookback,lookbackDays:30});
   }catch(error){
     console.error('meta-lead-sync:',error?.message||'Meta lead sync failed');
     const status=error?.message==='Missing Bearer token'?401:500;
