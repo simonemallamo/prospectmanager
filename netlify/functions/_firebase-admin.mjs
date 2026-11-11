@@ -38,6 +38,7 @@ export function getMetaIntegrationConfig(emailOrToken) {
     appSecret: process.env[`META_APP_SECRET_${suffix}`] || (legacy ? process.env.META_APP_SECRET : ''),
     configId: process.env[`META_BUSINESS_LOGIN_CONFIG_ID_${suffix}`] || (legacy ? process.env.META_BUSINESS_LOGIN_CONFIG_ID : ''),
     pageId: process.env[`META_PAGE_ID_${suffix}`] || (legacy ? process.env.META_PAGE_ID : ''),
+    adAccountId: process.env[`META_AD_ACCOUNT_ID_${suffix}`] || '',
     campaignName: process.env[`META_CAMPAIGN_NAME_${suffix}`] || (legacy ? (process.env.META_CAMPAIGN_NAME || 'ugc moduli') : '')
   };
 }

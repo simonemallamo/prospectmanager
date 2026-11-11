@@ -58,6 +58,7 @@ export default async function handler(request){
     const pageSnap=await pageRef.get();
     if(!pageSnap.exists)return reply({error:'Pagina Meta non collegata.'},409);
     let page=pageSnap.data();
+    if(config.adAccountId&&String(page.adAccountId||'').replace(/^act_/,'')!==String(config.adAccountId).replace(/^act_/,''))return reply({error:'L’account pubblicitario personale non risulta collegato. Ricollega Meta scegliendo “Il tuo account” > Simone Mallamo e autorizzando l’account pubblicitario corretto.'},409);
     // The signed-in owner connection is the authoritative mapping. A prior
     // relink can leave meta_pages with a stale UID/email; repair only when this
     // verified account's connection explicitly lists the configured Page.
@@ -99,7 +100,34 @@ export default async function handler(request){
       }
       formsUrl=formData.paging?.next||'';
     }
-    return reply({ok:true,imported,duplicates,filtered,scanned,formsScanned,outsideLookback,lookbackDays:30});
+    let adsScanned=0,adsMatched=0,adLeadsScanned=0;
+    if(config.adAccountId){
+      let adsUrl=`act_${String(config.adAccountId).replace(/^act_/,'')}/ads`;
+      for(let adsPage=0;adsPage<10&&adsUrl;adsPage++){
+        const adsData=await graph(adsUrl,{access_token:page.pageAccessToken,fields:'id,name,adset{id,name},campaign{id,name}',limit:100});
+        for(const ad of adsData.data||[]){
+          adsScanned++;
+          const campaignName=clean(ad.campaign?.name),adName=clean(ad.name);
+          if(![campaignName,adName].some(name=>lower(name)===target))continue;
+          adsMatched++;
+          let adLeadsUrl=`${ad.id}/leads`;
+          for(let adLeadPage=0;adLeadPage<3&&adLeadsUrl;adLeadPage++){
+            const adLeadData=await graph(adLeadsUrl,{access_token:page.pageAccessToken,fields:'id,created_time,field_data,ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,form_id',limit:100});
+            for(const lead of adLeadData.data||[]){
+              adLeadsScanned++;
+              if(lead.created_time&&Date.parse(lead.created_time)<cutoff){outsideLookback++;continue;}
+              const result=await saveLead({...lead,ad_name:lead.ad_name||adName,adset_name:lead.adset_name||ad.adset?.name||'',campaign_name:lead.campaign_name||campaignName},page,target);
+              if(result==='imported')imported++;
+              else if(result==='duplicate')duplicates++;
+              else filtered++;
+            }
+            adLeadsUrl=adLeadData.paging?.next||'';
+          }
+        }
+        adsUrl=adsData.paging?.next||'';
+      }
+    }
+    return reply({ok:true,imported,duplicates,filtered,scanned,formsScanned,adsScanned,adsMatched,adLeadsScanned,outsideLookback,lookbackDays:30});
   }catch(error){
     console.error('meta-lead-sync:',error?.message||'Meta lead sync failed');
     const status=error?.message==='Missing Bearer token'?401:500;
