@@ -54,10 +54,28 @@ export default async function handler(request){
     if(!isMetaIntegrationOwner(identity))return reply({error:'Accesso non autorizzato. Verifica l’email del tuo account.'},403);
     const config=getMetaIntegrationConfig(identity);
     if(!config?.campaignName)return reply({error:'Campagna o inserzione Meta non configurata.'},409);
-    const pageSnap=await db.collection('meta_pages').doc(String(config.pageId)).get();
+    const pageRef=db.collection('meta_pages').doc(String(config.pageId));
+    const pageSnap=await pageRef.get();
     if(!pageSnap.exists)return reply({error:'Pagina Meta non collegata.'},409);
-    const page=pageSnap.data();
-    if(page.uid!==identity.uid||String(page.ownerEmail||'').toLowerCase()!==String(identity.email||'').toLowerCase())return reply({error:'La Pagina Meta collegata non appartiene a questo profilo.'},403);
+    let page=pageSnap.data();
+    // The signed-in owner connection is the authoritative mapping. A prior
+    // relink can leave meta_pages with a stale UID/email; repair only when this
+    // verified account's connection explicitly lists the configured Page.
+    const currentConnectionSnap=await db.collection('meta_connections').doc(identity.uid).get();
+    const currentConnection=currentConnectionSnap.data();
+    const connectionOwnsPage=currentConnection?.connected===true&&Array.isArray(currentConnection.pages)&&currentConnection.pages.some(item=>String(item.id)===String(config.pageId));
+    if(!connectionOwnsPage)return reply({error:'Il collegamento Meta del tuo account non include la Pagina configurata. Ricollega il tuo account Meta.'},409);
+    if(page.uid&&page.uid!==identity.uid){
+      const priorConnectionSnap=await db.collection('meta_connections').doc(page.uid).get();
+      const priorConnection=priorConnectionSnap.data();
+      const priorStillOwnsPage=priorConnection?.connected===true&&Array.isArray(priorConnection.pages)&&priorConnection.pages.some(item=>String(item.id)===String(config.pageId));
+      if(priorStillOwnsPage)return reply({error:'La Pagina risulta ancora collegata a un altro profilo Meta. Ricollega la Pagina dal profilo corretto.'},409);
+    }
+    if(page.uid!==identity.uid||String(page.ownerEmail||'').trim().toLowerCase()!==String(identity.email||'').trim().toLowerCase()||page.appKey!==config.key){
+      await pageRef.set({uid:identity.uid,ownerEmail:String(identity.email||'').trim().toLowerCase(),appKey:config.key,updatedAt:FieldValue.serverTimestamp()},{merge:true});
+      page={...page,uid:identity.uid,ownerEmail:String(identity.email||'').trim().toLowerCase(),appKey:config.key};
+    }
+    if(!page.pageAccessToken)return reply({error:'Il collegamento della Pagina non contiene più un token valido. Ricollega il tuo account Meta.'},409);
     const target=lower(config.campaignName),cutoff=Date.now()-30*24*60*60*1000;
     let imported=0,duplicates=0,filtered=0,scanned=0,formsScanned=0;
     let formsUrl=`${config.pageId}/leadgen_forms`;
