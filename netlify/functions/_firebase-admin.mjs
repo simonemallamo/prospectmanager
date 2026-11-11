@@ -38,7 +38,9 @@ export function getMetaIntegrationConfig(emailOrToken) {
     appSecret: process.env[`META_APP_SECRET_${suffix}`] || (legacy ? process.env.META_APP_SECRET : ''),
     configId: process.env[`META_BUSINESS_LOGIN_CONFIG_ID_${suffix}`] || (legacy ? process.env.META_BUSINESS_LOGIN_CONFIG_ID : ''),
     pageId: process.env[`META_PAGE_ID_${suffix}`] || (legacy ? process.env.META_PAGE_ID : ''),
-    adAccountId: process.env[`META_AD_ACCOUNT_ID_${suffix}`] || '',
+    // The ID is configuration, not a credential. Keep Simone's personal
+    // account here to avoid exceeding Netlify's current function env limit.
+    adAccountId: process.env[`META_AD_ACCOUNT_ID_${suffix}`] || (key==='SIMONE' ? '534355994099908' : ''),
     campaignName: process.env[`META_CAMPAIGN_NAME_${suffix}`] || (legacy ? (process.env.META_CAMPAIGN_NAME || 'ugc moduli') : '')
   };
 }
