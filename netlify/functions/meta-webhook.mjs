@@ -47,8 +47,19 @@ export default async function handler(request){
     const signedOwner=getConfiguredMetaIntegrationConfigs().find(config=>validSignature(raw,signature,config.appSecret));
     if(!signedOwner)return json({error:'Invalid signature'},401);
     const body=JSON.parse(raw); if(body.object!=='page')return json({received:true,ignored:true}); const results=[];
-    for(const entry of body.entry||[])for(const change of entry.changes||[])if(change.field==='leadgen'){const leadId=change.value?.leadgen_id;if(!leadId||!entry.id)continue;try{results.push({pageId:entry.id,leadId,...await saveLead(leadId,entry.id,signedOwner.email)});}catch(e){console.error(e);results.push({pageId:entry.id,leadId,error:e.message});}}
+    for(const entry of body.entry||[])for(const change of entry.changes||[])if(change.field==='leadgen'){const leadId=change.value?.leadgen_id;if(!leadId||!entry.id)continue;try{results.push({pageId:entry.id,leadId,...await saveLead(leadId,entry.id,signedOwner.email)});}catch(e){console.warn('meta-webhook lead processing failed',{integration:signedOwner.key,errorType:e?.name||'Error'});results.push({error:true});}}
+    const outcome={integration:signedOwner.key,events:results.length,imported:0,duplicates:0,ignored:{},errors:0};
+    for(const result of results){
+      if(result.created)outcome.imported++;
+      else if(result.duplicate)outcome.duplicates++;
+      else if(result.ignored)outcome.ignored[result.reason||'unspecified']=(outcome.ignored[result.reason||'unspecified']||0)+1;
+      else if(result.error)outcome.errors++;
+    }
+    console.info('meta-webhook outcome',outcome);
+    // Let Meta retry failed lead retrievals or Firestore writes. Returning 200
+    // here used to acknowledge transient failures and silently lose the lead.
+    if(outcome.errors)return json({received:false,retry:true},503);
     return json({received:true,results});
-  }catch(e){console.error('meta-webhook:',e);return json({received:true,error:'processing_error'});}
+  }catch(e){console.warn('meta-webhook request processing failed',{errorType:e?.name||'Error'});return json({received:false,retry:true},503);}
 }
 export const config={path:'/.netlify/functions/meta-webhook'};
