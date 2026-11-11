@@ -1,6 +1,6 @@
 import { db, FieldValue, verifyBearer, getMetaIntegrationConfig, isMetaIntegrationOwner } from './_firebase-admin.mjs';
 import { graph, describeGraphError, graphErrorSummary, isTokenError } from './_meta-graph.mjs';
-import { LEAD_FIELDS, lower, saveLead, withAdNames } from './_meta-leads.mjs';
+import { LEAD_FIELDS, lower, saveLead, withAdNames, ensureFieldData, extractContact } from './_meta-leads.mjs';
 
 const ALLOWED_ORIGINS=new Set(['https://simonemallamo.github.io','https://pm.retiredyoung.it']);
 const cors=origin=>({
@@ -50,13 +50,20 @@ export default async function handler(request){
     const userToken=page.userAccessToken||'';
     if(config.adAccountId&&!userToken)return reply({error:'Il collegamento Meta è precedente alla correzione e non contiene il token utente per l’account pubblicitario. Premi “Ricollega account Meta” e autorizza di nuovo.',needsReconnect:true},409);
     const target=lower(config.campaignName),cutoff=Date.now()-30*24*60*60*1000,nameCache=new Map();
-    const stats={imported:0,duplicates:0,filtered:0,scanned:0,formsScanned:0,outsideLookback:0,adsScanned:0,adsMatched:[],adLeadsScanned:0,lookbackDays:30};
+    const fieldKeys=new Set();
+    const stats={imported:0,repaired:0,withoutContact:0,fieldSources:{},duplicates:0,filtered:0,scanned:0,formsScanned:0,outsideLookback:0,adsScanned:0,adsMatched:[],adLeadsScanned:0,lookbackDays:30};
     const errors=[];
     const recordError=(phase,error)=>{const detail={phase,...describeGraphError(error)};errors.push(detail);console.error('meta-lead-sync graph error',detail);};
     const handleLead=async lead=>{
       if(lead.created_time&&Date.parse(lead.created_time)<cutoff){stats.outsideLookback++;return;}
-      const result=await saveLead(await withAdNames(lead,{userToken,cache:nameCache}),page,target);
-      if(result==='imported')stats.imported++;else if(result==='duplicate')stats.duplicates++;else stats.filtered++;
+      const {lead:full,fieldSource}=await ensureFieldData(lead,{pageToken:page.pageAccessToken,userToken});
+      stats.fieldSources[fieldSource]=(stats.fieldSources[fieldSource]||0)+1;
+      // Field keys only (never values) to diagnose unmapped form questions.
+      const contact=extractContact(full.field_data||[]);
+      for(const key of contact.fieldKeys)fieldKeys.add(key);
+      if(!contact.name&&!contact.phone&&!contact.email)stats.withoutContact++;
+      const result=await saveLead(await withAdNames(full,{userToken,cache:nameCache}),page,target);
+      if(result==='imported')stats.imported++;else if(result==='repaired')stats.repaired++;else if(result==='duplicate')stats.duplicates++;else stats.filtered++;
     };
     const readLeads=async(objectId,label,onLead)=>{
       // Page token first; fall back to the user token if Meta rejects it for this object.
@@ -107,7 +114,7 @@ export default async function handler(request){
         formsUrl=formData.paging?.next||'';
       }
     }catch(error){recordError('page lead forms',error);}
-    const summary={...stats,adsMatched:stats.adsMatched.length,matchedAds:stats.adsMatched,errors};
+    const summary={...stats,adsMatched:stats.adsMatched.length,matchedAds:stats.adsMatched,fieldKeys:[...fieldKeys],errors};
     console.info('meta-lead-sync outcome',{...summary,errors:errors.length});
     if(errors.length){
       const reconnect=errors.some(item=>item.code===190||item.code===102);

@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { db, json, adminAuth, getMetaIntegrationConfig, getConfiguredMetaIntegrationConfigs } from './_firebase-admin.mjs';
 import { graph, describeGraphError } from './_meta-graph.mjs';
-import { LEAD_FIELDS, lower, saveLead, withAdNames } from './_meta-leads.mjs';
+import { LEAD_FIELDS, lower, saveLead, withAdNames, ensureFieldData } from './_meta-leads.mjs';
 function validSignature(raw, signature, secret){
   if(!secret||!signature?.startsWith('sha256='))return false;
   const actual=Buffer.from(signature.slice(7),'hex');
@@ -26,10 +26,12 @@ async function processLead(leadId,pageId,signedOwnerEmail){
   // The configured label may be the campaign, ad set or ad name. Simone's
   // value is the ad "UGC simone" inside campaign "UGC Ads"; names missing from
   // the Page-token response are resolved from the ad with the user token.
-  const enriched=await withAdNames(lead,{userToken:page.userAccessToken||''});
+  const {lead:full,fieldSource}=await ensureFieldData(lead,{pageToken:page.pageAccessToken,userToken:page.userAccessToken||''});
+  if(fieldSource==='none')console.warn('meta-webhook lead without field_data',{pageId:String(pageId)});
+  const enriched=await withAdNames(full,{userToken:page.userAccessToken||''});
   const result=await saveLead({...enriched,id:lead.id||String(leadId)},{...page,pageId:String(pageId)},target);
   if(result==='imported')return{created:true,uid:page.uid};
-  if(result==='duplicate')return{duplicate:true};
+  if(result==='duplicate'||result==='repaired')return{duplicate:true};
   return{ignored:true,reason:result==='filtered'?'campaign_or_ad_not_allowed':'ignored'};
 }
 export default async function handler(request){
