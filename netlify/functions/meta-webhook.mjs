@@ -18,8 +18,10 @@ async function saveLead(leadId,pageId,signedOwnerEmail){
   if(!pageOwnerEmail||pageOwnerEmail!==signedOwnerEmail)return{ignored:true,reason:'app_page_owner_mismatch'};
   const lr=db.collection('meta_leads').doc(String(leadId)); if((await lr.get()).exists)return{duplicate:true};
   const lead=await graph(String(leadId),{access_token:page.pageAccessToken,fields:'id,created_time,field_data,ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,form_id'});
-  const ownerConfig=getMetaIntegrationConfig(pageOwnerEmail),allowedCampaign=clean(ownerConfig?.campaignName).toLocaleLowerCase();
-  if(allowedCampaign&&clean(lead.campaign_name).toLocaleLowerCase()!==allowedCampaign)return{ignored:true,reason:'campaign_not_allowed'};
+  const ownerConfig=getMetaIntegrationConfig(pageOwnerEmail),allowedName=clean(ownerConfig?.campaignName).toLocaleLowerCase();
+  // The configured Meta label may be either the campaign name or the ad name.
+  // Simone's configured value is the ad "UGC simone" inside campaign "UGC Ads".
+  if(allowedName&&![lead.campaign_name,lead.ad_name].some(value=>clean(value).toLocaleLowerCase()===allowedName))return{ignored:true,reason:'campaign_or_ad_not_allowed'};
   const f=fieldMap(lead.field_data||{});
   const prospect={
     name:val(f,['full_name','name','nome','nome completo'])||val(f,['email'])||val(f,['phone_number','phone','telefono','cellulare'])||`Meta Lead ${leadId}`,
