@@ -28,7 +28,15 @@ export default async function handler(request) {
     if (!appId || !configId || !redirectUri) return corsJson({error:'La configurazione Meta per questo account non è ancora completa.'},500,origin);
     const state = crypto.randomBytes(32).toString('hex');
     await db.collection('meta_oauth_states').doc(state).set({uid,ownerEmail:metaConfig.email,createdAt:new Date(),expiresAt:new Date(Date.now()+10*60*1000)});
-    const params = new URLSearchParams({client_id:appId, redirect_uri:redirectUri, state, config_id:configId, response_type:'code'});
+    const params = new URLSearchParams({client_id:appId, redirect_uri:redirectUri, state, response_type:'code'});
+    if(metaConfig.key==='SIMONE'){
+      // Simone's ad account is a personal account, not a Business Portfolio
+      // asset. Use standard Facebook Login so /me/adaccounts can return it.
+      params.set('scope','ads_read,business_management,leads_retrieval,pages_manage_ads,pages_manage_metadata,pages_read_engagement,pages_show_list');
+      params.set('auth_type','rerequest');
+    }else{
+      params.set('config_id',configId);
+    }
     const authUrl = `https://www.facebook.com/dialog/oauth?${params}`;
     return corsJson({authUrl},200,origin);
   } catch(e) {
