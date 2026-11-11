@@ -50,7 +50,7 @@ export default async function handler(request){
     const userToken=page.userAccessToken||'';
     if(config.adAccountId&&!userToken)return reply({error:'Il collegamento Meta è precedente alla correzione e non contiene il token utente per l’account pubblicitario. Premi “Ricollega account Meta” e autorizza di nuovo.',needsReconnect:true},409);
     const target=lower(config.campaignName),cutoff=Date.now()-30*24*60*60*1000,nameCache=new Map();
-    const fieldKeys=new Set();
+    const fieldKeys=new Set(),formCache=new Map();
     const stats={imported:0,repaired:0,withoutContact:0,fieldSources:{},duplicates:0,filtered:0,scanned:0,formsScanned:0,outsideLookback:0,adsScanned:0,adsMatched:[],adLeadsScanned:0,lookbackDays:30};
     const errors=[];
     const recordError=(phase,error)=>{const detail={phase,...describeGraphError(error)};errors.push(detail);console.error('meta-lead-sync graph error',detail);};
@@ -62,7 +62,7 @@ export default async function handler(request){
       const contact=extractContact(full.field_data||[]);
       for(const key of contact.fieldKeys)fieldKeys.add(key);
       if(!contact.name&&!contact.phone&&!contact.email)stats.withoutContact++;
-      const result=await saveLead(await withAdNames(full,{userToken,cache:nameCache}),page,target);
+      const result=await saveLead(await withAdNames(full,{userToken,cache:nameCache}),page,target,{pageToken:page.pageAccessToken,userToken,formCache});
       if(result==='imported')stats.imported++;else if(result==='repaired')stats.repaired++;else if(result==='duplicate')stats.duplicates++;else stats.filtered++;
     };
     const readLeads=async(objectId,label,onLead)=>{

@@ -3,35 +3,80 @@
 import { db, FieldValue } from './_firebase-admin.mjs';
 import { graph, describeGraphError } from './_meta-graph.mjs';
 
-export const LEAD_FIELDS = 'id,created_time,field_data,ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,form_id';
+export const LEAD_FIELDS = 'id,created_time,field_data,ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,form_id,platform';
 const clean = value => typeof value === 'string' ? value.trim() : '';
 export const lower = value => clean(value).toLocaleLowerCase();
 // "Numero di telefono" / "numero_di_telefono" / "Téléphone" → "numero_di_telefono" / "telephone"
 const normKey = value => clean(value).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-function fieldMap(fields = []) { const result = {}; for (const field of fields) { const key = normKey(field.name); if (key) result[key] = clean(field.values?.[0] ?? ''); } return result; }
-const pick = (fields, names) => { for (const name of names) if (fields[name]) return fields[name]; return ''; };
-const pickBy = (fields, test) => { for (const [key, item] of Object.entries(fields)) if (item && test(key, item)) return item; return ''; };
+function fieldMap(fields = []) { const result = {}; for (const field of fields) { const key = normKey(field.name); if (key) result[key] = clean((field.values || []).join(', ')); } return result; }
 
 // Maps Meta instant-form answers to prospect contact fields. Handles standard
 // keys (full_name, phone_number, email), split first/last name and custom
 // Italian questions such as "Nome e cognome" or "Numero di telefono".
+// usedKeys lists the keys consumed as contact data, so the remaining answers
+// can be stored as questionnaire responses.
 export function extractContact(fieldData = []) {
-  const f = fieldMap(fieldData);
-  const first = pick(f, ['first_name', 'nome']), last = pick(f, ['last_name', 'cognome']);
-  const name = pick(f, ['full_name', 'name', 'nome_e_cognome', 'nome_cognome', 'nome_completo'])
-    || [first, last].filter(Boolean).join(' ')
-    || pickBy(f, key => /(^|_)(name|nome|nominativo)(_|$)/.test(key) && !/(company|azienda|societa|business)/.test(key));
-  const phone = pick(f, ['phone_number', 'phone', 'telefono', 'cellulare', 'mobile', 'numero_di_telefono', 'whatsapp'])
-    || pickBy(f, key => /(phone|telefono|cellulare|mobile|whatsapp|numero)/.test(key))
-    || pickBy(f, (key, item) => /^\+?[\d\s().-]{7,}$/.test(item));
-  const email = pick(f, ['email', 'e_mail']) || pickBy(f, key => /mail/.test(key)) || pickBy(f, (key, item) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item));
-  return {
-    name, phone, email,
-    country: pick(f, ['country', 'paese', 'nazione']),
-    provincia: pick(f, ['province', 'provincia', 'state', 'region', 'regione', 'city', 'citta']),
-    fieldKeys: Object.keys(f)
-  };
+  const f = fieldMap(fieldData), used = new Set();
+  const pick = names => { for (const name of names) if (f[name]) { used.add(name); return f[name]; } return ''; };
+  const pickBy = test => { for (const [key, item] of Object.entries(f)) if (item && !used.has(key) && test(key, item)) { used.add(key); return item; } return ''; };
+  let name = pick(['full_name', 'name', 'nome_e_cognome', 'nome_cognome', 'nome_completo']);
+  if (!name) { const first = pick(['first_name', 'nome']), last = pick(['last_name', 'cognome']); name = [first, last].filter(Boolean).join(' '); }
+  if (!name) name = pickBy(key => /(^|_)(name|nome|nominativo)(_|$)/.test(key) && !/(company|azienda|societa|business)/.test(key));
+  const email = pick(['email', 'e_mail']) || pickBy(key => /mail/.test(key)) || pickBy((key, item) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item));
+  const phone = pick(['phone_number', 'phone', 'telefono', 'cellulare', 'mobile', 'numero_di_telefono', 'whatsapp'])
+    || pickBy(key => /(phone|telefono|cellulare|mobile|whatsapp)/.test(key))
+    || pickBy((key, item) => /^\+?[\d\s().-]{7,}$/.test(item));
+  const country = pick(['country', 'paese', 'nazione']);
+  const provincia = pick(['province', 'provincia', 'state', 'region', 'regione', 'city', 'citta']);
+  return { name, phone, email, country, provincia, fieldKeys: Object.keys(f), usedKeys: used };
 }
+
+const prettyKey = key => { const text = key.replace(/_/g, ' ').trim(); return text.charAt(0).toUpperCase() + text.slice(1); };
+
+// Question labels as written in the form ("Quanto saresti dispost@ ad
+// investire…"), keyed by the normalized field key. Cached per form.
+async function questionLabels(formId, { pageToken, userToken, cache }) {
+  if (!formId) return {};
+  if (cache?.has(formId)) return cache.get(formId);
+  let labels = {};
+  for (const [token, tokenKind] of [[pageToken, 'page'], [userToken, 'user']]) {
+    if (!token) continue;
+    try {
+      const form = await graph(String(formId), { token, tokenKind, params: { fields: 'questions{key,label,type,options}' } });
+      for (const q of form.questions || []) {
+        const key = normKey(q.key);
+        if (!key) continue;
+        const choices = {};
+        for (const option of q.options || []) if (option?.key != null && option.value) choices[String(option.key)] = clean(option.value);
+        labels[key] = { label: clean(q.label), choices };
+      }
+      break;
+    } catch (error) {
+      console.warn('meta form questions lookup failed', describeGraphError(error));
+    }
+  }
+  cache?.set(formId, labels);
+  return labels;
+}
+
+// Every non-contact answer, in form order, as [{key, question, answer}].
+export async function questionnaireAnswers(lead, contact, options = {}) {
+  const rest = [];
+  for (const field of lead.field_data || []) {
+    const key = normKey(field.name);
+    if (!key || contact.usedKeys.has(key)) continue;
+    const raw = (field.values || []).map(clean).filter(Boolean);
+    if (raw.length) rest.push({ key, raw });
+  }
+  if (!rest.length) return [];
+  const labels = await questionLabels(lead.form_id, options);
+  // Multiple-choice answers arrive as option keys ("100_-_300€"); show the
+  // option text from the form, or at least turn underscores into spaces.
+  const readable = (key, raw) => labels[key]?.choices?.[raw] || (/\s/.test(raw) ? raw : raw.replace(/_/g, ' '));
+  return rest.map(({ key, raw }) => ({ key, question: labels[key]?.label || prettyKey(key), answer: raw.map(item => readable(key, item)).join(', ') }));
+}
+
+const platformLabel = value => ({ ig: 'Instagram', fb: 'Facebook', msg: 'Messenger', wa: 'WhatsApp', an: 'Audience Network' })[lower(value)] || clean(value);
 
 // The leads edge sometimes returns leads without field_data. Re-read the
 // single lead: Page token first, then the user token. Returns the token kind
@@ -82,9 +127,11 @@ const PLACEHOLDER = /^Meta Lead \d+$/;
 // prospect: if the lead already exists (sync and webhook racing, or a repeat
 // webhook delivery) the whole batch fails and nothing is written, so a lead is
 // never duplicated nor reassigned to another member. An existing prospect of
-// the same owner that still has the placeholder name is completed in place
-// (only empty contact fields are filled).
-export async function saveLead(lead, page, target) {
+// the same owner is completed in place: only empty fields are filled (name
+// only while it is still the "Meta Lead <id>" placeholder); stage, checkboxes
+// and owner are never touched.
+// options: { pageToken, userToken, formCache } to read the form question labels.
+export async function saveLead(lead, page, target, options = {}) {
   const leadId = String(lead.id || '');
   if (!leadId) return 'ignored';
   const leadRef = db.collection('meta_leads').doc(leadId);
@@ -92,17 +139,27 @@ export async function saveLead(lead, page, target) {
   const contact = extractContact(lead.field_data || []);
   if (existing.exists) {
     const { prospectId, uid } = existing.data() || {};
-    if (!prospectId || uid !== page.uid || !(contact.name || contact.phone || contact.email)) return 'duplicate';
+    if (!prospectId || uid !== page.uid || !(lead.field_data || []).length) return 'duplicate';
     const prospectRef = db.collection('prospects').doc(prospectId);
     const snap = await prospectRef.get();
     const current = snap.exists ? snap.data() : null;
-    if (!current || current.uid !== page.uid || !PLACEHOLDER.test(current.name || '')) return 'duplicate';
-    const patch = { name: contact.name || contact.email || contact.phone || current.name };
+    if (!current || current.uid !== page.uid) return 'duplicate';
+    const patch = {};
+    if (PLACEHOLDER.test(current.name || '') && (contact.name || contact.email || contact.phone)) patch.name = contact.name || contact.email || contact.phone;
     for (const key of ['phone', 'email', 'country', 'provincia']) if (!current[key] && contact[key]) patch[key] = contact[key];
+    if (!(Array.isArray(current.metaAnswers) && current.metaAnswers.length)) {
+      const answers = await questionnaireAnswers(lead, contact, { pageToken: options.pageToken, userToken: options.userToken, cache: options.formCache });
+      if (answers.length) patch.metaAnswers = answers;
+    }
+    if (!current.metaPlatform && lead.platform) patch.metaPlatform = platformLabel(lead.platform);
+    if (!current.metaCreatedTime && lead.created_time) patch.metaCreatedTime = lead.created_time;
+    if (!current.formId && lead.form_id) patch.formId = lead.form_id;
+    if (!Object.keys(patch).length) return 'duplicate';
     await prospectRef.update(patch);
     return 'repaired';
   }
   if (!matchesTarget(lead, target)) return 'filtered';
+  const metaAnswers = await questionnaireAnswers(lead, contact, { pageToken: options.pageToken, userToken: options.userToken, cache: options.formCache });
   const prospect = {
     name: contact.name || contact.email || contact.phone || `Meta Lead ${leadId}`,
     channel: 'Facebook Ads', source: 'Meta Lead Ads', sourceDetail: 'leadgen',
@@ -111,7 +168,7 @@ export async function saveLead(lead, page, target) {
     metaLeadId: leadId, metaPageId: String(page.pageId), metaPageName: page.pageName || '',
     campaignId: lead.campaign_id || '', campaignName: lead.campaign_name || '', adSetId: lead.adset_id || '',
     adSetName: lead.adset_name || '', adId: lead.ad_id || '', adName: lead.ad_name || '', formId: lead.form_id || '',
-    metaCreatedTime: lead.created_time || '',
+    metaCreatedTime: lead.created_time || '', metaPlatform: platformLabel(lead.platform), metaAnswers,
     createdAt: FieldValue.serverTimestamp(), lastCheckAt: null, _insertedAt: Date.now()
   };
   const prospectRef = db.collection('prospects').doc(), batch = db.batch();

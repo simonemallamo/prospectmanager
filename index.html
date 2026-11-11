@@ -1052,6 +1052,7 @@ td{padding:13px 12px;}
     </div>
     <div class="fg"><label>Telefono</label><input type="text" id="p-phone" placeholder="Es. +39 333 123 4567"></div>
     <div class="fg"><label>Note</label><input type="text" id="p-note" placeholder="Es. Interessato al business..."></div>
+    <div class="fg" id="p-meta-box" style="display:none;"></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeProspectModal()">Annulla</button>
       <button class="btn-save" onclick="saveProspect()">Salva</button>
@@ -1803,7 +1804,7 @@ window.renderTable = () => {
     const conoscitiva=typeof p.conoscitiva==='boolean'?p.conoscitiva:!!p.contattato;
     return `<tr data-id="${p.id}">
       <td style="padding:9px 8px;"><input type="checkbox" class="row-check" value="${p.id}" onchange="updateBulkBar()" style="cursor:pointer;width:15px;height:15px;accent-color:var(--accent);"></td>
-      <td><div class="nm">${x(p.name)}</div>${p.channel||p.note?`<div class="note">${x(p.channel||'')}${p.channel&&p.note?' · ':''}${x(p.note||'')}</div>`:''}</td>
+      <td><div class="nm">${x(p.name)}</div>${p.channel||p.note?`<div class="note">${x(p.channel||'')}${p.channel&&p.note?' · ':''}${x(p.note||'')}</div>`:''}${metaLeadSummary(p)?`<div class="note" style="color:var(--accent);">${x(metaLeadSummary(p))}</div>`:''}</td>
       <td style="white-space:nowrap;font-size:12px;color:var(--text2);">${p.phone?x(p.phone):'—'}</td>
       <td style="white-space:nowrap;">${x(p.country||p.provincia||'—')}</td>
       <td><span class="dbadge ${dc}">${d}g</span></td>
@@ -1862,8 +1863,28 @@ window.editProspect = pid => {
   id('p-country').value=p.country||'';
   if(p.country && typeof updateRegions !== 'undefined') { updateRegions('p-country','p-provincia'); setTimeout(()=>{ id('p-provincia').value=p.provincia||''; }, 50); } else { id('p-provincia').value=p.provincia||''; }
   id('p-note').value=p.note||'';
+  renderMetaLeadDetails(p);
   id('p-overlay').classList.remove('hidden');
 };
+// Read-only Meta Lead Ads details (email, platform, date, form answers).
+window.renderMetaLeadDetails = p => {
+  const box=id('p-meta-box'); if(!box)return;
+  const answers=Array.isArray(p?.metaAnswers)?p.metaAnswers:[];
+  if(!p||(!answers.length&&!p.metaPlatform&&!p.metaCreatedTime&&!(p.metaLeadId&&p.email))){box.style.display='none';box.innerHTML='';return;}
+  const when=p.metaCreatedTime?new Date(p.metaCreatedTime).toLocaleString('it-IT',{dateStyle:'short',timeStyle:'short'}):'';
+  const row=(label,value,href)=>`<div style="margin-top:8px;"><div style="font-size:11px;color:var(--text3);">${x(label)}</div><div style="font-size:13px;color:var(--text);word-break:break-word;">${href?`<a href="${x(href)}" style="color:var(--accent);">${x(value)}</a>`:x(value)}</div></div>`;
+  box.innerHTML=`<label>Risposte modulo Meta</label><div style="border:1px solid var(--border);border-radius:10px;padding:4px 12px 12px;">`+
+    [p.metaPlatform||when?row('Origine',[p.metaPlatform,when].filter(Boolean).join(' · ')):'',
+     p.email?row('E-mail',p.email,'mailto:'+p.email):'',
+     ...answers.map(a=>row(a.question||a.key||'',a.answer||''))].join('')+`</div>`;
+  box.style.display='block';
+};
+function metaLeadSummary(p) {
+  const answers=Array.isArray(p.metaAnswers)?p.metaAnswers:[];
+  const short=answers.map(a=>String(a.answer||'').trim()).filter(v=>v&&!/^(s[iì]|no|yes)$/i.test(v)).slice(0,2).map(v=>v.length>28?v.slice(0,27)+'…':v);
+  const platform={Instagram:'IG',Facebook:'FB',Messenger:'MSG',WhatsApp:'WA'}[p.metaPlatform]||p.metaPlatform||'';
+  return [platform,...short].filter(Boolean).join(' · ');
+}
 window.populateCountries = function(selId) {
   const sel = id(selId);
   if(!sel) return;
@@ -1892,6 +1913,7 @@ window.openProspectModal = () => {
   editingPid=null;
   id('p-modal-title').textContent='Nuovo prospect';
   ['p-name','p-channel','p-phone','p-note'].forEach(k=>id(k).value='');
+  renderMetaLeadDetails(null);
   id('p-country').value='';
   id('p-provincia').value=''; id('p-provincia').disabled=true;
   id('p-overlay').classList.remove('hidden');
