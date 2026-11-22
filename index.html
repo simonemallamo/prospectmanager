@@ -2031,7 +2031,15 @@ const pmPushSupported = () => 'serviceWorker' in navigator && 'PushManager' in w
 const pmLsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const pmLsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} };
 const pmSnoozed = k => { const t = Number(pmLsGet(k) || 0); return t > 0 && Date.now() - t < 3 * 86400000; };
-let pmDeferredInstall = null, pmSwReg = null, pmBannerMode = '';
+let pmDeferredInstall = null, pmSwReg = null, pmBannerMode = '', pmBackendOk = null;
+// Notifications stay hidden until the push-subscribe function answers (it is
+// deployed separately on Netlify), so nobody sees a button that cannot work.
+let pmBackendCheck = null;
+function pmBackendReady() {
+  pmBackendCheck ||= fetch(PUSH_ENDPOINT, { method: 'OPTIONS' }).then(r => r.ok).catch(() => false)
+    .then(ok => { pmBackendOk = ok; if (!ok) pmBackendCheck = null; window.renderAppSettings?.(); return ok; });
+  return pmBackendCheck;
+}
 addEventListener('beforeinstallprompt', e => { e.preventDefault(); pmDeferredInstall = e; });
 addEventListener('appinstalled', () => { pmDeferredInstall = null; hideAppBanner(); });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').then(r => { pmSwReg = r; }).catch(e => console.warn('Service worker non registrato', e?.message));
@@ -2060,7 +2068,7 @@ async function pmRegisterDevice() {
   return token;
 }
 function pmNotifState() {
-  if (!FCM_VAPID_KEY) return 'soon';
+  if (!FCM_VAPID_KEY || pmBackendOk !== true) return 'soon';
   if (!pmPushSupported()) return pmEnv.ios && !pmStandalone() ? 'needs-install' : 'unsupported';
   if (Notification.permission === 'denied') return 'blocked';
   if (Notification.permission === 'granted' && pmLsGet('pm_push_token')) return 'on';
@@ -2070,7 +2078,7 @@ window.enableNotifications = async () => {
   const msg = id('app-notif-msg');
   const say = (text, color) => { if (msg) { msg.textContent = text; msg.style.color = color; } };
   try {
-    if (!FCM_VAPID_KEY) throw new Error('Le notifiche saranno disponibili a breve.');
+    if (!FCM_VAPID_KEY || pmBackendOk !== true) throw new Error('Le notifiche saranno disponibili a breve.');
     if (!pmPushSupported()) {
       if (pmEnv.ios && !pmStandalone()) { openInstallGuide(); throw new Error('Su iPhone le notifiche funzionano solo dall’app aggiunta alla schermata Home.'); }
       throw new Error('Questo browser non supporta le notifiche.');
@@ -2102,6 +2110,7 @@ window.disableNotifications = async () => {
   renderAppSettings();
 };
 window.renderAppSettings = () => {
+  if (pmBackendOk === null && FCM_VAPID_KEY) pmBackendReady();
   const inst = id('app-install-state'), notif = id('app-notif-state'); if (!inst) return;
   inst.textContent = 'App: ' + (pmStandalone() ? '✅ installata su questo dispositivo' : pmEnv.mobile ? 'non installata (stai usando il browser)' : 'in uso dal browser');
   const labels = { soon: 'in arrivo', 'needs-install': 'disponibili dopo aver aggiunto l’app alla Home', unsupported: 'non supportate da questo browser', blocked: '⛔ bloccate nelle impostazioni del dispositivo', on: '✅ attive', off: 'non attive' };
@@ -2165,7 +2174,7 @@ window.closeInstallGuide = () => id('install-overlay').classList.add('hidden');
 // After every login: keep this device's token current, or suggest install /
 // notifications (dismissable, comes back after 3 days).
 async function pmAppAfterLogin() {
-  if (!FCM_VAPID_KEY) return;
+  if (!FCM_VAPID_KEY || !(await pmBackendReady())) return;
   try {
     if (pmPushSupported() && Notification.permission === 'granted') { await pmRegisterDevice(); return; }
   } catch (e) { console.warn('Aggiornamento dispositivo notifiche non riuscito', e?.message); }

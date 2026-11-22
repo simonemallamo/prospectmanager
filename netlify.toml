@@ -1,0 +1,5 @@
+# Netlify only hosts the serverless functions (the site itself is served by
+# GitHub Pages). Skip builds that do not touch them: every production deploy
+# costs credits.
+[build]
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- netlify/ netlify.toml package.json"
