@@ -811,6 +811,9 @@ td{padding:13px 12px;}
           Hai dimenticato la password?
         </button>
       </div>
+      <div style="text-align:center;margin-top:.5rem;">
+        <a href="guida/" target="_blank" rel="noopener" style="color:var(--accent);font-size:12px;font-weight:600;text-decoration:none;">📖 Guida all'utilizzo</a>
+      </div>
     </div>
 
     <!-- SIGNUP -->
@@ -847,6 +850,7 @@ td{padding:13px 12px;}
       <div class="toggle-wrap"><span>☀️</span><div class="t-toggle" onclick="toggleTheme()"></div><span>🌙</span></div>
       <div class="user-av" id="u-av">?</div>
       <div class="user-nm" id="u-nm">—</div>
+      <button class="btn-sm" onclick="openGuide()" title="Guida all'utilizzo">Guida</button>
       <button class="btn-sm" onclick="openSettings()">Impostazioni</button>
       <button class="btn-sm danger" onclick="doLogout()">Esci</button>
     </div>
@@ -1943,6 +1947,11 @@ window.openProspectModal = () => {
   id('p-overlay').classList.remove('hidden');
   // Populate countries after modal is visible
   if(typeof COUNTRY_LIST !== 'undefined') populateCountries('p-country');
+};
+// Usage guide (guida/): leaders get the leader edition, everyone else the member one.
+window.openGuide = () => {
+  const aud = cData?.role === 'leader' ? 'leader' : 'member';
+  window.open(`guida/?aud=${aud}`, '_blank', 'noopener');
 };
 window.closeProspectModal = () => id('p-overlay').classList.add('hidden');
 window.saveProspect = async () => {
@@ -3735,6 +3744,8 @@ const I18N_ES = {
   'Stato':'Estado',
   'Paese':'País',
   'Iscritto':'Registrado',
+  'Guida':'Guía',
+  "📖 Guida all'utilizzo":'📖 Guía de uso',
   'Non interessato':'No interesado',
   'Non interessati':'No interesados',
   'Contattato':'Contactado',

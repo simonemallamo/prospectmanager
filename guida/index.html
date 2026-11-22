@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Guida Prospect Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  @page{size:A4;margin:0}
+  :root{
+    --ink:#201a0f;--ink2:#5b5140;--ink3:#8c826d;--paper:#fffdf7;--cream:#f7f3e6;--line:#e6dcc4;
+    --gold:#a6801f;--gold-hi:#d4af37;--gold-soft:#f3e7c2;--green:#0ca352;--green-soft:#dcf5e7;
+    --blue:#2f6fd6;--blue-soft:#e1ebfb;--amber:#c97a12;--amber-soft:#fbecd5;--red:#c8372d;--red-soft:#f9dedb;
+    --dark:#0a0908;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{font-family:Manrope,system-ui,sans-serif;color:var(--ink);background:#fff;font-size:10.2pt;line-height:1.5}
+  .page{width:210mm;height:297mm;overflow:hidden;padding:18mm 18mm 20mm;position:relative;page-break-after:always;break-after:page;background:var(--paper)}
+  .page:last-child{page-break-after:auto;break-after:auto}
+  .pf{position:absolute;left:18mm;right:18mm;bottom:10mm;display:flex;justify-content:space-between;font-size:8pt;color:var(--ink3);border-top:1px solid var(--line);padding-top:3mm}
+  .pf .pn::after{content:counter(pg)}
+  body{counter-reset:pg}
+  .page.num{counter-increment:pg}
+
+  /* cover */
+  .cover{background:var(--dark);color:#f5eedc;padding:0;display:flex;flex-direction:column;overflow:hidden}
+  .cover .glow{position:absolute;inset:0;background:radial-gradient(520px 420px at 92% 8%,rgba(212,175,55,.22),transparent 70%),radial-gradient(460px 420px at 0% 100%,rgba(212,175,55,.10),transparent 70%)}
+  .cover .in{position:relative;padding:24mm 20mm 18mm;display:flex;flex-direction:column;height:297mm}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand svg{width:26px;height:31px}
+  .brand span{font-family:'Space Grotesk';font-weight:700;letter-spacing:.24em;font-size:10.5pt;color:#f0c85a}
+  .cover .kick{margin-top:62mm;font-family:'IBM Plex Mono';font-weight:600;letter-spacing:.22em;font-size:10pt;color:#d4af37}
+  .cover h1{font-family:'Space Grotesk';font-weight:700;font-size:54pt;line-height:.98;letter-spacing:-.035em;margin-top:6mm}
+  .cover h1 em{font-style:normal;color:#f0c85a}
+  .cover p.sub{font-size:13pt;color:#c9bea5;margin-top:8mm;max-width:130mm;line-height:1.5}
+  .cover .meta{margin-top:auto;display:flex;gap:10mm;border-top:1px solid #2c2720;padding-top:6mm;font-size:9pt;color:#9d927b}
+  .cover .meta b{display:block;color:#f5eedc;font-size:10.5pt;font-weight:600;margin-top:1mm}
+
+  h2{font-family:'Space Grotesk';font-size:22pt;line-height:1.1;letter-spacing:-.02em;margin:0 0 3mm}
+  .chap{font-family:'IBM Plex Mono';font-weight:600;font-size:8.5pt;letter-spacing:.2em;color:var(--gold);margin-bottom:2mm}
+  .intro{color:var(--ink2);font-size:11pt;margin-bottom:6mm;max-width:160mm}
+  h3{font-family:'Space Grotesk';font-size:13pt;margin:6mm 0 2mm;display:flex;align-items:center;gap:8px}
+  h3 .n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:7px;background:var(--gold-soft);color:var(--gold);font-size:9.5pt;font-family:'IBM Plex Mono'}
+  p{margin:0 0 2.5mm}
+  ul,ol{margin:0 0 3mm 5.5mm}
+  li{margin-bottom:1.2mm}
+  b{font-weight:700}
+  .ui{display:inline-block;font-weight:700;font-size:9.4pt;background:var(--cream);border:1px solid var(--line);border-radius:6px;padding:0 6px;white-space:nowrap}
+  .path{font-family:'IBM Plex Mono';font-size:9pt;color:var(--gold)}
+  .box{border-radius:10px;padding:3.5mm 4.5mm;margin:3mm 0 4mm;font-size:10pt;border:1px solid}
+  .tip{background:var(--gold-soft);border-color:#e3cf8e}
+  .warn{background:var(--amber-soft);border-color:#efcf9b}
+  .ok{background:var(--green-soft);border-color:#a9e3c3}
+  .info{background:var(--blue-soft);border-color:#b9cff3}
+  .box b:first-child{display:block;margin-bottom:1mm}
+  table{width:100%;border-collapse:separate;border-spacing:0;margin:2mm 0 4mm;font-size:9.6pt;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  th{background:var(--cream);text-align:left;font-size:8.2pt;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);padding:2.2mm 3mm;border-bottom:1px solid var(--line)}
+  td{padding:2.2mm 3mm;border-bottom:1px solid var(--line);vertical-align:top;background:#fff}
+  tr:last-child td{border-bottom:0}
+  td:first-child{font-weight:700;white-space:nowrap}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:4mm}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:3.5mm 4mm}
+  .card h4{font-family:'Space Grotesk';font-size:11pt;margin-bottom:1mm}
+  .card p{font-size:9.6pt;color:var(--ink2);margin:0}
+  .new{display:inline-block;font-family:'IBM Plex Mono';font-size:7pt;font-weight:600;letter-spacing:.1em;color:#fff;background:var(--green);border-radius:4px;padding:.5mm 1.6mm;vertical-align:2px;margin-left:4px}
+  .soon{background:var(--amber)}
+  .lead-tag{display:inline-block;font-family:'IBM Plex Mono';font-size:7pt;font-weight:600;letter-spacing:.1em;color:var(--gold);border:1px solid var(--gold-hi);border-radius:4px;padding:.3mm 1.6mm;vertical-align:2px;margin-left:4px}
+  .chk{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:4px;border:1.5px solid var(--line);font-size:8pt;font-weight:800;vertical-align:-3px}
+  .chk.on{background:var(--gold-hi);border-color:var(--gold-hi);color:#1a1408}
+  .chk.g{background:var(--green);border-color:var(--green);color:#fff}
+  .chk.r{background:var(--red);border-color:var(--red);color:#fff}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align:0}
+  .pill{display:inline-block;font-family:'IBM Plex Mono';font-size:8.5pt;font-weight:600;border-radius:5px;padding:0 5px}
+  .pill.g{background:var(--green-soft);color:var(--green)} .pill.a{background:var(--amber-soft);color:var(--amber)} .pill.r{background:var(--red-soft);color:var(--red)}
+  .wa{color:#1da851;font-weight:700}
+  .toc{list-style:none;margin:4mm 0 0;padding:0;counter-reset:t}
+  .toc li{display:flex;align-items:baseline;gap:4mm;padding:2.6mm 0;border-bottom:1px solid var(--line);font-size:11pt}
+  .toc li .k{font-family:'IBM Plex Mono';font-size:9pt;color:var(--gold);width:9mm}
+  .toc li .d{color:var(--ink3);font-size:9.5pt;margin-left:auto}
+  .steps{counter-reset:s;list-style:none;margin:2mm 0 4mm;padding:0}
+  .steps li{counter-increment:s;position:relative;padding-left:9mm;margin-bottom:2mm}
+  .steps li::before{content:counter(s);position:absolute;left:0;top:.3mm;width:6mm;height:6mm;border-radius:50%;background:var(--ink);color:#fff;font-size:8pt;font-weight:700;display:grid;place-items:center}
+  .muted{color:var(--ink3)}
+  .keep{break-inside:avoid;page-break-inside:avoid}
+  [data-aud="leader"]{}
+  body.member [data-aud="leader"]{display:none!important}
+  body.leader [data-aud="member"]{display:none!important}
+
+  /* ── Web version: flowing, responsive pages; the A4 layout above is for print/PDF ── */
+  .webbar{display:none}
+  @media screen{
+    body{background:var(--cream);font-size:15px}
+    .page{height:auto;min-height:0;overflow:visible;width:auto;max-width:860px;margin:0 auto 18px;padding:40px 44px 36px;border:1px solid var(--line);border-radius:18px;box-shadow:0 1px 2px rgba(32,26,15,.04)}
+    .page .pf{display:none}
+    .cover{border:0}
+    .cover .in{height:auto;min-height:0;padding:44px 44px 34px}
+    .cover .kick{margin-top:70px}
+    .cover h1{font-size:52px}
+    .webbar{display:flex;position:sticky;top:0;z-index:10;align-items:center;gap:10px;flex-wrap:wrap;max-width:860px;margin:0 auto 18px;padding:12px 14px;
+      background:rgba(255,253,247,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--line);border-top:0;border-radius:0 0 14px 14px}
+    .webbar a{color:var(--ink);text-decoration:none}
+    .webbar .back{font-weight:700;font-size:14px}
+    .seg{display:inline-flex;margin-left:auto;background:var(--cream);border:1px solid var(--line);border-radius:10px;padding:3px}
+    .seg button{font:inherit;font-size:13.5px;font-weight:700;border:0;background:transparent;color:var(--ink2);padding:6px 14px;border-radius:8px;cursor:pointer}
+    .seg button.on{background:var(--ink);color:#fff}
+    .dl{font-size:13.5px;font-weight:700;background:var(--gold-hi);color:#1a1408!important;padding:8px 14px;border-radius:10px}
+  }
+  @media screen and (max-width:700px){
+    body{font-size:14.5px}
+    .page{padding:26px 16px 22px;border-radius:0;border-left:0;border-right:0;margin-bottom:10px}
+    .cover .in{padding:28px 18px 24px}
+    .cover .kick{margin-top:44px}
+    .cover h1{font-size:38px}
+    .cover p.sub{font-size:16px}
+    .cover .meta{flex-wrap:wrap;gap:14px 22px}
+    h2{font-size:24px}
+    .grid2{grid-template-columns:1fr}
+    table{display:block;overflow-x:auto}
+    td:first-child{white-space:normal;min-width:110px}
+    .ui{white-space:normal}
+    .webbar{border-radius:0;border-left:0;border-right:0;margin-bottom:10px}
+    .seg{margin-left:0}
+    .dl{margin-left:auto}
+  }
+</style>
+</head>
+<body>
+<script>
+  // ?aud=member | leader selects the edition; leader sections are hidden for members.
+  let aud=(new URLSearchParams(location.search).get('aud')==='leader')?'leader':'member';
+  document.body.classList.add(aud);
+</script>
+<nav class="webbar" aria-label="Guida">
+  <a class="back" href="../">← Torna all'app</a>
+  <div class="seg" role="group" aria-label="Versione della guida">
+    <button type="button" data-set="member">Membro</button>
+    <button type="button" data-set="leader">Leader</button>
+  </div>
+  <a class="dl" id="dl-pdf" href="Guida-Prospect-Manager-Membro.pdf" download>Scarica PDF</a>
+</nav>
+<script>
+  function setAud(next){
+    document.body.classList.remove('member','leader');document.body.classList.add(next);aud=next;
+    document.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on',b.dataset.set===next));
+    document.getElementById('dl-pdf').href=next==='leader'?'Guida-Prospect-Manager-Leader.pdf':'Guida-Prospect-Manager-Membro.pdf';
+    try{const u=new URL(location.href);u.searchParams.set('aud',next);history.replaceState(null,'',u);}catch(e){}
+  }
+  document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>setAud(b.dataset.set)));
+  setAud(aud);
+</script>
+
+<!-- COVER -->
+<section class="page cover">
+  <div class="glow"></div>
+  <div class="in">
+    <div class="brand">
+      <svg viewBox="0 0 100 120"><defs><clipPath id="cp"><path d="M50,8 C38,8 30,18 30,30 C30,40 35,47 40,50 C25,55 16,66 14,98 C14,105 18,110 25,110 L75,110 C82,110 86,105 86,98 C84,66 75,55 60,50 C65,47 70,40 70,30 C70,18 62,8 50,8 Z"/></clipPath></defs>
+        <g clip-path="url(#cp)" fill="none" stroke-width="5" stroke-linecap="round"><path d="M28,14 C36,4 64,4 72,14" stroke="#f0c85a"/><path d="M20,24 C36,17 64,17 80,24" stroke="#f0c85a"/><path d="M16,34 C36,30 64,30 84,34" stroke="#e3bb46"/><path d="M14,44 C36,42 64,42 86,44" stroke="#d4af37"/><path d="M12,54 C36,56 64,56 88,54" stroke="#c9a227"/><path d="M10,64 C36,68 64,68 90,64" stroke="#b8922c"/><path d="M12,74 C36,71 64,71 88,74" stroke="#a37f26"/><path d="M14,84 C36,78 64,78 86,84" stroke="#a37f26"/><path d="M16,94 C36,86 64,86 84,94" stroke="#a37f26"/><path d="M18,104 C36,94 64,94 82,104" stroke="#a37f26"/></g></svg>
+      <span>PROSPECT MANAGER</span>
+    </div>
+    <div class="kick" data-aud="member">GUIDA MEMBRO</div>
+    <div class="kick" data-aud="leader">GUIDA LEADER</div>
+    <h1 data-aud="member">Gestisci i tuoi<br>prospect, <em>passo<br>dopo passo.</em></h1>
+    <h1 data-aud="leader">Guida il tuo team<br>e la tua <em>struttura.</em></h1>
+    <p class="sub" data-aud="member">Tutto quello che serve per registrarti, gestire la tua lista contatti, ricevere i lead dalle inserzioni e collaborare con il tuo team.</p>
+    <p class="sub" data-aud="leader">Tutte le funzioni dei membri, più la Dashboard Team, le gambe destra e sinistra, il Network tree e il link di invito per far crescere la tua struttura.</p>
+    <div class="meta">
+      <div>Aggiornata al<b>22 novembre 2026</b></div>
+      <div>Indirizzo<b>pm.retiredyoung.it</b></div>
+      <div>A cura di<b>Simone Mallamo</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- TOC + NOVITÀ -->
+<section class="page num">
+  <div class="chap">INDICE</div>
+  <h2>Cosa trovi in questa guida</h2>
+  <ol class="toc">
+    <li><span class="k">00</span>Novità degli ultimi aggiornamenti</li>
+    <li><span class="k">01</span>Primo accesso: registrazione e profilo</li>
+    <li><span class="k">02</span>La tua lista prospect</li>
+    <li><span class="k">03</span>Fasi, statistiche, filtri e ricerca</li>
+    <li><span class="k">04</span>Importare lead da Facebook Ads (CSV)</li>
+    <li><span class="k">05</span>Lead Meta automatici<span class="d">account abilitati</span></li>
+    <li><span class="k">06</span>Condivisione e accesso alle liste</li>
+    <li><span class="k">07</span>Impostazioni e Network tree</li>
+    <li data-aud="leader"><span class="k">08</span>Leader: link di invito e richieste<span class="d">solo leader</span></li>
+    <li data-aud="leader"><span class="k">09</span>Leader: Dashboard Team e gambe<span class="d">solo leader</span></li>
+    <li data-aud="leader"><span class="k">10</span>Leader: organizzare il Network tree<span class="d">solo leader</span></li>
+    <li><span class="k">★</span>In arrivo: messaggio WhatsApp automatico</li>
+    <li><span class="k">?</span>Domande frequenti e assistenza</li>
+  </ol>
+  <div class="box tip keep" style="margin-top:8mm"><b>Come usare questa guida</b>I capitoli seguono l'ordine in cui userai l'app: parti dal primo accesso e arriva fino alle funzioni avanzate. I riquadri gialli contengono consigli pratici, quelli arancioni avvisi importanti.</div>
+  <div class="pf"><span>Prospect Manager · <span data-aud="member">Guida Membro</span><span data-aud="leader">Guida Leader</span></span><span class="pn"></span></div>
+</section>
+
+<section class="page num">
+  <div class="chap">00 · NOVITÀ</div>
+  <h2>Cosa è cambiato</h2>
+  <div class="grid2">
+    <div class="card"><h4>Lead Meta completi <span class="new">NUOVO</span></h4><p>I lead delle inserzioni arrivano con nome, telefono, email, piattaforma (Instagram o Facebook), data e risposte del modulo.</p></div>
+    <div class="card"><h4>Apri WhatsApp dal numero <span class="new">NUOVO</span></h4><p>Tocca il numero di telefono, o l'icona verde accanto, per aprire subito la chat WhatsApp con il prospect.</p></div>
+    <div class="card"><h4>Colonna «Non interessato» <span class="new">NUOVO</span></h4><p>Segna chi non è interessato: la riga si attenua e il conteggio compare tra le statistiche.</p></div>
+    <div class="card"><h4>Contattato e Conoscitiva</h4><p>Due colonne separate per distinguere il primo contatto dalla chiamata conoscitiva.</p></div>
+    <div class="card"><h4>Italiano / Español</h4><p>Cambia lingua con i pulsanti <span class="ui">IT</span> <span class="ui">ES</span> in alto. Puoi usare anche il tema chiaro ☀️ o scuro 🌙.</p></div>
+    <div class="card"><h4>Messaggio WhatsApp automatico <span class="new soon">IN ARRIVO</span></h4><p>Un messaggio personalizzato inviato in automatico ai nuovi lead delle inserzioni che scegli.</p></div>
+  </div>
+  <div class="pf"><span>Prospect Manager · <span data-aud="member">Guida Membro</span><span data-aud="leader">Guida Leader</span></span><span class="pn"></span></div>
+</section>
+
+<!-- 01 ACCESSO -->
+<section class="page num">
+  <div class="chap">01 · PRIMO ACCESSO</div>
+  <h2>Registrazione e profilo</h2>
+  <p class="intro">In pochi minuti sei operativo. Usa sempre il link che ti ha inviato il tuo sponsor: così vieni collegato subito alla struttura giusta.</p>
+
+  <h3><span class="n">1</span>Registrati dal link dello sponsor</h3>
+  <ol class="steps">
+    <li>Apri il link di invito. In alto vedi <span class="ui">🔗 Stai per unirti al team di …</span> con il nome dello sponsor.</li>
+    <li>Scegli <span class="ui">Registrati</span> e compila <b>nome, cognome, email, numero di telefono, JIFU ID</b> e una <b>password</b>.</li>
+    <li>Il campo <b>Codice sponsor</b> è facoltativo: se usi il link corretto non serve compilarlo.</li>
+    <li>Premi <span class="ui">Crea account →</span>. L'amministratore verifica la richiesta.</li>
+  </ol>
+  <div class="box warn keep"><b>Ti sei registrato senza link?</b>Non sei collegato a nessun team. Vai in <span class="path">Impostazioni → Codice sponsor</span> e invia la richiesta con l'UID Firebase o il JIFU ID del tuo sponsor (vedi capitolo 07).</div>
+
+  <h3><span class="n">2</span>Completa il profilo</h3>
+  <p>Se mancano dei dati, al primo accesso compare <span class="ui">Completa il tuo profilo</span>. Nome, cognome, telefono e JIFU ID sono obbligatori: servono al tuo team per riconoscerti.</p>
+
+  <h3><span class="n">3</span>Accedi e recupera la password</h3>
+  <ul>
+    <li>Accedi con email e password da <b>pm.retiredyoung.it</b>, dal computer o dal telefono.</li>
+    <li>Password dimenticata? Scrivi l'email nel campo di accesso e tocca <span class="ui">Hai dimenticato la password?</span>: ricevi un'email per reimpostarla.</li>
+  </ul>
+
+  <h3><span class="n">4</span>Personalizza l'app</h3>
+  <div class="grid2">
+    <div class="card"><h4>Lingua</h4><p><span class="ui">IT</span> / <span class="ui">ES</span> in alto a destra. La scelta viene ricordata.</p></div>
+    <div class="card"><h4>Tema</h4><p>☀️ chiaro o 🌙 scuro con l'interruttore accanto alla lingua.</p></div>
+  </div>
+  <div class="box tip keep"><b>Sul telefono come un'app</b>Su iPhone apri il sito con Safari → Condividi → «Aggiungi alla schermata Home». Su Android apri il menu di Chrome → «Aggiungi a schermata Home».</div>
+  <div class="pf"><span>Prospect Manager · <span data-aud="member">Guida Membro</span><span data-aud="leader">Guida Leader</span></span><span class="pn"></span></div>
+</section>
+
+<!-- 02 LISTA -->
+<section class="page num">
+  <div class="chap">02 · LISTA PROSPECT</div>
+  <h2>La tua lista prospect</h2>
+  <p class="intro">È la schermata principale. Ogni riga è una persona: le spunte ti dicono a che punto sei con ciascuno.</p>
+
+  <h3><span class="n">1</span>Aggiungi un prospect</h3>
+  <p>Premi <span class="ui">＋ Nuovo prospect</span> e compila <b>Nome e cognome</b> (obbligatorio), <b>Canale di contatto</b> (es. Instagram), <b>Paese</b>, <b>Provincia / Regione</b>, <b>Telefono</b> e <b>Note</b>. Premi <span class="ui">Salva</span>.</p>
+
+  <h3><span class="n">2</span>Le colonne della tabella</h3>
+  <table class="keep">
+    <tr><th style="width:34mm">Colonna</th><th>A cosa serve</th></tr>
+    <tr><td>Nome</td><td>Nome del prospect. Sotto trovi canale e note; per i lead Meta anche un riassunto (es. «IG · 100 - 300€»).</td></tr>
+    <tr><td>Telefono <span class="new">NUOVO</span></td><td><span class="wa">Tocca il numero o l'icona verde</span> per aprire la chat WhatsApp. Il prefisso internazionale (+39 per l'Italia) viene aggiunto da solo.</td></tr>
+    <tr><td>Paese</td><td>Paese o provincia del prospect.</td></tr>
+    <tr><td>Giorni</td><td>Giorni dall'ultima azione: <span class="pill g">0–3g</span> <span class="pill a">4–7g</span> <span class="pill r">8g+</span>. Si azzera ogni volta che tocchi una spunta.</td></tr>
+    <tr><td>Contattato</td><td><span class="chk on">✓</span> Hai avuto il primo contatto.</td></tr>
+    <tr><td>Conoscitiva</td><td><span class="chk g">✓</span> Hai fatto la chiamata conoscitiva.</td></tr>
+    <tr><td>Presentazione</td><td><span class="chk on">✓</span> Hai fatto la presentazione del progetto.</td></tr>
+    <tr><td>Follow-up 1→4</td><td>Quattro spunte progressive, una per ogni follow-up fatto.</td></tr>
+    <tr><td>Pagamento</td><td><span class="dot" style="background:var(--amber)"></span> «In attesa»: il prospect deve completare il pagamento.</td></tr>
+    <tr><td>Iscritto</td><td><span class="chk on">✓</span> Il prospect si è iscritto.</td></tr>
+    <tr><td>Non interessato <span class="new">NUOVO</span></td><td><span class="chk r">✕</span> Non è interessato: la riga si attenua, ma resta nella lista. Ricliccando togli la spunta.</td></tr>
+  </table>
+
+  <h3><span class="n">3</span>Modifica, elimina, seleziona</h3>
+  <ul>
+    <li><span class="ui">Modifica</span> apre la scheda con tutti i campi. Per i lead Meta mostra anche le risposte del modulo, solo in lettura.</li>
+    <li><span class="ui">Elimina</span> cancella il prospect, dopo una conferma.</li>
+    <li>Con le caselle a sinistra selezioni più righe: compare la barra per <span class="ui">🗑 Elimina selezionati</span>, <span class="ui">Seleziona tutti "Facebook Ads"</span> o <span class="ui">Seleziona tutti visibili</span>.</li>
+  </ul>
+  <div class="pf"><span>Prospect Manager · <span data-aud="member">Guida Membro</span><span data-aud="leader">Guida Leader</span></span><span class="pn"></span></div>
+</section>
+
+<!-- 03 FASI -->
+<section class="page num">
+  <div class="chap">03 · FASI E STATISTICHE</div>
+  <h2>Fasi, statistiche, filtri e ricerca</h2>
+
+  <h3><span class="n">1</span>Le statistiche in alto</h3>
+  <p>Sette riquadri si aggiornano in tempo reale: <b>Nuovi (7gg)</b>, <b>Totale</b>, <b>Conoscitive</b>, <b>Presentazioni</b>, <b>Attesa pag.</b>, <b>Iscritti</b> e <b>Non interessati</b>. «Nuovi (7gg)» conta sempre gli ultimi 7 giorni rispetto a oggi: non si azzera ogni settimana.</p>
+
+  <h3><span class="n">2</span>La pipeline: in che fase è ogni prospect</h3>
+  <table class="keep">
+    <tr><th style="width:42mm">Fase</th><th>Quando un prospect è in questa fase</th></tr>
+    <tr><td>Nuovo</td><td>Nessuna presentazione e nessun follow-up ancora fatto.</td></tr>
+    <tr><td>Attivo</td><td>Hai fatto la presentazione o almeno un follow-up.</td></tr>
+    <tr><td>In attesa pagamento</td><td>È attivo il pallino «Pagamento».</td></tr>
+    <tr><td>Follow-up completo</td><td>Tutti e 4 i follow-up sono spuntati.</td></tr>
+  </table>
+  <p>Tocca un riquadro della <b>Pipeline prospect</b> per vedere solo i prospect di quella fase.</p>
+
+  <h3><span class="n">3</span>Filtri, ricerca e ordinamento</h3>
+  <ul>
+    <li><b>Ricerca</b>: cerca per nome, note o canale.</li>
+    <li><b>Filtri rapidi</b>: Tutti, Nuovo, Attivo, In attesa pag., FU completo, FU 1+, FU 2+, FU 3+.</li>
+    <li><b>Provincia</b>: mostra solo una provincia, utile per gli eventi locali.</li>
+    <li><b>Ordinamento</b>: clicca l'intestazione di una colonna (↕) per ordinare; un secondo clic inverte l'ordine. Per esempio, su «Non interessato» raggruppi chi ha detto no.</li>
+  </ul>
+  <div class="box tip keep"><b>Routine consigliata</b>Ogni giorno ordina per <b>Giorni</b> dal più alto: in cima trovi i prospect da ricontattare. Dopo ogni azione aggiorna la spunta, così il contatore si azzera.</div>
+
+  <div class="pf"><span>Prospect Manager · <span data-aud="member">Guida Membro</span><span data-aud="leader">Guida Leader</span></span><span class="pn"></span></div>
+</section>
+
+<section class="page num">
+  <div class="chap">04 · IMPORTAZIONE CSV</div>
+  <h2>Importare lead da Facebook Ads</h2>
+  <p class="intro">Se scarichi i lead da Meta in un file CSV, puoi caricarli tutti insieme.</p>
+  <ol class="steps">
+    <li>Premi <span class="ui">📥 Importa CSV</span> e scegli il file.</li>
+    <li>Abbina le colonne: <b>Nome</b> (obbligatorio), <b>Telefono</b>, <b>Luogo</b>, <b>Note</b>. Il sistema prova ad abbinarle da solo; correggi se serve.</li>
+    <li>Premi <span class="ui">Anteprima →</span>, controlla i dati e conferma con <span class="ui">✓ Importa</span>.</li>
+    <li>Hai sbagliato? <span class="ui">↩ Annulla ultima</span> rimuove l'ultima importazione.</li>
+  </ol>
+  <h3>Dove scaricare il file</h3>
+  <ul>
+    <li>In <b>Meta Business Suite → Centro lead</b>, oppure dalla pagina del modulo istantaneo, scegli <b>Scarica</b> e il formato <b>CSV</b>.</li>
+    <li>Puoi caricare anche file CSV esportati da altri strumenti, purché abbiano almeno una colonna con il nome.</li>
+  </ul>
+  <h3>Esempio di abbinamento</h3>
+  <table class="keep">
+    <tr><th style="width:52mm">Colonna nel file</th><th>Campo nel Prospect Manager</th></tr>
+    <tr><td>full_name / Nome e cognome</td><td>Nome *</td></tr>
+    <tr><td>phone_number / Telefono</td><td>Telefono</td></tr>
+    <tr><td>city / Città</td><td>Luogo</td></tr>
+    <tr><td>Una domanda del modulo</td><td>Note (es. budget o disponibilità)</td></tr>
+  </table>
+  <div class="box warn keep"><b>Hai già i lead Meta automatici?</b>Se il tuo account riceve i lead in automatico (capitolo 05), non importare di nuovo lo stesso file: creeresti dei doppioni. L'importazione CSV serve per i lead vecchi o per gli account non collegati.</div>
+  <div class="pf"><span>Prospect Manager · <span data-aud="member">Guida Membro</span><span data-aud="leader">Guida Leader</span></span><span class="pn"></span></div>
+</section>
+
+<!-- 05 META -->
+<section class="page num">
+  <div class="chap">05 · LEAD META AUTOMATICI</div>
+  <h2>I lead delle inserzioni, in automatico</h2>
+  <p class="intro">Per gli account abilitati, i lead delle inserzioni Meta (moduli istantanei su Facebook e Instagram) arrivano nella lista da soli, senza file da caricare.</p>
+  <div class="box info keep"><b>È disponibile per il tuo account?</b>La sezione <span class="path">Impostazioni → 🔗 Integrazione Meta Ads</span> compare solo per gli account abilitati. Per attivarla contatta Simone.</div>
+
+  <h3><span class="n">1</span>Collega il tuo account Meta</h3>
+  <ol class="steps">
+    <li>Se richiesto, verifica la tua email con <span class="ui">Invia email di verifica</span> e poi <span class="ui">Ho verificato, ricontrolla</span>.</li>
+    <li>Premi <span class="ui">Collega account Meta →</span>. L'autorizzazione avviene su Facebook: approva <b>tutti</b> i permessi, la Pagina e l'account pubblicitario.</li>
+    <li>Tornato nel Prospect Manager vedi lo stato «Collegato».</li>
+  </ol>
+  <div class="box warn keep"><b>Sicurezza</b>Non inserire mai password o token nel Prospect Manager: l'accesso passa sempre dalla pagina ufficiale di Facebook.</div>
+
+  <h3><span class="n">2</span>Cosa succede quando arriva un lead</h3>
+  <ul>
+    <li>Il lead compare nella lista con canale <b>Facebook Ads</b>, con <b>nome, telefono ed email</b>.</li>
+    <li>Sotto il nome vedi la <b>piattaforma</b> (IG o FB) e un riassunto delle risposte.</li>
+    <li>In <span class="ui">Modifica</span> trovi la sezione <b>Risposte modulo Meta</b>: origine, data e ora, email e tutte le domande del modulo con le risposte.</li>
+    <li>Ogni lead viene registrato <b>una sola volta</b> e resta nella tua lista: non viene duplicato né assegnato ad altri.</li>
+  </ul>
+
+  <h3><span class="n">3</span>Recupera i lead recenti</h3>
+  <p><span class="ui">Recupera lead recenti →</span> ricontrolla gli ultimi 30 giorni e importa gli eventuali lead mancanti. Il riepilogo indica quanti lead sono stati importati, quanti erano già presenti e quanti appartengono ad altre campagne.</p>
+  <div class="box tip keep"><b>Le risposte del questionario non compaiono?</b>Meta trasmette solo le domande inserite <b>dentro il modulo istantaneo</b> come «Domande personalizzate». Le domande aggiunte in altri modi si vedono nel Centro lead di Meta, ma non arrivano al Prospect Manager.</div>
+  <div class="pf"><span>Prospect Manager · <span data-aud="member">Guida Membro</span><span data-aud="leader">Guida Leader</span></span><span class="pn"></span></div>
+</section>
+
+<!-- 06 CONDIVISIONE -->
+<section class="page num">
+  <div class="chap">06 · COLLABORAZIONE</div>
+  <h2>Condivisione e accesso alle liste</h2>
+  <p class="intro">Ogni lista è privata: la vedi solo tu. Puoi decidere di mostrare un singolo prospect, oppure l'intera lista, a un'altra persona.</p>
+
+  <h3><span class="n">1</span>Condividere un singolo prospect</h3>
+  <ol class="steps">
+    <li>Sulla riga del prospect premi <span class="ui">Condividi</span>.</li>
+    <li>Inserisci l'<b>email</b>, il <b>JIFU ID</b> o il <b>codice ID Firebase</b> della persona e conferma.</li>
+    <li>Il prospect compare nella sua lista con la scritta «Condiviso con te». Può vederlo ma non modificarlo.</li>
+    <li>Per interrompere premi <span class="ui">Revoca</span> sulla stessa riga.</li>
+  </ol>
+
+  <h3><span class="n">2</span>Chiedere di vedere la lista di un altro membro</h3>
+  <ol class="steps">
+    <li>Vai in <span class="path">Impostazioni → Accesso alla lista contatti</span>.</li>
+    <li>Compila nome, cognome e JIFU ID uguali al tuo profilo.</li>
+    <li>Identifica il destinatario tramite <b>Email</b>, <b>Codice ID Firebase</b> o <b>ID JIFU</b> e premi <span class="ui">Invia richiesta →</span>.</li>
+    <li>L'accesso si attiva <b>solo se il proprietario accetta</b>, e lui può revocarlo in qualsiasi momento.</li>
+  </ol>
+
+  <h3><span class="n">3</span>Rispondere alle richieste ricevute</h3>
+  <p>Le richieste per la tua lista compaiono nella stessa sezione delle Impostazioni. Scegli <span class="ui">Accetta</span> o <span class="ui">Rifiuta</span>; un accesso già concesso si toglie in ogni momento con <span class="ui">Revoca accesso</span>.</p>
+  <div class="box info keep"><b>Privacy</b>I leader vedono nella Dashboard i <b>numeri aggregati</b> del team, non i dettagli dei prospect. Per vedere una lista serve sempre l'approvazione del proprietario.</div>
+  <div class="pf"><span>Prospect Manager · <span data-aud="member">Guida Membro</span><span data-aud="leader">Guida Leader</span></span><span class="pn"></span></div>
+</section>
+
+<!-- 07 IMPOSTAZIONI -->
+<section class="page num">
+  <div class="chap">07 · IMPOSTAZIONI E NETWORK TREE</div>
+  <h2>Impostazioni account</h2>
+  <p class="intro">Si aprono dal pulsante <span class="ui">Impostazioni</span> in alto a destra.</p>
+  <table class="keep">
+    <tr><th style="width:46mm">Sezione</th><th>A cosa serve</th></tr>
+    <tr><td>Codice sponsor</td><td>Se sei collegato allo sponsor sbagliato o a nessuno, indica l'UID Firebase o il JIFU ID di quello corretto. La modifica viene applicata dopo la verifica dell'amministratore.</td></tr>
+    <tr><td>Upgrade a Team Leader</td><td>Inserisci il <b>Codice Leader</b> che ti fornisce Simone e premi <span class="ui">Richiedi accesso Leader →</span>. Il ruolo si attiva dopo l'approvazione dell'amministratore.</td></tr>
+    <tr><td>Accesso alla lista contatti</td><td>Richieste di accesso alle liste, inviate e ricevute (capitolo 06).</td></tr>
+    <tr><td>Integrazione Meta Ads</td><td>Collegamento Meta e recupero dei lead, solo per gli account abilitati (capitolo 05).</td></tr>
+    <tr><td>🔄 Ricarica sessione</td><td>Se l'amministratore ha appena cambiato il tuo ruolo, ad esempio dopo l'approvazione come Leader, ricarica per vedere le nuove funzioni senza uscire.</td></tr>
+    <tr data-aud="leader"><td>🔗 Il tuo link di invito</td><td>Solo per i leader: vedi capitolo 08.</td></tr>
+  </table>
+
+  <h2 style="margin-top:8mm">Network tree</h2>
+  <p>La scheda <span class="ui">Network tree</span> mostra <b>la tua struttura</b> come un albero: tu in alto, poi i tuoi diretti e i loro diretti.</p>
+  <ul>
+    <li>Usa <span class="ui">+</span> e <span class="ui">−</span> per lo zoom e <span class="ui">Reimposta</span> per tornare alla vista iniziale.</li>
+    <li>Passa con il mouse, o tocca, su una persona per vedere i suoi dati essenziali.</li>
+    <li>I colori distinguono <b>Leader</b>, <b>Membro</b> e <b>Posizione libera</b>.</li>
+  </ul>
+  <div class="box tip keep" data-aud="member"><b>Vuoi diventare Leader?</b>Chiedi il Codice Leader a Simone e invialo da <span class="path">Impostazioni → Upgrade a Team Leader</span>. Dopo l'approvazione premi <span class="ui">🔄 Ricarica sessione</span>: compare la scheda <b>Dashboard Team</b>.</div>
+  <div class="pf"><span>Prospect Manager · <span data-aud="member">Guida Membro</span><span data-aud="leader">Guida Leader</span></span><span class="pn"></span></div>
+</section>
+
+<!-- 08 LEADER INVITO -->
+<section class="page num" data-aud="leader">
+  <div class="chap">08 · LEADER</div>
+  <h2>Link di invito e richieste <span class="lead-tag">SOLO LEADER</span></h2>
+  <p class="intro">Come leader hai tutte le funzioni dei membri, più gli strumenti per far crescere e seguire la tua struttura.</p>
+
+  <h3><span class="n">1</span>Il tuo link di invito</h3>
+  <ol class="steps">
+    <li>Vai in <span class="path">Impostazioni → 🔗 Il tuo link di invito</span>.</li>
+    <li>Premi <span class="ui">Copia</span> e invialo ai tuoi diretti su WhatsApp, Telegram o via email.</li>
+    <li>Chi si registra da quel link vede «Stai per unirti al team di …» con il tuo nome e viene collegato <b>automaticamente</b> a te come upline.</li>
+  </ol>
+  <div class="box ok keep"><b>Il link non scade</b>Puoi usarlo sempre e con tutte le persone che vuoi. Ricorda ai nuovi di usarlo per registrarsi: è il modo più veloce per entrare nel team giusto.</div>
+
+  <h3><span class="n">2</span>Aiutare un membro collegato male</h3>
+  <ul>
+    <li>Se un membro si è registrato senza il tuo link, chiedigli di inviare la richiesta da <span class="path">Impostazioni → Codice sponsor</span> indicando il tuo <b>JIFU ID</b> o il tuo <b>UID Firebase</b>.</li>
+    <li>L'amministratore verifica e collega il membro alla tua struttura.</li>
+  </ul>
+
+  <h3><span class="n">3</span>Promuovere un membro a Leader</h3>
+  <p>Il membro invia la richiesta con il Codice Leader da <span class="path">Impostazioni → Upgrade a Team Leader</span>. Dopo l'approvazione dell'amministratore gli basta premere <span class="ui">🔄 Ricarica sessione</span>.</p>
+
+  <h3><span class="n">4</span>Checklist settimanale del leader</h3>
+  <ul>
+    <li>Controlla nella Dashboard i <b>Nuovi (7gg)</b> e il <b>Ranking</b> della settimana.</li>
+    <li>Assegna una gamba ai membri nella sezione <b>Gamba non assegnata</b>.</li>
+    <li>Confronta le gambe: dove calano le presentazioni, organizza un affiancamento.</li>
+    <li>Verifica che i nuovi membri abbiano completato il profilo e abbiano la loro lista attiva.</li>
+  </ul>
+  <div class="pf"><span>Prospect Manager · Guida Leader</span><span class="pn"></span></div>
+</section>
+
+<!-- 09 DASHBOARD -->
+<section class="page num" data-aud="leader">
+  <div class="chap">09 · LEADER</div>
+  <h2>Dashboard Team e gambe <span class="lead-tag">SOLO LEADER</span></h2>
+  <p class="intro">La scheda <span class="ui">Dashboard Team</span> mostra in tempo reale i numeri aggregati di tutta la tua struttura.</p>
+
+  <h3><span class="n">1</span>Panoramica</h3>
+  <p>Sei riquadri: <b>Diretti</b>, <b>Struttura attiva</b>, <b>Nuovi (7gg)</b>, <b>Presentazioni sett.</b>, <b>Attesa pag.</b> e <b>Prospect totali</b> di tutta la rete. Vedi solo i numeri, non i dettagli dei singoli prospect.</p>
+
+  <h3><span class="n">2</span>Confronto delle gambe</h3>
+  <p>Con i filtri <span class="ui">Tutta la struttura</span>, <span class="ui">Gamba sinistra</span>, <span class="ui">Gamba destra</span> e <span class="ui">Gamba non assegnata</span> confronti le due gambe: persone, prospect, nuovi della settimana, presentazioni e attese di pagamento, con la composizione per fase.</p>
+
+  <h3><span class="n">3</span>Assegnare la gamba</h3>
+  <ul>
+    <li>Sulla scheda di ogni membro trovi i pulsanti <span class="ui">👈 Sinistra</span> e <span class="ui">👉 Destra</span>. Il cambio è immediato.</li>
+    <li>I membri non ancora assegnati compaiono in <b>Gamba non assegnata</b>: assegnali per avere confronti corretti.</li>
+    <li>L'assegnazione è <b>personale</b>: vale solo nella tua Dashboard e non cambia né l'upline del membro né la vista degli altri leader.</li>
+    <li>Nella stessa gamba puoi riordinare i membri trascinando le schede.</li>
+  </ul>
+
+  <h3><span class="n">4</span>Ranking settimanale</h3>
+  <p>Il <b>Ranking nuovi prospect (settimana)</b> ordina i membri in base ai prospect inseriti negli ultimi 7 giorni. È utile per riconoscere chi è attivo e chi ha bisogno di supporto.</p>
+
+  <h3><span class="n">5</span>Disattivare un membro dalle statistiche</h3>
+  <p>Puoi nascondere un membro non più attivo: sparisce dalle statistiche e dalla griglia e finisce in <b>Membri disattivati</b>, dove con <span class="ui">Riattiva</span> lo includi di nuovo.</p>
+  <div class="box warn keep"><b>Vale solo su questo dispositivo</b>La disattivazione viene salvata nel browser che stai usando. Su un altro telefono o computer il membro risulta di nuovo visibile.</div>
+  <div class="pf"><span>Prospect Manager · Guida Leader</span><span class="pn"></span></div>
+</section>
+
+<!-- 10 TREE LEADER -->
+<section class="page num" data-aud="leader">
+  <div class="chap">10 · LEADER</div>
+  <h2>Organizzare il Network tree <span class="lead-tag">SOLO LEADER</span></h2>
+  <p class="intro">Oltre a consultarlo, nel Network tree puoi organizzare la tua struttura nelle due gambe con il trascinamento.</p>
+  <ol class="steps">
+    <li>Apri <span class="ui">Network tree</span>: vedi «La mia struttura».</li>
+    <li>Passa sopra un membro per vederne i dettagli.</li>
+    <li>Trascina un membro su una <b>Posizione libera</b> per assegnarlo a quel punto della gamba, oppure su un altro membro per scambiarli.</li>
+    <li>Le modifiche sono <b>personali</b>: organizzano la tua vista e non cambiano l'upline né la vista degli altri leader.</li>
+  </ol>
+  <div class="box info keep"><b>Dashboard e Network tree insieme</b>Usa la Dashboard per i <b>numeri</b> delle due gambe e il Network tree per vedere <b>chi è dove</b>. Quando aggiungi un nuovo diretto, assegnagli subito la gamba in entrambe le viste.</div>
+
+  <h3><span class="n">★</span>Esempio di lettura della struttura</h3>
+  <table class="keep">
+    <tr><th style="width:40mm">Livello</th><th>Chi comprende</th></tr>
+    <tr><td>Diretti (livello 1)</td><td>Chi si è registrato con il tuo link di invito.</td></tr>
+    <tr><td>Livello 2</td><td>Chi è stato invitato dai tuoi diretti.</td></tr>
+    <tr><td>Livello 3 e oltre</td><td>Tutta la struttura in profondità, inclusa nella tua Dashboard.</td></tr>
+  </table>
+  <div class="pf"><span>Prospect Manager · Guida Leader</span><span class="pn"></span></div>
+</section>
+
+<!-- IN ARRIVO -->
+<section class="page num">
+  <div class="chap">★ · IN ARRIVO</div>
+  <h2>Messaggio WhatsApp automatico</h2>
+  <p class="intro">Una funzione in sviluppo: ogni nuovo lead delle inserzioni Meta riceverà in pochi secondi il tuo primo messaggio su WhatsApp, anche quando non sei online.</p>
+  <div class="grid2">
+    <div class="card"><h4>Scegli tu le inserzioni</h4><p>Attivi l'invio a mano, inserzione per inserzione. Le nuove inserzioni partono sempre spente.</p></div>
+    <div class="card"><h4>Un messaggio per inserzione</h4><p>Ogni inserzione ha il suo testo, con il nome del lead inserito in automatico.</p></div>
+    <div class="card"><h4>Stato del messaggio</h4><p>Nella scheda del prospect vedi se il messaggio è stato inviato, consegnato o letto.</p></div>
+    <div class="card"><h4>Mai doppio</h4><p>Un solo invio per lead. Niente invii ai contatti inseriti a mano o importati.</p></div>
+  </div>
+  <h3>Cosa servirà</h3>
+  <ul>
+    <li>Il tuo <b>WhatsApp Business</b> collegato all'API ufficiale di Meta.</li>
+    <li>Un <b>modello di messaggio approvato da Meta</b> per ogni testo.</li>
+    <li>Il consenso al contatto WhatsApp nel modulo dell'inserzione.</li>
+  </ul>
+  <div class="box tip keep"><b>Costo: pochi centesimi per messaggio</b>È la tariffa di Meta per WhatsApp: circa 3–8 centesimi per ogni messaggio automatico inviato, secondo la categoria del modello. Le risposte che scrivi dall'app WhatsApp Business restano gratuite.</div>
+  <p class="muted">La funzione sarà annunciata quando sarà disponibile. Tempi e dettagli potrebbero cambiare.</p>
+  <div class="pf"><span>Prospect Manager · <span data-aud="member">Guida Membro</span><span data-aud="leader">Guida Leader</span></span><span class="pn"></span></div>
+</section>
+
+<!-- FAQ -->
+<section class="page num">
+  <div class="chap">? · DOMANDE FREQUENTI</div>
+  <h2>FAQ e assistenza</h2>
+  <table>
+    <tr><th style="width:62mm">Domanda</th><th>Risposta</th></tr>
+    <tr><td style="white-space:normal">Ho dimenticato la password</td><td>Scrivi l'email nella schermata di accesso e tocca «Hai dimenticato la password?»: ricevi un'email per reimpostarla.</td></tr>
+    <tr><td style="white-space:normal">Posso vedere i prospect degli altri?</td><td>No, a meno che il proprietario te li condivida o accetti la tua richiesta di accesso alla lista. I leader vedono solo numeri aggregati.</td></tr>
+    <tr><td style="white-space:normal">Il contatore Giorni non si azzera</td><td>Si azzera solo quando tocchi una spunta, non quando apri o modifichi la scheda.</td></tr>
+    <tr><td style="white-space:normal">Il numero non apre WhatsApp</td><td>Controlla che il numero sia completo. Per i numeri esteri senza prefisso, imposta il Paese nella scheda del prospect. Se non vedi l'icona, ricarica la pagina.</td></tr>
+    <tr><td style="white-space:normal">Un lead Meta ha solo il numero al posto del nome</td><td>Premi «Recupera lead recenti» nelle Impostazioni: i dati mancanti vengono completati in automatico.</td></tr>
+    <tr><td style="white-space:normal">Mi sono registrato senza link</td><td>Invia la richiesta da Impostazioni → Codice sponsor con il JIFU ID o l'UID del tuo sponsor.</td></tr>
+    <tr><td style="white-space:normal">Sono stato approvato come Leader ma non vedo la Dashboard</td><td>Premi Impostazioni → 🔄 Ricarica sessione.</td></tr>
+    <tr data-aud="leader"><td style="white-space:normal">Ho cambiato gamba a un membro: lo vede anche il mio upline?</td><td>No, l'assegnazione delle gambe è personale e vale solo nella tua Dashboard e nel tuo Network tree.</td></tr>
+    <tr data-aud="leader"><td style="white-space:normal">Un membro disattivato ricompare</td><td>La disattivazione vale solo sul dispositivo in cui l'hai fatta. Ripetila sull'altro dispositivo.</td></tr>
+    <tr><td style="white-space:normal">Posso usarlo dal telefono?</td><td>Sì, da qualsiasi browser. Puoi aggiungerlo alla schermata Home e aprirlo come un'app.</td></tr>
+  </table>
+  <div class="box ok keep" style="margin-top:6mm"><b>Serve aiuto?</b>Contatta Simone su Instagram <b>@simonemallamo</b>. Indica sempre la tua email di accesso, il tuo JIFU ID e una breve descrizione del problema, con uno screenshot se possibile.</div>
+  <p class="muted" style="margin-top:4mm">I dati sono salvati su Firebase (Google) e non vengono condivisi con terze parti. Le integrazioni Meta e WhatsApp usano solo le autorizzazioni che concedi tu.</p>
+  <div class="pf"><span>Prospect Manager · <span data-aud="member">Guida Membro</span><span data-aud="leader">Guida Leader</span></span><span class="pn"></span></div>
+</section>
+
+</body>
+</html>
