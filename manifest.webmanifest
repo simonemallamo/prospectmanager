@@ -1,0 +1,18 @@
+{
+  "name": "Prospect Manager",
+  "short_name": "Prospect",
+  "description": "Gestisci i tuoi prospect e il tuo team.",
+  "id": "./",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0908",
+  "theme_color": "#0a0908",
+  "lang": "it",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

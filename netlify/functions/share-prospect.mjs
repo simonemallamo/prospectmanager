@@ -1,4 +1,5 @@
 import { db, FieldValue, adminAuth, verifyBearer } from './_firebase-admin.mjs';
+import { sendPushToUser } from './_push.mjs';
 
 const allowedOrigins=new Set([
   'https://simonemallamo.github.io',
@@ -136,7 +137,15 @@ export default async function handler(request){
     const normalizedShared=sharedWith.filter(uid=>!aliases.has(uid));
     const shared=action==='share';
     if(shared)normalizedShared.push(recipient.uid);
+    const alreadyShared=sharedWith.some(uid=>aliases.has(uid));
     await prospectRef.update({sharedWith:normalizedShared,lastCheckAt:FieldValue.serverTimestamp()});
+    // Push to the recipient only for a new share. No prospect data in the
+    // notification text: it can be read on a locked screen.
+    if(shared&&!alreadyShared){
+      const sharer=(await db.collection('users').doc(identity.uid).get()).data()||{};
+      const sharerName=[sharer.name,sharer.surname].map(v=>String(v||'').trim()).filter(Boolean).join(' ')||'Un membro del team';
+      await sendPushToUser(recipient.uid,{title:'Nuovo prospect condiviso',body:`${sharerName} ti ha condiviso un prospect. Toccalo per aprirlo.`,url:'./',tag:`share-${prospectId}`});
+    }
     return json({shared},200,origin);
   }catch(error){
     const status=error?.message==='Missing Bearer token'?401:400;

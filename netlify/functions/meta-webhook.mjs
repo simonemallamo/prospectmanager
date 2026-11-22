@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { db, json, adminAuth, getMetaIntegrationConfig, getConfiguredMetaIntegrationConfigs } from './_firebase-admin.mjs';
 import { graph, describeGraphError } from './_meta-graph.mjs';
+import { sendPushToUser } from './_push.mjs';
 import { LEAD_FIELDS, lower, saveLead, withAdNames, ensureFieldData } from './_meta-leads.mjs';
 function validSignature(raw, signature, secret){
   if(!secret||!signature?.startsWith('sha256='))return false;
@@ -30,7 +31,11 @@ async function processLead(leadId,pageId,signedOwnerEmail){
   if(fieldSource==='none')console.warn('meta-webhook lead without field_data',{pageId:String(pageId)});
   const enriched=await withAdNames(full,{userToken:page.userAccessToken||''});
   const result=await saveLead({...enriched,id:full.id||String(leadId)},{...page,pageId:String(pageId)},target,{pageToken:page.pageAccessToken,userToken:page.userAccessToken||''});
-  if(result==='imported')return{created:true,uid:page.uid};
+  if(result==='imported'){
+    const source=[enriched.ad_name,enriched.campaign_name].map(v=>String(v||'').trim()).find(Boolean);
+    await sendPushToUser(page.uid,{title:'Nuovo lead da Meta Ads 🎯',body:source?`È arrivato un nuovo lead dall'inserzione «${source}».`:'È arrivato un nuovo lead dalle tue inserzioni.',url:'./',tag:`lead-${full.id||leadId}`});
+    return{created:true,uid:page.uid};
+  }
   if(result==='duplicate'||result==='repaired')return{duplicate:true};
   return{ignored:true,reason:result==='filtered'?'campaign_or_ad_not_allowed':'ignored'};
 }

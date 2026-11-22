@@ -2,8 +2,15 @@
 <html lang="it" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Prospect Manager</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#0a0908">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Prospect">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 /* ── THEMES ── */
@@ -770,6 +777,23 @@ td{padding:13px 12px;}
 .tree-drag-hint{display:none;position:fixed;z-index:500;left:50%;bottom:24px;transform:translateX(-50%);padding:10px 16px;border:1px solid var(--border2);border-radius:10px;background:var(--surface);color:var(--text2);font-size:10px;box-shadow:var(--shadow);}
 @media(max-width:760px){.tree-page-header{align-items:flex-start;flex-direction:column;}.tree-controls{width:100%;}.tree-root-select{flex:1;min-width:0;}.tree-canvas-toolbar{align-items:flex-start;flex-direction:column;}.tree-help{line-height:1.4;}.tree-canvas-wrap{height:calc(100vh - 300px);min-height:460px;}.nt-row{gap:38px;}#network-tree-root{padding:48px!important;}}
 </style>
+<style>
+/* ── App install banner + notifications ── */
+.app-banner{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:90;max-width:520px;margin:0 auto;
+  background:var(--surface);border:1px solid var(--border2);border-radius:18px;box-shadow:0 24px 60px -18px rgba(0,0,0,.55);padding:16px 16px 14px;display:flex;gap:14px;align-items:flex-start}
+.app-banner.hidden{display:none}
+.app-banner-ico{flex:0 0 44px;height:44px;border-radius:12px;background:var(--accent-dim);display:grid;place-items:center;font-size:22px}
+.app-banner-title{font-weight:700;font-size:15px;color:var(--text);line-height:1.3}
+.app-banner-sub{font-size:12.5px;color:var(--text2);margin-top:3px;line-height:1.45}
+.app-banner-actions{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+.app-banner-actions button{font:inherit;font-size:13px;font-weight:700;border-radius:10px;padding:8px 14px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2)}
+.app-banner-actions button.primary{background:var(--accent);border-color:var(--accent);color:#1a1408}
+.install-steps{list-style:none;margin:10px 0 0;padding:0;counter-reset:st}
+.install-steps li{counter-increment:st;position:relative;padding:0 0 12px 36px;font-size:13.5px;line-height:1.5;color:var(--text)}
+.install-steps li::before{content:counter(st);position:absolute;left:0;top:0;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#1a1408;font-weight:800;font-size:12px;display:grid;place-items:center}
+.install-note{font-size:12px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-top:6px;line-height:1.5}
+.kbd{display:inline-block;font-weight:700;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:0 6px;white-space:nowrap}
+</style>
 </head>
 <body>
 
@@ -1116,6 +1140,19 @@ td{padding:13px 12px;}
         </div>
       </div>
     </div>
+    <!-- App install + push notifications -->
+    <div id="app-settings" style="margin-top:1rem;padding:1rem;border:1px solid var(--border2);border-radius:10px;background:var(--surface2);">
+      <div style="font-size:14px;font-weight:600;margin-bottom:5px;">📱 App e notifiche</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:10px;">Ricevi un avviso quando ti viene condiviso un prospect o arriva un nuovo lead dalle inserzioni.</div>
+      <div id="app-install-state" style="font-size:12px;color:var(--text2);margin-bottom:4px;">App: —</div>
+      <div id="app-notif-state" style="font-size:12px;color:var(--text2);margin-bottom:10px;">Notifiche: —</div>
+      <div id="app-notif-msg" role="status" style="font-size:12px;margin-bottom:8px;"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button id="app-install-btn" class="btn-cancel" onclick="openInstallGuide()">Come installare l’app</button>
+        <button id="app-notif-on" class="btn-primary" style="width:auto;" onclick="enableNotifications()">Attiva notifiche</button>
+        <button id="app-notif-off" class="btn-cancel" style="display:none;" onclick="disableNotifications()">Disattiva notifiche</button>
+      </div>
+    </div>
     <!-- Meta Ads integration -->
     <div id="meta-integration" style="display:none;margin-top:1rem;padding:1rem;border:1px solid var(--border2);border-radius:10px;background:var(--surface2);">
       <div style="font-size:14px;font-weight:600;margin-bottom:5px;">🔗 Integrazione Meta Ads</div>
@@ -1135,6 +1172,26 @@ td{padding:13px 12px;}
       <button onclick="reloadSession()" style="padding:5px 12px;border:.5px solid var(--border2);border-radius:6px;background:transparent;color:var(--text2);font-size:12px;cursor:pointer;">🔄 Ricarica sessione</button>
     </div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeSettings()">Chiudi</button></div>
+  </div>
+</div>
+
+<!-- App install / notifications banner -->
+<div id="app-banner" class="app-banner hidden" role="dialog" aria-live="polite">
+  <div class="app-banner-ico">🔔</div>
+  <div style="flex:1;min-width:0;">
+    <div class="app-banner-title" id="app-banner-title">Vuoi essere avvisato quando ricevi un nuovo prospect?</div>
+    <div class="app-banner-sub" id="app-banner-sub">Aggiungi Prospect Manager alla schermata Home e attiva le notifiche.</div>
+    <div class="app-banner-actions">
+      <button class="primary" id="app-banner-main" onclick="appBannerMain()">Aggiungi alla Home</button>
+      <button onclick="snoozeAppBanner()">Più tardi</button>
+    </div>
+  </div>
+</div>
+<div id="install-overlay" class="overlay hidden" onclick="if(event.target===this)closeInstallGuide()">
+  <div class="modal">
+    <div class="modal-title">📲 Installa l’app</div>
+    <div id="install-guide-body"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeInstallGuide()">Chiudi</button></div>
   </div>
 </div>
 
@@ -1573,7 +1630,7 @@ window.saveRequiredProfile = async () => {
   }
 };
 
-window.doLogout = async () => { if (unsub) unsub(); await signOut(auth); };
+window.doLogout = async () => { if (unsub) unsub(); await pmForgetDevice(); await signOut(auth); };
 
 window.authTab = t => {
   id('form-login').classList.toggle('hidden', t !== 'login');
@@ -1636,6 +1693,7 @@ async function showApp() {
   id('tab-tree').classList.remove('hidden');
 
   loadProspects();
+  pmAppAfterLogin();
 }
 
 async function checkInviteBanner() {
@@ -1953,6 +2011,170 @@ window.openGuide = () => {
   const aud = cData?.role === 'leader' ? 'leader' : 'member';
   window.open(`guida/?aud=${aud}`, '_blank', 'noopener');
 };
+// ══ APP INSTALL (PWA) + PUSH NOTIFICATIONS ══
+// Public Web Push key: Firebase console → Project settings → Cloud Messaging →
+// Web Push certificates. While empty, banners stay hidden and notifications off.
+const FCM_VAPID_KEY = '';
+const PUSH_ENDPOINT = 'https://rymanager.netlify.app/.netlify/functions/push-subscribe';
+const pmUA = navigator.userAgent || '';
+const pmEnv = {
+  ios: /iPhone|iPad|iPod/.test(pmUA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1),
+  android: /Android/i.test(pmUA),
+  inApp: /Instagram|FBAN|FBAV|FB_IAB|FBIOS|Messenger|Line\/|TikTok|musical_ly/i.test(pmUA),
+  samsung: /SamsungBrowser/i.test(pmUA),
+  firefox: /Firefox|FxiOS/i.test(pmUA),
+  iosOtherBrowser: /CriOS|FxiOS|EdgiOS|OPiOS|GSA\//i.test(pmUA)
+};
+pmEnv.mobile = pmEnv.ios || pmEnv.android;
+const pmStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const pmPushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const pmLsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const pmLsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} };
+const pmSnoozed = k => { const t = Number(pmLsGet(k) || 0); return t > 0 && Date.now() - t < 3 * 86400000; };
+let pmDeferredInstall = null, pmSwReg = null, pmBannerMode = '';
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); pmDeferredInstall = e; });
+addEventListener('appinstalled', () => { pmDeferredInstall = null; hideAppBanner(); });
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').then(r => { pmSwReg = r; }).catch(e => console.warn('Service worker non registrato', e?.message));
+
+async function pmPushRequest(action, extra = {}) {
+  const res = await fetch(PUSH_ENDPOINT, { method: 'POST', headers: { 'Authorization': 'Bearer ' + await cUser.getIdToken(), 'Content-Type': 'application/json' }, body: JSON.stringify({ action, ...extra }) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Impossibile aggiornare le notifiche.');
+  return data;
+}
+async function pmMessaging() {
+  const mod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js');
+  if (!(await mod.isSupported())) throw new Error('Questo browser non supporta le notifiche push.');
+  return { mod, messaging: mod.getMessaging(fbApp) };
+}
+async function pmFcmToken() {
+  const reg = pmSwReg || await navigator.serviceWorker.ready;
+  const { mod, messaging } = await pmMessaging();
+  return mod.getToken(messaging, { vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: reg });
+}
+async function pmRegisterDevice() {
+  const token = await pmFcmToken();
+  if (!token) throw new Error('Impossibile registrare questo dispositivo.');
+  await pmPushRequest('add', { token, platform: pmEnv.ios ? 'ios' : pmEnv.android ? 'android' : 'desktop', standalone: pmStandalone() });
+  pmLsSet('pm_push_token', token);
+  return token;
+}
+function pmNotifState() {
+  if (!FCM_VAPID_KEY) return 'soon';
+  if (!pmPushSupported()) return pmEnv.ios && !pmStandalone() ? 'needs-install' : 'unsupported';
+  if (Notification.permission === 'denied') return 'blocked';
+  if (Notification.permission === 'granted' && pmLsGet('pm_push_token')) return 'on';
+  return 'off';
+}
+window.enableNotifications = async () => {
+  const msg = id('app-notif-msg');
+  const say = (text, color) => { if (msg) { msg.textContent = text; msg.style.color = color; } };
+  try {
+    if (!FCM_VAPID_KEY) throw new Error('Le notifiche saranno disponibili a breve.');
+    if (!pmPushSupported()) {
+      if (pmEnv.ios && !pmStandalone()) { openInstallGuide(); throw new Error('Su iPhone le notifiche funzionano solo dall’app aggiunta alla schermata Home.'); }
+      throw new Error('Questo browser non supporta le notifiche.');
+    }
+    // Must be the first await: iOS only accepts the request inside a user tap.
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') throw new Error(permission === 'denied' ? 'Notifiche bloccate. Riattivale dalle impostazioni del telefono, nella sezione Notifiche dell’app Prospect.' : 'Permesso non concesso.');
+    say('Attivazione in corso…', 'var(--text2)');
+    await pmRegisterDevice();
+    await pmPushRequest('test').catch(() => {});
+    hideAppBanner();
+    say('✅ Notifiche attive su questo dispositivo. Ti abbiamo inviato una notifica di prova.', 'var(--green)');
+  } catch (e) {
+    if (msg && !id('s-overlay').classList.contains('hidden')) say(e.message || 'Impossibile attivare le notifiche.', 'var(--red)');
+    else alert(e.message || 'Impossibile attivare le notifiche.');
+  }
+  renderAppSettings();
+};
+async function pmForgetDevice() {
+  const token = pmLsGet('pm_push_token');
+  if (!token || !cUser) return;
+  try { await pmPushRequest('remove', { token }); } catch (e) {}
+  pmLsSet('pm_push_token', null);
+}
+window.disableNotifications = async () => {
+  await pmForgetDevice();
+  try { const { mod, messaging } = await pmMessaging(); await mod.deleteToken(messaging); } catch (e) {}
+  const msg = id('app-notif-msg'); if (msg) { msg.textContent = 'Notifiche disattivate su questo dispositivo.'; msg.style.color = 'var(--text2)'; }
+  renderAppSettings();
+};
+window.renderAppSettings = () => {
+  const inst = id('app-install-state'), notif = id('app-notif-state'); if (!inst) return;
+  inst.textContent = 'App: ' + (pmStandalone() ? '✅ installata su questo dispositivo' : pmEnv.mobile ? 'non installata (stai usando il browser)' : 'in uso dal browser');
+  const labels = { soon: 'in arrivo', 'needs-install': 'disponibili dopo aver aggiunto l’app alla Home', unsupported: 'non supportate da questo browser', blocked: '⛔ bloccate nelle impostazioni del dispositivo', on: '✅ attive', off: 'non attive' };
+  const state = pmNotifState();
+  notif.textContent = 'Notifiche: ' + labels[state];
+  id('app-install-btn').style.display = pmStandalone() ? 'none' : '';
+  id('app-notif-on').style.display = ['off', 'needs-install'].includes(state) ? '' : 'none';
+  id('app-notif-off').style.display = state === 'on' ? '' : 'none';
+};
+function showAppBanner(mode) {
+  pmBannerMode = mode;
+  const install = mode === 'install';
+  id('app-banner-title').textContent = install ? 'Vuoi essere avvisato quando ricevi un nuovo prospect?' : 'Attiva le notifiche';
+  id('app-banner-sub').textContent = install ? 'Aggiungi Prospect Manager alla schermata Home e attiva le notifiche: ti avvisiamo appena arriva un lead o ti viene condiviso un prospect.' : 'Ricevi un avviso quando ti viene condiviso un prospect o arriva un nuovo lead dalle inserzioni.';
+  id('app-banner-main').textContent = install ? (pmDeferredInstall ? 'Installa l’app' : 'Come fare') : 'Attiva';
+  id('app-banner').classList.remove('hidden');
+}
+function hideAppBanner() { id('app-banner')?.classList.add('hidden'); }
+window.snoozeAppBanner = () => { pmLsSet(pmBannerMode === 'install' ? 'pm_install_snooze' : 'pm_notif_snooze', String(Date.now())); hideAppBanner(); };
+window.appBannerMain = async () => {
+  if (pmBannerMode === 'notif') return enableNotifications();
+  if (pmDeferredInstall) {
+    pmDeferredInstall.prompt();
+    const choice = await pmDeferredInstall.userChoice.catch(() => null);
+    pmDeferredInstall = null;
+    if (choice?.outcome === 'accepted') { hideAppBanner(); alert('App installata! Aprila dall’icona Prospect sulla schermata Home, accedi e tocca «Attiva notifiche».'); }
+    return;
+  }
+  openInstallGuide();
+};
+window.openInstallGuide = () => {
+  const step = html => `<li>${html}</li>`;
+  let body = '';
+  if (pmEnv.inApp) {
+    body = `<div class="install-note">Stai usando il browser interno di un’app (Instagram, Facebook…), che non permette di installare.</div><ol class="install-steps">
+      ${step('Tocca <span class="kbd">⋯</span> o <span class="kbd">⋮</span> in alto a destra.')}
+      ${step(`Scegli <b>«Apri nel browser»</b> (${pmEnv.ios ? 'Safari' : 'Chrome'}).`)}
+      ${step('Accedi e riapri questa guida da <b>Impostazioni → App e notifiche</b>.')}</ol>`;
+  } else if (pmEnv.ios && pmEnv.iosOtherBrowser) {
+    body = `<ol class="install-steps">${step('Copia l’indirizzo <b>pm.retiredyoung.it</b> e aprilo in <b>Safari</b>.')}${step('Su iPhone le notifiche funzionano solo con l’app aggiunta alla Home da Safari.')}${step('In Safari tocca <span class="kbd">Condividi ⬆︎</span> → <b>«Aggiungi alla schermata Home»</b>.')}</ol>`;
+  } else if (pmEnv.ios) {
+    body = `<ol class="install-steps">
+      ${step('Tocca il pulsante <span class="kbd">Condividi ⬆︎</span> nella barra di Safari (in basso, o in alto su iPad).')}
+      ${step('Scorri e scegli <b>«Aggiungi alla schermata Home»</b>, poi tocca <b>Aggiungi</b>.')}
+      ${step('Apri <b>Prospect</b> dall’icona sulla Home e <b>accedi di nuovo</b> (serve solo la prima volta).')}
+      ${step('Tocca <b>«Attiva notifiche»</b> e poi <b>Consenti</b>.')}</ol>
+      <div class="install-note">Serve iOS 16.4 o successivo. Le notifiche arrivano anche con l’app chiusa.</div>`;
+  } else if (pmEnv.android) {
+    const menu = pmEnv.samsung ? 'il menu <span class="kbd">☰</span> in basso → <b>«Aggiungi pagina a»</b> → <b>«Schermata Home»</b>' : pmEnv.firefox ? 'il menu <span class="kbd">⋮</span> → <b>«Installa»</b> o <b>«Aggiungi alla schermata Home»</b>' : 'il menu <span class="kbd">⋮</span> in alto a destra → <b>«Installa app»</b> o <b>«Aggiungi a schermata Home»</b>';
+    body = `${pmDeferredInstall ? '<button class="btn-primary" style="width:100%;margin:6px 0 4px;" onclick="closeInstallGuide();appBannerMain()">📲 Installa l’app</button><div class="install-note">Oppure installala a mano:</div>' : ''}
+      <ol class="install-steps">${step('Apri ' + menu + '.')}${step('Conferma con <b>Installa</b> o <b>Aggiungi</b>.')}${step('Apri <b>Prospect</b> dalla schermata Home, accedi e tocca <b>«Attiva notifiche»</b>.')}</ol>`;
+  } else {
+    body = `<div class="install-note">Dal computer puoi attivare le notifiche direttamente nel browser, senza installare nulla.</div>
+      <button class="btn-primary" style="width:100%;margin-top:10px;" onclick="closeInstallGuide();enableNotifications()">🔔 Attiva notifiche su questo computer</button>
+      <div class="install-note" style="margin-top:10px;">Per installarla come app: in Chrome o Edge tocca l’icona <span class="kbd">⊕</span> a destra della barra degli indirizzi.</div>`;
+  }
+  id('install-guide-body').innerHTML = body;
+  id('install-overlay').classList.remove('hidden');
+};
+window.closeInstallGuide = () => id('install-overlay').classList.add('hidden');
+// After every login: keep this device's token current, or suggest install /
+// notifications (dismissable, comes back after 3 days).
+async function pmAppAfterLogin() {
+  if (!FCM_VAPID_KEY) return;
+  try {
+    if (pmPushSupported() && Notification.permission === 'granted') { await pmRegisterDevice(); return; }
+  } catch (e) { console.warn('Aggiornamento dispositivo notifiche non riuscito', e?.message); }
+  if (pmStandalone() || !pmEnv.mobile) {
+    if (pmPushSupported() && Notification.permission === 'default' && !pmSnoozed('pm_notif_snooze')) showAppBanner('notif');
+  } else if (!pmSnoozed('pm_install_snooze')) {
+    showAppBanner('install');
+  }
+}
 window.closeProspectModal = () => id('p-overlay').classList.add('hidden');
 window.saveProspect = async () => {
   const name=id('p-name').value.trim();
@@ -3482,6 +3704,7 @@ window.refreshMetaVerification=async()=>{
 };
 window.openSettings=()=>{
   if(!cUser) return;
+  renderAppSettings();
   // Settings must render from the profile already loaded at login. Do not hold
   // the modal behind Firestore reads or other network requests.
   const currentUid=cUser.uid;
