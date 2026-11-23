@@ -97,8 +97,17 @@ service cloud.firestore {
       allow create: if signedIn() &&
         request.resource.data.uid == request.auth.uid &&
         (!('sharedWith' in request.resource.data) || request.resource.data.sharedWith.size() == 0);
+      // Members a prospect is shared with may update its details and
+      // pipeline, but never its owner, sharing, Meta data or creation info.
       allow update: if isAdmin() || (ownsProspect() &&
-        request.resource.data.uid == resource.data.uid);
+        request.resource.data.uid == resource.data.uid) ||
+        (signedIn() && resource.data.sharedWith is list &&
+         request.auth.uid in resource.data.sharedWith &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+           'name', 'channel', 'phone', 'country', 'provincia', 'note',
+           'contacted', 'conoscitiva', 'presentation', 'followUps',
+           'payment', 'iscritto', 'nonInteressato', 'lastCheckAt'
+         ]));
       allow delete: if isAdmin() || ownsProspect();
     }
 

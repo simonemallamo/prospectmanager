@@ -1882,17 +1882,21 @@ window.renderTable = () => {
       <td><div class="pay-row" onclick="tField('${p.id}','payment',${!p.payment})"><div class="pay-dot${p.payment?' on':''}"></div><span class="pay-lbl${p.payment?' on':''}">${p.payment?'In attesa':'—'}</span></div></td>
       <td><button class="chk${p.iscritto?' on':''}" onclick="tField('${p.id}','iscritto',${!p.iscritto})" title="Segna come iscritto">${p.iscritto?'✓':''}</button></td>
       <td><button class="chk${p.nonInteressato?' on':''}" style="${p.nonInteressato?'background:var(--red);border-color:var(--red);color:#fff;':''}" onclick="tField('${p.id}','nonInteressato',${!p.nonInteressato})" title="Segna come non interessato">${p.nonInteressato?'✕':''}</button></td>
-      <td><div class="act-btns">${p.uid===cUser.uid?`<button class="act-btn" onclick="editProspect('${p.id}')">Modifica</button><button class="act-btn" onclick="shareProspect('${p.id}')">Condividi</button>${Array.isArray(p.sharedWith)&&p.sharedWith.length?`<button class="act-btn" onclick="revokeProspectShare('${p.id}')">Revoca</button>`:''}<button class="act-btn del" onclick="delProspect('${p.id}','${x(p.name)}')">Elimina</button>`:'Condiviso con te'}</div></td>
+      <td><div class="act-btns">${p.uid===cUser.uid?`<button class="act-btn" onclick="editProspect('${p.id}')">Modifica</button><button class="act-btn" onclick="shareProspect('${p.id}')">Condividi</button>${Array.isArray(p.sharedWith)&&p.sharedWith.length?`<button class="act-btn" onclick="revokeProspectShare('${p.id}')">Revoca</button>`:''}<button class="act-btn del" onclick="delProspect('${p.id}','${x(p.name)}')">Elimina</button>`:`${canEditProspect(p)?`<button class="act-btn" onclick="editProspect('${p.id}')">Modifica</button>`:''}<span style="font-size:11px;color:var(--text3);white-space:nowrap;">${canEditProspect(p)?'Condiviso con te':'Sola lettura'}</span>`}</div></td>
     </tr>`;
   }).join('');
 };
 
-window.tField = async (id_,f,v) => { const p=prospects.find(x=>x.id===id_); if(p?.uid!==cUser.uid)return; await updateDoc(doc(db,'prospects',id_),{[f]:v,lastCheckAt:serverTimestamp()}); };
+// The owner, and members a prospect is shared with, can update it. Members
+// cannot delete, share or reassign it (enforced by firestore.rules).
+const canEditProspect = p => !!p && (p.uid===cUser.uid || (Array.isArray(p.sharedWith) && p.sharedWith.includes(cUser.uid)));
+const saveFailed = e => { console.warn('prospect update failed', e?.code||e?.message); alert('Modifica non salvata. Ricarica la pagina e riprova.'); };
+window.tField = async (id_,f,v) => { const p=prospects.find(x=>x.id===id_); if(!canEditProspect(p))return; await updateDoc(doc(db,'prospects',id_),{[f]:v,lastCheckAt:serverTimestamp()}).catch(saveFailed); };
 window.tFu = async (id_,i,v) => {
   const p=prospects.find(x=>x.id===id_); if(!p) return;
-  if(p.uid!==cUser.uid)return;
+  if(!canEditProspect(p))return;
   const fu=[...(p.followUps||[false,false,false,false])]; fu[i]=v;
-  await updateDoc(doc(db,'prospects',id_),{followUps:fu,lastCheckAt:serverTimestamp()});
+  await updateDoc(doc(db,'prospects',id_),{followUps:fu,lastCheckAt:serverTimestamp()}).catch(saveFailed);
 };
 window.delProspect = async (id_,name) => { const p=prospects.find(x=>x.id===id_); if(p?.uid===cUser.uid && confirm(`Eliminare ${name}?`)) await deleteDoc(doc(db,'prospects',id_)); };
 async function setProspectSharing(pid,recipient,action){
@@ -2189,7 +2193,12 @@ window.saveProspect = async () => {
   const name=id('p-name').value.trim();
   if(!name){id('p-name').style.borderColor='var(--red)';return;}
   const data={name,channel:id('p-channel').value.trim(),phone:id('p-phone').value.trim(),country:id('p-country').value,provincia:id('p-provincia').value,note:id('p-note').value.trim(),uid:cUser.uid,userName:cData?.name||cUser.email};
-  if(editingPid) { if(prospects.find(p=>p.id===editingPid)?.uid!==cUser.uid)return; await updateDoc(doc(db,'prospects',editingPid),data); }
+  if(editingPid) {
+    const p=prospects.find(x=>x.id===editingPid); if(!canEditProspect(p))return;
+    // A shared prospect keeps its owner: the member only updates the details.
+    if(p.uid!==cUser.uid){ delete data.uid; delete data.userName; }
+    try { await updateDoc(doc(db,'prospects',editingPid),data); } catch(e) { saveFailed(e); return; }
+  }
   else await addDoc(collection(db,'prospects'),{...data,contacted:false,conoscitiva:false,nonInteressato:false,presentation:false,followUps:[false,false,false,false],payment:false,createdAt:serverTimestamp(),lastCheckAt:null,_insertedAt:Date.now()});
   closeProspectModal();
 };
