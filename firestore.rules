@@ -91,9 +91,10 @@ service cloud.firestore {
     match /prospects/{prospectId} {
       // A full-list grant is created only after the owner accepts a request.
       allow read: if isAdmin() || ownsProspect() ||
-        hasListAccess(resource.data.uid) ||
-        (signedIn() && resource.data.sharedWith is list &&
-         request.auth.uid in resource.data.sharedWith);
+        hasListAccess(resource.data.uid);
+      // Separate statement so the "shared with me" query (sharedWith
+      // array-contains uid) can be authorised on its own.
+      allow read: if signedIn() && request.auth.uid in resource.data.sharedWith;
       allow create: if signedIn() &&
         request.resource.data.uid == request.auth.uid &&
         (!('sharedWith' in request.resource.data) || request.resource.data.sharedWith.size() == 0);

@@ -109,6 +109,7 @@ export default async function handler(request){
           followUps:Array.isArray(p.followUps)?p.followUps.slice(0,4).map(Boolean):[false,false,false,false],
           payment:p.payment===true,
           iscritto:p.iscritto===true,
+          nonInteressato:p.nonInteressato===true,
           note:typeof p.note==='string'?p.note:'',
           channel:typeof p.channel==='string'?p.channel:'',
           _insertedAt:Number(p._insertedAt)||0,

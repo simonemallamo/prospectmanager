@@ -1753,6 +1753,7 @@ function loadProspects() {
       if (!response.ok) throw new Error(data.error||'Errore nel caricamento dei prospect condivisi.');
       const timestamp = ms => Number.isFinite(ms) && ms > 0 ? {toMillis:()=>ms} : null;
       sharedDocs = new Map((data.prospects||[]).map(p=>[p.id,{
+        sharedWith:[cUser.uid], // returned only because it is shared with me
         ...p,
         createdAt:timestamp(p.createdAtMillis),
         lastCheckAt:timestamp(p.lastCheckAtMillis)
@@ -1891,12 +1892,20 @@ window.renderTable = () => {
 // cannot delete, share or reassign it (enforced by firestore.rules).
 const canEditProspect = p => !!p && (p.uid===cUser.uid || (Array.isArray(p.sharedWith) && p.sharedWith.includes(cUser.uid)));
 const saveFailed = e => { console.warn('prospect update failed', e?.code||e?.message); alert('Modifica non salvata. Ricarica la pagina e riprova.'); };
-window.tField = async (id_,f,v) => { const p=prospects.find(x=>x.id===id_); if(!canEditProspect(p))return; await updateDoc(doc(db,'prospects',id_),{[f]:v,lastCheckAt:serverTimestamp()}).catch(saveFailed); };
+// Show the tick at once; the Firestore listener then confirms it.
+async function updatePipeline(p, changes) {
+  const before = Object.fromEntries(Object.keys(changes).map(k => [k, p[k]])), prevCheck = p.lastCheckAt;
+  Object.assign(p, changes); p.lastCheckAt = { toMillis: () => Date.now() };
+  renderStats(); renderTable();
+  try { await updateDoc(doc(db,'prospects',p.id),{...changes,lastCheckAt:serverTimestamp()}); }
+  catch(e) { Object.assign(p, before); p.lastCheckAt = prevCheck; renderStats(); renderTable(); saveFailed(e); }
+}
+window.tField = async (id_,f,v) => { const p=prospects.find(x=>x.id===id_); if(!canEditProspect(p))return; await updatePipeline(p,{[f]:v}); };
 window.tFu = async (id_,i,v) => {
   const p=prospects.find(x=>x.id===id_); if(!p) return;
   if(!canEditProspect(p))return;
   const fu=[...(p.followUps||[false,false,false,false])]; fu[i]=v;
-  await updateDoc(doc(db,'prospects',id_),{followUps:fu,lastCheckAt:serverTimestamp()}).catch(saveFailed);
+  await updatePipeline(p,{followUps:fu});
 };
 window.delProspect = async (id_,name) => { const p=prospects.find(x=>x.id===id_); if(p?.uid===cUser.uid && confirm(`Eliminare ${name}?`)) await deleteDoc(doc(db,'prospects',id_)); };
 async function setProspectSharing(pid,recipient,action){
