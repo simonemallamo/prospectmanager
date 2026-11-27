@@ -1167,6 +1167,14 @@ td{padding:13px 12px;}
       </div>
       <div style="font-size:10px;color:var(--text3);margin-top:8px;">L'autorizzazione avviene su Facebook. Non inserire password o token in RY Manager.</div>
     </div>
+    <!-- Automatic lead distribution per campaign -->
+    <div id="lead-rules" style="display:none;margin-top:1rem;padding:1rem;border:1px solid var(--border2);border-radius:10px;background:var(--surface2);">
+      <div style="font-size:14px;font-weight:600;margin-bottom:5px;">🎯 Distribuzione automatica lead</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:10px;">Per ogni campagna scegli a quali membri condividere i nuovi lead e quanti al giorno. I lead vengono alternati tra i membri finché non raggiungono la loro quota; il resto rimane a te. Il conteggio riparte ogni giorno a mezzanotte.</div>
+      <div id="lead-rules-body" style="font-size:12px;color:var(--text2);">Caricamento…</div>
+      <div id="lead-rules-msg" role="status" style="font-size:12px;margin:8px 0;"></div>
+      <button id="lead-rules-save" class="btn-primary" style="width:100%;display:none;" onclick="saveLeadRules()">Salva distribuzione</button>
+    </div>
     <div style="margin-top:.75rem;padding-top:.75rem;border-top:.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
       <span style="font-size:11px;color:var(--text3);">Il tuo ruolo è stato aggiornato dall'admin? Ricarica.</span>
       <button onclick="reloadSession()" style="padding:5px 12px;border:.5px solid var(--border2);border-radius:6px;background:transparent;color:var(--text2);font-size:12px;cursor:pointer;">🔄 Ricarica sessione</button>
@@ -3729,9 +3737,115 @@ window.refreshMetaVerification=async()=>{
     err.style.display='block';
   }
 };
+// ── AUTOMATIC LEAD DISTRIBUTION ──
+// Rules live in lead_rules/{uid}; the Meta webhook applies them when a lead
+// arrives (netlify/functions/_meta-leads.mjs → saveLead). Keep pmCampaignKey
+// identical to campaignKey() there.
+const pmCampaignKey = p => {
+  const cid = String(p?.campaignId || '').trim();
+  if (cid) return cid.replace(/[^\w-]/g, '_');
+  const name = String(p?.campaignName || '').trim().toLocaleLowerCase().replace(/[^\w-]+/g, '_');
+  return name ? 'name_' + name : '';
+};
+const pmHtml = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pmRomeDay = () => new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Rome',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+let leadRulesDraft = null, leadRulesMembers = [], leadRulesCounts = {};
+const isMetaOwnerUser = () => ['mallamo.simone@gmail.com','veglia.alessia@gmail.com'].includes((cUser?.email||'').toLowerCase());
+window.renderLeadRules = async () => {
+  const box = id('lead-rules'), body = id('lead-rules-body');
+  if (!box || !cUser) return;
+  box.style.display = isMetaOwnerUser() ? '' : 'none';
+  if (!isMetaOwnerUser()) return;
+  id('lead-rules-msg').textContent = '';
+  body.textContent = 'Caricamento…';
+  try {
+    const admin = String(cUser.email||'').toLowerCase() === 'mallamo.simone@gmail.com';
+    const [rulesSnap, daySnap, usersSnap] = await Promise.all([
+      getDoc(doc(db,'lead_rules',cUser.uid)),
+      getDoc(doc(db,'lead_rules',cUser.uid,'days',pmRomeDay())).catch(() => null),
+      getDocs(admin ? collection(db,'users') : query(collection(db,'users'),where('uplinePath','array-contains',cUser.uid)))
+    ]);
+    leadRulesMembers = usersSnap.docs.filter(d => d.id !== cUser.uid).map(d => {
+      const u = d.data() || {};
+      return { uid: d.id, name: [u.name,u.surname].filter(Boolean).join(' ').trim() || u.email || d.id, email: u.email || '' };
+    }).sort((a,b) => a.name.localeCompare(b.name,'it'));
+    leadRulesCounts = daySnap?.exists() ? (daySnap.data().counts || {}) : {};
+    const saved = rulesSnap.exists() ? (rulesSnap.data().campaigns || {}) : {};
+    leadRulesDraft = {};
+    for (const [key, c] of Object.entries(saved)) if (/^[\w-]{1,200}$/.test(key)) leadRulesDraft[key] = { name: c.name || key, members: (c.members||[]).map(m => ({ uid: m.uid, name: m.name, quota: m.quota })) };
+    // Campaigns seen in my own Meta leads appear even before a rule exists.
+    for (const p of prospects) {
+      if (p.uid !== cUser.uid) continue;
+      const key = pmCampaignKey(p);
+      if (key && !leadRulesDraft[key]) leadRulesDraft[key] = { name: p.campaignName || 'Campagna senza nome', members: [] };
+    }
+    drawLeadRules();
+  } catch (e) {
+    console.warn('lead rules load failed', e?.code || e?.message);
+    body.textContent = 'Impossibile caricare la distribuzione. Ricarica la pagina e riprova.';
+    id('lead-rules-save').style.display = 'none';
+  }
+};
+function drawLeadRules() {
+  const body = id('lead-rules-body'), keys = Object.keys(leadRulesDraft || {});
+  id('lead-rules-save').style.display = keys.length ? '' : 'none';
+  if (!keys.length) { body.textContent = 'Nessuna campagna ancora: le campagne compaiono qui appena arriva il primo lead.'; return; }
+  const memberName = uid => leadRulesMembers.find(m => m.uid === uid)?.name;
+  body.innerHTML = keys.map(key => {
+    const c = leadRulesDraft[key], counts = leadRulesCounts[key] || {};
+    const total = c.members.reduce((n, m) => n + (Number(m.quota) || 0), 0);
+    const rows = c.members.map((m, i) => {
+      const opts = leadRulesMembers.map(u => `<option value="${pmHtml(u.uid)}"${u.uid===m.uid?' selected':''}>${pmHtml(u.name)}</option>`).join('');
+      const missing = m.uid && !memberName(m.uid) ? `<option value="${pmHtml(m.uid)}" selected>${pmHtml(m.name || m.uid)} (non nel team)</option>` : '';
+      return `<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+        <select style="flex:1;min-width:0;" onchange="leadRuleSet('${key}',${i},'uid',this.value)"><option value="">Scegli membro…</option>${missing}${opts}</select>
+        <input type="number" min="0" max="500" step="1" value="${Number(m.quota)||0}" style="width:64px;" aria-label="Lead al giorno" onchange="leadRuleSet('${key}',${i},'quota',this.value)">
+        <span style="font-size:11px;color:var(--text3);white-space:nowrap;" title="Assegnati oggi">oggi ${Number(counts[m.uid])||0}</span>
+        <button class="btn-cancel" style="padding:4px 8px;" aria-label="Rimuovi" onclick="leadRuleRemove('${key}',${i})">✕</button>
+      </div>`;
+    }).join('');
+    return `<div style="border-top:.5px solid var(--border);padding-top:10px;margin-top:10px;">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px;">${pmHtml(c.name)}</div>
+      ${rows || '<div style="margin-bottom:6px;">Tutti i lead di questa campagna restano a te.</div>'}
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+        <button class="btn-cancel" style="padding:4px 10px;" onclick="leadRuleAdd('${key}')">+ Aggiungi membro</button>
+        ${total ? `<span style="font-size:11px;color:var(--text3);">Primi ${total} lead del giorno al team, poi a te</span>` : ''}
+      </div></div>`;
+  }).join('');
+}
+window.leadRuleAdd = key => { leadRulesDraft[key].members.push({ uid: '', name: '', quota: 1 }); drawLeadRules(); };
+window.leadRuleRemove = (key, i) => { leadRulesDraft[key].members.splice(i, 1); drawLeadRules(); };
+window.leadRuleSet = (key, i, field, value) => {
+  const m = leadRulesDraft[key].members[i];
+  if (field === 'uid') { m.uid = value; m.name = leadRulesMembers.find(u => u.uid === value)?.name || ''; }
+  else m.quota = Math.max(0, Math.min(500, Math.floor(Number(value) || 0)));
+  drawLeadRules();
+};
+window.saveLeadRules = async () => {
+  const msg = id('lead-rules-msg'), say = (t, c) => { msg.textContent = t; msg.style.color = c; };
+  const campaigns = {};
+  for (const [key, c] of Object.entries(leadRulesDraft || {})) {
+    const members = [], seen = new Set();
+    for (const m of c.members) {
+      if (!m.uid || !(m.quota > 0)) continue;
+      if (seen.has(m.uid)) return say(`«${c.name}»: lo stesso membro è inserito due volte.`, 'var(--red)');
+      seen.add(m.uid); members.push({ uid: m.uid, name: m.name || '', quota: m.quota });
+    }
+    if (members.length) campaigns[key] = { name: c.name, members };
+  }
+  const btn = id('lead-rules-save'); btn.disabled = true;
+  try {
+    await setDoc(doc(db,'lead_rules',cUser.uid), { campaigns, updatedAt: serverTimestamp() });
+    say('✅ Distribuzione salvata. Vale per i prossimi lead in arrivo.', 'var(--green)');
+  } catch (e) {
+    console.warn('lead rules save failed', e?.code || e?.message);
+    say('Salvataggio non riuscito. Ricarica la pagina e riprova.', 'var(--red)');
+  } finally { btn.disabled = false; }
+};
 window.openSettings=()=>{
   if(!cUser) return;
   renderAppSettings();
+  renderLeadRules();
   // Settings must render from the profile already loaded at login. Do not hold
   // the modal behind Firestore reads or other network requests.
   const currentUid=cUser.uid;

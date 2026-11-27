@@ -1,6 +1,6 @@
 import { db, FieldValue, verifyBearer, getMetaIntegrationConfig, isMetaIntegrationOwner } from './_firebase-admin.mjs';
 import { graph, describeGraphError, graphErrorSummary, isTokenError } from './_meta-graph.mjs';
-import { LEAD_FIELDS, lower, saveLead, withAdNames, ensureFieldData, extractContact } from './_meta-leads.mjs';
+import { LEAD_FIELDS, lower, saveLead, withAdNames, ensureFieldData, extractContact, notifyAssigned } from './_meta-leads.mjs';
 
 const ALLOWED_ORIGINS=new Set(['https://simonemallamo.github.io','https://pm.retiredyoung.it']);
 const cors=origin=>({
@@ -62,7 +62,9 @@ export default async function handler(request){
       const contact=extractContact(full.field_data||[]);
       for(const key of contact.fieldKeys)fieldKeys.add(key);
       if(!contact.name&&!contact.phone&&!contact.email)stats.withoutContact++;
-      const result=await saveLead(await withAdNames(full,{userToken,cache:nameCache}),page,target,{pageToken:page.pageAccessToken,userToken,formCache});
+      let assigned=null;
+      const result=await saveLead(await withAdNames(full,{userToken,cache:nameCache}),page,target,{pageToken:page.pageAccessToken,userToken,formCache,onAssigned:a=>{assigned=a;}});
+      if(assigned)await notifyAssigned(page.uid,assigned);
       if(result==='imported')stats.imported++;else if(result==='repaired')stats.repaired++;else if(result==='duplicate')stats.duplicates++;else stats.filtered++;
     };
     const readLeads=async(objectId,label,onLead)=>{

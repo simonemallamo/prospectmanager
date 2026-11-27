@@ -2,6 +2,7 @@
 // paths apply the same filter, mapping and deduplication.
 import { db, FieldValue } from './_firebase-admin.mjs';
 import { graph, describeGraphError } from './_meta-graph.mjs';
+import { sendPushToUser } from './_push.mjs';
 
 export const LEAD_FIELDS = 'id,created_time,field_data,ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,form_id,platform';
 const clean = value => typeof value === 'string' ? value.trim() : '';
@@ -120,6 +121,38 @@ export function matchesTarget(lead, target) {
   return [lead.campaign_name, lead.adset_name, lead.ad_name].some(name => lower(name) === target);
 }
 
+// ── Automatic lead distribution ──
+// lead_rules/{ownerUid}: { campaigns: { [campaignKey]: { name, members: [{ uid, name, quota }] } } }
+// written by the owner from Settings. lead_rules/{ownerUid}/days/{YYYY-MM-DD}
+// holds { counts: { [campaignKey]: { [memberUid]: n } } }, written only here.
+// The day follows Italian time, so quotas restart at midnight in Italy.
+export const romeDay = (date = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+// Same key as the client (index.html → pmCampaignKey): the campaign ID, or the
+// lowercased name when Meta did not return an ID.
+export function campaignKey(lead) {
+  const id = String(lead?.campaign_id || '').trim();
+  if (id) return id.replace(/[^\w-]/g, '_');
+  const name = lower(lead?.campaign_name).replace(/[^\w-]+/g, '_');
+  return name ? `name_${name}` : '';
+}
+// Picks the member with the lowest share of their daily quota still below it,
+// so leads alternate (R, E, R, E…) instead of filling one member first. Ties
+// go to the first member in the list. Returns null when every quota is full:
+// the lead then stays with the owner only.
+export function pickAssignee(members, counts, ownerUid) {
+  let best = null, bestRatio = Infinity;
+  for (const member of Array.isArray(members) ? members : []) {
+    const uid = typeof member?.uid === 'string' ? member.uid : '';
+    const quota = Math.min(Math.floor(Number(member?.quota) || 0), 500);
+    if (!uid || uid === ownerUid || quota <= 0) continue;
+    const used = Number(counts?.[uid]) || 0;
+    if (used >= quota) continue;
+    const ratio = used / quota;
+    if (ratio < bestRatio) { best = uid; bestRatio = ratio; }
+  }
+  return best;
+}
+
 const PLACEHOLDER = /^Meta Lead \d+$/;
 
 // Returns 'imported' | 'repaired' | 'duplicate' | 'filtered' | 'ignored'.
@@ -130,7 +163,9 @@ const PLACEHOLDER = /^Meta Lead \d+$/;
 // the same owner is completed in place: only empty fields are filled (name
 // only while it is still the "Meta Lead <id>" placeholder); stage, checkboxes
 // and owner are never touched.
-// options: { pageToken, userToken, formCache } to read the form question labels.
+// options: { pageToken, userToken, formCache } to read the form question labels;
+// onAssigned({ assignedTo, prospectId }) runs when a distribution rule shared
+// the new prospect with a team member.
 export async function saveLead(lead, page, target, options = {}) {
   const leadId = String(lead.id || '');
   if (!leadId) return 'ignored';
@@ -171,14 +206,39 @@ export async function saveLead(lead, page, target, options = {}) {
     metaCreatedTime: lead.created_time || '', metaPlatform: platformLabel(lead.platform), metaAnswers,
     createdAt: FieldValue.serverTimestamp(), lastCheckAt: null, _insertedAt: Date.now()
   };
-  const prospectRef = db.collection('prospects').doc(), batch = db.batch();
-  batch.create(leadRef, { leadId, prospectId: prospectRef.id, uid: page.uid, pageId: String(page.pageId), receivedAt: FieldValue.serverTimestamp() });
-  batch.set(prospectRef, prospect);
+  const prospectRef = db.collection('prospects').doc();
+  const rulesRef = db.collection('lead_rules').doc(String(page.uid));
+  const dayRef = rulesRef.collection('days').doc(romeDay());
+  const key = campaignKey(lead);
+  let assignedTo = null;
   try {
-    await batch.commit();
+    // One transaction: the lead marker, the prospect and the daily counter
+    // are written together, so concurrent webhook deliveries can neither
+    // duplicate a lead nor push a member over the daily quota.
+    await db.runTransaction(async tx => {
+      const [marker, rulesSnap, daySnap] = await Promise.all([tx.get(leadRef), tx.get(rulesRef), tx.get(dayRef)]);
+      if (marker.exists) throw Object.assign(new Error('already exists'), { code: 6 });
+      const rule = key ? rulesSnap.data()?.campaigns?.[key] : null;
+      assignedTo = pickAssignee(rule?.members, daySnap.data()?.counts?.[key], page.uid);
+      tx.create(leadRef, { leadId, prospectId: prospectRef.id, uid: page.uid, pageId: String(page.pageId), receivedAt: FieldValue.serverTimestamp(), ...(assignedTo ? { assignedTo } : {}) });
+      tx.set(prospectRef, assignedTo ? { ...prospect, sharedWith: [assignedTo], autoAssigned: true } : prospect);
+      if (assignedTo) tx.set(dayRef, { counts: { [key]: { [assignedTo]: FieldValue.increment(1) } }, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    });
   } catch (error) {
     if (error?.code === 6 || /already exists/i.test(error?.message || '')) return 'duplicate';
     throw error;
   }
+  if (assignedTo) options.onAssigned?.({ assignedTo, prospectId: prospectRef.id });
   return 'imported';
+}
+
+// Push to the member a rule assigned the lead to. No lead data in the text:
+// notifications can be read on a locked screen.
+export async function notifyAssigned(ownerUid, { assignedTo, prospectId }) {
+  let ownerName = 'Il tuo upline';
+  try {
+    const owner = (await db.collection('users').doc(String(ownerUid)).get()).data() || {};
+    ownerName = [owner.name, owner.surname].map(v => String(v || '').trim()).filter(Boolean).join(' ') || ownerName;
+  } catch (error) { /* name is cosmetic */ }
+  await sendPushToUser(assignedTo, { title: 'Nuovo lead assegnato 🎯', body: `${ownerName} ti ha assegnato un nuovo lead. Toccalo per aprirlo.`, url: './', tag: `share-${prospectId}` });
 }
